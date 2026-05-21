@@ -16,7 +16,7 @@ namespace Webware\Acl\Admin\CommandHandler;
 
 use Override;
 use Webware\Acl\Admin\Command\SaveRoleCommand;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Acl\AclInterface;
 use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandResultInterface;
 use Webware\CommandBus\Command\CommandStatus;
@@ -26,7 +26,7 @@ use Webware\CommandBus\CommandInterface;
 final class SaveRoleHandler implements CommandHandlerInterface
 {
     public function __construct(
-        private readonly AclRepositoryInterface $aclRepository,
+        private readonly array $config,
     ) {}
 
     #[Override]
@@ -34,9 +34,8 @@ final class SaveRoleHandler implements CommandHandlerInterface
     {
         assert($command instanceof SaveRoleCommand);
 
-        $pk = $this->aclRepository->saveRole($command->roleId, $command->parentPk);
-        $this->aclRepository->incrementVersion();
+        // @todo Implement config-driven role save via ConfigSaveEvent
 
-        return new CommandResult($command, CommandStatus::Success, $pk);
+        return new CommandResult($command, CommandStatus::Success, null);
     }
 }

@@ -16,14 +16,16 @@ namespace Webware\Acl\Admin\CommandHandler\Container;
 
 use Psr\Container\ContainerInterface;
 use Webware\Acl\Admin\CommandHandler\UpdateRuleTypeHandler;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Acl\AclInterface;
 
 final class UpdateRuleTypeHandlerFactory
 {
     public function __invoke(ContainerInterface $container): UpdateRuleTypeHandler
     {
+        $config = $container->get('config');
+
         return new UpdateRuleTypeHandler(
-            $container->get(AclRepositoryInterface::class),
+            $config[AclInterface::class] ?? [],
         );
     }
 }

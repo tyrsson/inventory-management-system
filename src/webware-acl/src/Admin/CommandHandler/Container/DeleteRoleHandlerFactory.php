@@ -16,14 +16,16 @@ namespace Webware\Acl\Admin\CommandHandler\Container;
 
 use Psr\Container\ContainerInterface;
 use Webware\Acl\Admin\CommandHandler\DeleteRoleHandler;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Acl\AclInterface;
 
 final class DeleteRoleHandlerFactory
 {
     public function __invoke(ContainerInterface $container): DeleteRoleHandler
     {
+        $config = $container->get('config');
+
         return new DeleteRoleHandler(
-            $container->get(AclRepositoryInterface::class),
+            $config[AclInterface::class] ?? [],
         );
     }
 }

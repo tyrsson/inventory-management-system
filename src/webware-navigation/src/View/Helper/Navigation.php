@@ -13,6 +13,7 @@ use Webware\Navigation\NavigationContainer;
 use Webware\Navigation\NavigationFilterIterator;
 use Webware\Navigation\NavigationItem;
 use Webware\Navigation\Renderer\RendererInterface;
+use Webware\UserManager\UserInterface;
 
 use function usort;
 
@@ -33,8 +34,7 @@ use function usort;
  */
 final class Navigation implements StatefulHelperInterface
 {
-    /** @var string[] */
-    private array $roles = [];
+    private ?UserInterface $user = null;
 
     private ?string $activeRouteName = null;
 
@@ -48,10 +48,9 @@ final class Navigation implements StatefulHelperInterface
         private readonly ?RendererInterface $sitemapRenderer = null,
     ) {}
 
-    /** @param string[] $roles */
-    public function setRoles(array $roles): void
+    public function setUser(UserInterface|null $user): void
     {
-        $this->roles = $roles;
+        $this->user = $user;
     }
 
     public function setActiveRouteName(?string $name): void
@@ -62,7 +61,7 @@ final class Navigation implements StatefulHelperInterface
     #[Override]
     public function resetState(): void
     {
-        $this->roles           = [];
+        $this->user            = null;
         $this->activeRouteName = null;
     }
 
@@ -76,7 +75,7 @@ final class Navigation implements StatefulHelperInterface
         $iterator = new NavigationFilterIterator(
             $this->routeCollector->getRoutes(),
             $navId,
-            $this->roles,
+            $this->user,
             $this->acl,
         );
 

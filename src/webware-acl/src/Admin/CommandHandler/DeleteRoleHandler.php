@@ -16,7 +16,7 @@ namespace Webware\Acl\Admin\CommandHandler;
 
 use Override;
 use Webware\Acl\Admin\Command\DeleteRoleCommand;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Acl\AclInterface;
 use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandResultInterface;
 use Webware\CommandBus\Command\CommandStatus;
@@ -26,7 +26,7 @@ use Webware\CommandBus\CommandInterface;
 final class DeleteRoleHandler implements CommandHandlerInterface
 {
     public function __construct(
-        private readonly AclRepositoryInterface $aclRepository,
+        private readonly array $config,
     ) {}
 
     #[Override]
@@ -34,8 +34,7 @@ final class DeleteRoleHandler implements CommandHandlerInterface
     {
         assert($command instanceof DeleteRoleCommand);
 
-        $this->aclRepository->deleteRole($command->rolePk);
-        $this->aclRepository->incrementVersion();
+        // @todo Implement config-driven role delete via ConfigSaveEvent
 
         return new CommandResult($command, CommandStatus::Success, null);
     }

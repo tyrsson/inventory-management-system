@@ -19,6 +19,7 @@ use Mezzio\Template\TemplateRendererInterface;
 use Psr\Container\ContainerInterface;
 use Webware\UserManager\Repository\UserRepositoryInterface;
 use Webware\UserManager\RequestHandler\ResendVerificationHandler;
+use Webware\UserManager\View\Helper\UserUrl;
 
 final class ResendVerificationHandlerFactory
 {
@@ -28,6 +29,7 @@ final class ResendVerificationHandlerFactory
         $config      = $container->get('config');
         $userConf    = $config['user'] ?? [];
         $mailerConf  = $config[MailerInterface::class] ?? [];
+        $userUrl     = $container->get(UserUrl::class);
 
         return new ResendVerificationHandler(
             template:            $container->get(TemplateRendererInterface::class),
@@ -37,6 +39,8 @@ final class ResendVerificationHandlerFactory
             fromName:            (string) ($userConf['from_name']                    ?? 'Farmers IMS'),
             baseUrl:             (string) ($userConf['base_url']                     ?? 'http://localhost:8080'),
             verificationSubject: (string) ($mailerConf['verification_email_subject'] ?? 'Verify your account'),
+            loginUrl:            $userUrl('session.read'),
         );
     }
 }
+

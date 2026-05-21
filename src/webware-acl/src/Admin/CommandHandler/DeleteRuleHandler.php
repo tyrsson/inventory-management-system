@@ -16,7 +16,7 @@ namespace Webware\Acl\Admin\CommandHandler;
 
 use Override;
 use Webware\Acl\Admin\Command\DeleteRuleCommand;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Acl\AclInterface;
 use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandResultInterface;
 use Webware\CommandBus\Command\CommandStatus;
@@ -26,7 +26,7 @@ use Webware\CommandBus\CommandInterface;
 final class DeleteRuleHandler implements CommandHandlerInterface
 {
     public function __construct(
-        private readonly AclRepositoryInterface $aclRepository,
+        private readonly array $config,
     ) {}
 
     #[Override]
@@ -34,8 +34,7 @@ final class DeleteRuleHandler implements CommandHandlerInterface
     {
         assert($command instanceof DeleteRuleCommand);
 
-        $this->aclRepository->deleteRule($command->id);
-        $this->aclRepository->incrementVersion();
+        // @todo Implement config-driven rule delete via ConfigSaveEvent
 
         return new CommandResult($command, CommandStatus::Success, null);
     }

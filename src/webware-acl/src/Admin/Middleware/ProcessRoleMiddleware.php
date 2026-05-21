@@ -63,6 +63,12 @@ final class ProcessRoleMiddleware implements MiddlewareInterface
             $result = $this->commandBus->handle(new DeleteRoleCommand($rolePk));
             if ($result->getStatus() === CommandStatus::Success) {
                 $messenger?->success('Role deleted.');
+            } elseif ($result->getStatus() === CommandStatus::Failure) {
+                $messenger?->warning(
+                    (string) ($result->getResult() ?? 'Role could not be deleted.'),
+                    hops: 0,
+                    now: true,
+                );
             }
         }
 

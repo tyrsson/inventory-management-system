@@ -16,14 +16,16 @@ namespace Webware\Acl\Admin\CommandHandler\Container;
 
 use Psr\Container\ContainerInterface;
 use Webware\Acl\Admin\CommandHandler\SaveRoleHandler;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Acl\AclInterface;
 
 final class SaveRoleHandlerFactory
 {
     public function __invoke(ContainerInterface $container): SaveRoleHandler
     {
+        $config = $container->get('config');
+
         return new SaveRoleHandler(
-            $container->get(AclRepositoryInterface::class),
+            $config[AclInterface::class] ?? [],
         );
     }
 }

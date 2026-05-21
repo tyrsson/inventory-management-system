@@ -12,6 +12,8 @@ final class RegisterAdminResourcesListenerFactory
 {
     public function __invoke(ContainerInterface $container): RegisterAdminResourcesListener
     {
-        return new RegisterAdminResourcesListener();
+        return new RegisterAdminResourcesListener(
+            routeNamePrefix: Configuration::getAdminRouteNamePrefix($container, self::class),
+        );
     }
 }

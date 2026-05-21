@@ -17,6 +17,7 @@ use Mezzio\Router\Middleware\RouteMiddleware;
 use Axleus\Log\Middleware\MonologMiddleware;
 use Mezzio\Session\SessionMiddleware;
 use Psr\Container\ContainerInterface;
+use Webware\Acl\Middleware\AuthorizationMiddleware;
 use Webware\Acl\Middleware\IdentityMiddleware;
 use Webware\Event\Middleware\EventDispatcherMiddleware;
 use Webware\Traccio\Middleware\TracyDebuggerMiddleware;
@@ -75,12 +76,9 @@ return function (Application $app, MiddlewareFactory $factory, ContainerInterfac
     // Inject roles + active route name into the Navigation view helper:
     $app->pipe(\Webware\Navigation\Middleware\NavigationMiddleware::class);
 
-    // Add more middleware here that needs to introspect the routing results; this
-    // might include:
-    //
-    // - route-based authentication
-    // - route-based validation
-    // - etc.
+    // ACL route access check — must run after routing and identity are resolved,
+    // before dispatch.
+    $app->pipe(AuthorizationMiddleware::class);
 
     // Register the dispatch middleware in the middleware pipeline
     $app->pipe(DispatchMiddleware::class);

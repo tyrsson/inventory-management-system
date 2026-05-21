@@ -7,6 +7,7 @@ namespace Webware\Admin\Widget;
 use FilterIterator;
 use Iterator;
 use Webware\Acl\AclInterface;
+use Webware\UserManager\UserInterface;
 
 /**
  * Wraps an iterator of WidgetInterface instances and accepts only those
@@ -18,12 +19,11 @@ final class AclWidgetFilterIterator extends FilterIterator
 {
     /**
      * @param Iterator<int, WidgetInterface> $iterator
-     * @param string[]                       $roles    Current user's roles
      */
     public function __construct(
         Iterator $iterator,
         private readonly AclInterface $acl,
-        private readonly array $roles,
+        private readonly UserInterface|null $user,
     ) {
         parent::__construct($iterator);
     }
@@ -35,7 +35,7 @@ final class AclWidgetFilterIterator extends FilterIterator
         if (! $widget instanceof WidgetInterface) {
             return false;
         }
-
-        return $this->acl->isAllowed($this->roles, $widget->resourceId, $widget->privilege);
+        $check = $this->acl->isAllowed($this->user, $widget->resourceId, $widget->privilege);
+        return $check;
     }
 }

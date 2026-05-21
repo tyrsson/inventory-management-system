@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Webware\Acl\Admin\Middleware\Container;
 
-use Mezzio\Router\RouteCollectorInterface;
 use Psr\Container\ContainerInterface;
 use Webware\Acl\Admin\Middleware\ProcessProtectRouteMiddleware;
 use Webware\CommandBus\CommandBusInterface;
@@ -15,7 +14,6 @@ final class ProcessProtectRouteMiddlewareFactory
     {
         return new ProcessProtectRouteMiddleware(
             $container->get(CommandBusInterface::class),
-            $container->get(RouteCollectorInterface::class),
         );
     }
 }

@@ -10,36 +10,36 @@ use Mezzio\Template\TemplateRendererInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Webware\Acl\Repository\AclRepositoryInterface;
-
-use function array_map;
-use function array_sum;
+use Webware\Acl\Admin\Middleware\BuildAccessControlMiddleware;
+use Webware\CommandBus\Command\CommandResult;
+use Webware\CommandBus\Command\CommandStatus;
 
 /**
- * Handles GET /admin/access — ACL overview dashboard.
+ * Handles GET /admin/access — route-centric Access Control page.
+ *
+ * All data assembly is performed by BuildAccessControlMiddleware which runs
+ * before this handler in the pipeline and attaches the view model as a request
+ * attribute. This handler is render-only.
  */
 final class AclOverviewHandler implements RequestHandlerInterface
 {
     public function __construct(
-        private readonly AclRepositoryInterface $aclRepository,
         private readonly TemplateRendererInterface $template,
     ) {}
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $roles       = $this->aclRepository->fetchRoles();
-        $roleParents = $this->aclRepository->fetchRoleParents();
-        $resources   = $this->aclRepository->fetchResources();
-        $rules       = $this->aclRepository->fetchRules();
-        $assertions  = $this->aclRepository->fetchRuleAssertions();
+        /** @var array<string, mixed> $viewModel */
+        $viewModel = $request->getAttribute(BuildAccessControlMiddleware::class, []);
 
-        return new HtmlResponse($this->template->render('acl::admin-acl', [
-            'roles'          => $roles,
-            'roleParents'    => $roleParents,
-            'resources'      => $resources,
-            'rules'          => $rules,
-            'assertionCount' => array_sum(array_map('count', $assertions)),
-            'aclVersion'     => $this->aclRepository->fetchVersion(),
-        ]));
+        $response = new HtmlResponse($this->template->render('acl::admin-acl', $viewModel));
+
+        // Close the wizard modal after a successful POST
+        $result = $request->getAttribute(CommandResult::class);
+        if ($result instanceof CommandResult && $result->getStatus() === CommandStatus::Success) {
+            $response = $response->withHeader('HX-Trigger', 'closeModal');
+        }
+
+        return $response;
     }
 }

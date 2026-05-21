@@ -73,7 +73,7 @@ final readonly class GuestUser implements UserInterface
     #[Override]
     public function getRoleId(): string
     {
-        return $this->roles[0] ?? 'guest';
+        return $this->roles[0] ?? 'Guest';
     }
 
     /**

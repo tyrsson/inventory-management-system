@@ -60,7 +60,7 @@ $this->headTitle('Resend Verification Email');
                                 <?= $this->escapeHtml($this->error) ?>
                             </div>
 
-                            <form action="<?= $this->url('user.verify-email.resend') ?>" method="post" novalidate>
+                            <form action="<?= $this->userUrl('resend.verification.create') ?>" method="post" novalidate>
                                 <div class="mb-3">
                                     <label class="form-label form-label-sm fw-semibold" for="resend-email">Email</label>
                                     <input
@@ -87,7 +87,7 @@ $this->headTitle('Resend Verification Email');
                                 </div>
                             </div>
 
-                            <form action="<?= $this->url('user.verify-email.resend') ?>" method="post" novalidate>
+                            <form action="<?= $this->userUrl('resend.verification.create') ?>" method="post" novalidate>
                                 <div class="mb-3">
                                     <label class="form-label form-label-sm fw-semibold" for="resend-email">Email</label>
                                     <input
@@ -106,7 +106,7 @@ $this->headTitle('Resend Verification Email');
                         <?php endif; ?>
 
                         <div class="text-center">
-                            <a href="<?= $this->url('user.login') ?>" class="small text-secondary">Already verified? Sign in</a>
+                            <a href="<?= $this->userUrl('session.read') ?>" class="small text-secondary">Already verified? Sign in</a>
                         </div>
 
                     </div>

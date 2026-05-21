@@ -11,15 +11,16 @@ use Webware\Acl\PrivilegeInterface;
 /**
  * Registers admin module ACL rules.
  *
- * Grants Warehouse Supervisor and above read on admin.dashboard.
- * Warehouse Supervisor is the minimum role that may access any admin section
- * (manifest admin widget). Inheritance propagates upward through DC Warehouse,
- * Manager, Administrator, and Developer automatically.
+ * Grants the generic `administrator` role read access to the admin dashboard
+ * resource. IMS-specific role grants (e.g. Warehouse Supervisor) belong in
+ * the IMS application layer, not here.
  */
 final class RegisterAdminRulesListener
 {
+    public function __construct(private readonly string $routeNamePrefix) {}
+
     public function __invoke(RulesLoadedEvent $event): void
     {
-        $event->acl->allow('Warehouse Supervisor', 'admin.dashboard', PrivilegeInterface::READ);
+        $event->acl->allow('administrator', $this->routeNamePrefix . 'dashboard.read', PrivilegeInterface::READ);
     }
 }

@@ -50,7 +50,7 @@ $this->headTitle('Verify Email');
 
                                 <p class="text-secondary small mb-3">Enter your email address below and we will send you a new verification link.</p>
 
-                                <form action="<?= $this->url('user.verify-email.resend') ?>" method="post" novalidate>
+                                <form action="<?= $this->userUrl('resend.verification.create') ?>" method="post" novalidate>
                                     <div class="mb-3">
                                         <label class="form-label form-label-sm fw-semibold" for="resend-email">Email</label>
                                         <input
@@ -68,14 +68,14 @@ $this->headTitle('Verify Email');
 
                             <?php else: ?>
 
-                                <a href="<?= $this->url('user.register') ?>" class="btn btn-primary w-100 mb-3">Back to Registration</a>
+                                <a href="<?= $this->userUrl('account.read') ?>" class="btn btn-primary w-100 mb-3">Back to Registration</a>
 
                             <?php endif; ?>
 
                         <?php endif; ?>
 
                         <div class="text-center">
-                            <a href="<?= $this->url('user.login') ?>" class="small text-secondary">Already have an account? Sign in</a>
+                            <a href="<?= $this->userUrl('session.read') ?>" class="small text-secondary">Already have an account? Sign in</a>
                         </div>
 
                     </div>

@@ -16,14 +16,16 @@ namespace Webware\Acl\Admin\CommandHandler\Container;
 
 use Psr\Container\ContainerInterface;
 use Webware\Acl\Admin\CommandHandler\DeleteAssertionHandler;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Acl\AclInterface;
 
 final class DeleteAssertionHandlerFactory
 {
     public function __invoke(ContainerInterface $container): DeleteAssertionHandler
     {
+        $config = $container->get('config');
+
         return new DeleteAssertionHandler(
-            $container->get(AclRepositoryInterface::class),
+            $config[AclInterface::class] ?? [],
         );
     }
 }

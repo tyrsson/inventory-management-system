@@ -18,19 +18,18 @@ use Laminas\Permissions\Acl\Acl as LaminasAcl;
 use Laminas\Permissions\Acl\Assertion\AssertionAggregate;
 use Laminas\Permissions\Acl\Assertion\AssertionInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
-use Webware\Acl\Cache\AclCacheInterface;
 use Webware\Acl\Event\AclBuildStartedEvent;
 use Webware\Acl\Event\AclBuiltEvent;
 use Webware\Acl\Event\ResourcesLoadedEvent;
 use Webware\Acl\Event\RolesLoadedEvent;
 use Webware\Acl\Event\RulesLoadedEvent;
 use Webware\Acl\Exception\RuntimeException;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Acl\RoleProviderInterface;
 
 use function array_diff;
 use function array_keys;
 use function array_map;
-use function array_values;
+use function is_string;
 use function class_exists;
 use function count;
 use function implode;
@@ -38,74 +37,39 @@ use function is_a;
 use function sprintf;
 
 /**
- * Builds a fully hydrated Laminas\Permissions\Acl\Acl instance from database
- * data, using FileAclCache to avoid redundant DB queries on every request.
- *
- * On every call to build(), the current acl_version counter is compared
- * against the cached version. A mismatch (or absent cache) triggers a full
- * DB reload and a cache write. A version match returns the Acl rebuilt
- * in-memory from the cached raw arrays — zero DB queries beyond the single
- * fetchVersion() call.
+ * Builds a fully hydrated Laminas\Permissions\Acl\Acl instance from
+ * the webware-acl configuration array.
  *
  * PSR-14 events are fired at each stage of the build so that listeners can
  * extend the ACL without modifying this class. Wiring the dispatcher is
  * optional; if none is provided the build proceeds without event dispatch.
+ *
+ * @todo Wire config array data into buildFromArrays() once the config
+ *       structure for resources, rules, and assertions is finalised.
  */
 final class AclBuilder
 {
     public function __construct(
-        private readonly AclRepositoryInterface $repository,
-        private readonly AclCacheInterface $cache,
+        private readonly array $config,
         private readonly ?EventDispatcherInterface $events = null,
     ) {}
 
     /**
-     * Returns a fully built Laminas Acl instance.
-     * Reads from cache when the version matches; re-hydrates from DB otherwise.
+     * Returns a fully built Laminas Acl instance populated from the
+     * webware-acl configuration array.
+     *
+     * @todo Populate roles, resources, rules, and assertions from $this->config
+     *       once the config-driven data shape is finalised.
      */
     public function build(): LaminasAcl
     {
-        $currentVersion = $this->repository->fetchVersion();
-        $cached         = $this->cache->get();
-
-        if ($cached !== null && (int) $cached['version'] === $currentVersion) {
-            return $this->buildFromArrays($cached);
-        }
-
-        // Cache miss or stale — load everything from the DB
-        $roles          = $this->repository->fetchRoles();
-        $parents        = $this->repository->fetchRoleParents();
-        $resources      = $this->repository->fetchResources();
-        $rules          = $this->repository->fetchRules();
-        $assertions     = $this->repository->fetchRuleAssertions();
-
-        // Convert entity objects to cache-friendly arrays
-        $rolesData = array_values(
-            array_map(
-                static fn($r) => ['id' => $r->id, 'role_id' => $r->roleId],
-                $roles,
-            ),
-        );
-
-        $resourcesData = array_values(
-            array_map(
-                static fn($r) => ['resource_pk' => $r->resourcePk, 'resource_id' => $r->resourceId],
-                $resources,
-            ),
-        );
-
-        $data = [
-            'version'       => $currentVersion,
-            'roles'         => $rolesData,
-            'parents'       => $parents,
-            'resources'     => $resourcesData,
-            'rules'         => $rules,         // already resolved string IDs from repository joins
-            'assertions'    => $assertions,    // rule_pk → [{assertion, mode, sort_order}]
-        ];
-
-        $this->cache->set($data);
-
-        return $this->buildFromArrays($data);
+        return $this->buildFromArrays([
+            'roles'      => [],
+            'parents'    => [],
+            'resources'  => $this->config['resources'] ?? [],
+            'rules'      => $this->config['rules'] ?? [],
+            'assertions' => $this->config['assertions'] ?? [],
+        ]);
     }
 
     /**

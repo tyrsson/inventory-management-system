@@ -141,6 +141,81 @@ be written with this migration in mind — avoid scattering the string in multip
 
 ---
 
+## Route-based ACL (primary mechanism for this application)
+
+**`RouteResource`** is the HTTP-layer bridge that satisfies both the Laminas ACL resource contract
+and the store-ownership assertion contract — without requiring the command to carry ACL fields.
+
+Route name IS the resource ID. HTTP method IS the privilege. Ownership is resolved from the route
+params at the ACL check layer, before the route stack executes.
+
+### How it works
+
+1. `RouteMiddleware` (override of upstream) builds a `RouteResource` from the matched `RouteResult`
+   and attaches it as `RouteResource::class` request attribute.
+2. `AuthorizingDispatchMiddleware` (override of upstream `DispatchMiddleware`) reads `RouteResource::class`,
+   calls `Acl::isAllowedRoute(request, roles)`, and short-circuits with `ForbiddenHandlerInterface`
+   on deny — the route stack never executes for denied requests.
+3. `Acl::isAllowedRoute()` uses `$this->acl->hasResource($routeName)` to check opt-in status.
+   **Unregistered route → `true` (opt-in protection model).**
+4. `StoreOwnedResourceAssertion` receives the `RouteResource` as `$resource` — `getOwnerId()`
+   reads the owner ID from route params using a three-level config:
+   - Per-route options array (`$route->getOptions()['acl']['ownerId']`)
+   - Global `route_param_map` config (`AclInterface::class['route_param_map'][$routeName]['ownerId']`)
+   - Convention fallback (`'ownerId'`)
+
+### Opting a route into ACL protection
+
+Use the Admin UI "Unprotected Routes" section (`/admin/access/resources`) and click **Protect**.
+This fires `ProtectRouteCommand`, which inserts one `acl_resource` row (route name = resource ID)
+and one `acl_privilege` row per mapped HTTP method into the DB, then increments the ACL version.
+
+Or from a listener at build time:
+```php
+$event->acl->addResource('route.name'); // in RegisterXxxResourcesListener
+```
+
+### Second canonical shape — HTTP-layer (RouteResource, no command fields needed)
+
+When the command bus is not involved (route-level ACL only), the command does not need
+`RoleProviderInterface` or `StoreOwnedResourceInterface`. The assertion fires at the
+`AuthorizingDispatchMiddleware` layer using `RouteResource`:
+
+```php
+// ✅ No ACL fields on the command — ownership is checked at the HTTP layer
+final readonly class CreateProductCommand implements CommandInterface
+{
+    public function __construct(
+        public string $name,
+        public int    $storeId,  // from request — used in handler only, NOT for ACL
+    ) {}
+}
+```
+
+The handler only runs if the route is allowed. Store ownership was already asserted by
+`StoreOwnedResourceAssertion` acting on the `RouteResource` (which read `ownerId` from the
+route param before the route stack executed).
+
+---
+
+## `AuthorizableCommandInterface` (ecosystem use, deferred for this application)
+
+Supersedes `CommandInterface + RoleProviderInterface` for command-level ACL enforcement
+inside the command bus (rather than at the HTTP route layer).
+
+| Interface | Package | Purpose |
+|---|---|---|
+| `AuthorizableCommandInterface` | `webware-acl` | Extends `CommandInterface`; command carries its own role + resource for bus-level ACL |
+| `RoleProviderInterface` | `webware-acl` | Exposes the authenticated user as a `RoleInterface` |
+| `StoreOwnedResourceInterface` | `ims-store` | Extends `ResourceInterface` + `ProprietaryInterface`; exposes the target `storeId` |
+
+**Status:** `AuthorizableCommandInterface` and `CommandHandlerMiddleware` exist in
+`src/webware-acl/src/CommandBus/` but are not wired for this application. All route-level
+ACL is handled by `AuthorizingDispatchMiddleware`. Implement command-level ACL in a future PR
+when commands need to be dispatchable from non-HTTP contexts (CLI, queues, internal services).
+
+---
+
 ## Proven By
 
 Integration prototype: `test/AppTest/Acl/StoreOwnershipAssertionPrototypeTest.php`

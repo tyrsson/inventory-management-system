@@ -11,7 +11,7 @@ use Mezzio\Template\TemplateRendererInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Acl\AclInterface;
 use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandStatus;
 
@@ -27,18 +27,18 @@ use function json_encode;
 final class RuleManagerHandler implements RequestHandlerInterface
 {
     public function __construct(
-        private readonly AclRepositoryInterface $aclRepository,
+        private readonly array $config,
         private readonly TemplateRendererInterface $template,
     ) {}
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $roles       = $this->aclRepository->fetchRoles();
-        $roleParents = $this->aclRepository->fetchRoleParents();
-        $resources   = $this->aclRepository->fetchResources();
-        $privileges  = $this->aclRepository->fetchPrivileges();
-        $rules       = $this->aclRepository->fetchRules();
-        $assertions  = $this->aclRepository->fetchRuleAssertions();
+        $roles       = [];
+        $roleParents = [];
+        $resources   = [];
+        $privileges  = [];
+        $rules       = [];
+        $assertions  = [];
 
         $query          = $request->getQueryParams();
         $filterRole     = isset($query['role'])      && $query['role']      !== '' ? (string) $query['role']      : null;

@@ -13,10 +13,15 @@ use Webware\Acl\Event\ResourcesLoadedEvent;
  * Invoked on ResourcesLoadedEvent; adds the admin.acl resource so that
  * ACL management UI routes can be protected and referenced by rules.
  */
-final class RegisterAclResourcesListener
+final readonly class RegisterAclResourcesListener
 {
+    public function __construct(
+        private string $resourceId,
+    ) {
+    }
+
     public function __invoke(ResourcesLoadedEvent $event): void
     {
-        $event->acl->addResource('admin.acl');
+        $event->acl->addResource($this->resourceId);
     }
 }

@@ -17,6 +17,7 @@ namespace Webware\UserManager\Container;
 use Mezzio\Authentication\UserInterface;
 use Psr\Container\ContainerInterface;
 use Webmozart\Assert\Assert;
+use Webware\Acl\AclInterface;
 use Webware\UserManager\Entity\GuestUser;
 
 /**
@@ -32,7 +33,7 @@ final class UserFactory
     public function __invoke(ContainerInterface $container): callable
     {
         $config   = $container->get('config');
-        $baseRole = (string) ($config['webware-acl']['base_role'] ?? 'guest');
+        $baseRole = (string) ($config[AclInterface::class]['base_role'] ?? 'Guest');
 
         return static function (
             string $identity,

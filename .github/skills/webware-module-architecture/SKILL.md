@@ -198,6 +198,62 @@ src/{module}/src/
         Register{Module}WidgetListener.php    ← if module contributes a dashboard widget
     Widget/
         {Module}DashboardWidget.php           ← if applicable
+
+---
+
+## Admin Module RouteProvider — Config-Driven Paths
+
+All modules that register admin routes **must** consume the `webware-admin` config via `Webware\Admin\Container\Configuration` — never hardcode `/admin` or a route name prefix.
+
+### RouteProviderFactory
+
+```php
+use Webware\Admin\Container\Configuration;
+
+final readonly class RouteProviderFactory
+{
+    public function __invoke(ContainerInterface $container): RouteProvider
+    {
+        return new RouteProvider(
+            Configuration::getConfig($container, self::class)
+        );
+    }
+}
+```
+
+### RouteProvider constructor + usage
+
+```php
+final readonly class RouteProvider implements RouteProviderInterface
+{
+    public function __construct(private array $config) {}
+
+    public function registerRoutes(
+        RouteCollectorInterface $routeCollector,
+        MiddlewareFactoryInterface $middlewareFactory
+    ): void {
+        // Path: /{admin_route_key}/{module-segment}
+        // Name: {admin.}{module.}{action}
+        $routeCollector->get(
+            '/' . $this->config[Configuration::ROUTE_KEY] . '/module.manager',
+            $middlewareFactory->prepare([BuildModuleMiddleware::class, ModuleManagerHandler::class]),
+            $this->config[Configuration::ROUTE_NAME_PREFIX] . 'module.read'
+        );
+
+        $routeCollector->delete(
+            '/' . $this->config[Configuration::ROUTE_KEY] . '/module.manager/delete/entity/{id:\d+}',
+            $middlewareFactory->prepare([ProcessEntityMiddleware::class, DeleteEntityHandler::class]),
+            $this->config[Configuration::ROUTE_NAME_PREFIX] . 'module.entity.delete'
+        );
+    }
+}
+```
+
+**Rules:**
+- `Configuration::ROUTE_KEY` for all path segments (never `'admin'` literal)
+- `Configuration::ROUTE_NAME_PREFIX` for all route name prefixes (value is `'admin.'`)
+- Route name format: `admin.{module}.{action}` — e.g. `admin.acl.read`, `admin.acl.rules.delete`
+- Module path segment uses dot notation: `acl.manager`, `user.manager` — no slashes within the segment name
     Container/
         RouteProviderFactory.php
         Register{Module}*ListenerFactory.php

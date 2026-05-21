@@ -16,14 +16,16 @@ namespace Webware\Acl\Admin\CommandHandler\Container;
 
 use Psr\Container\ContainerInterface;
 use Webware\Acl\Admin\CommandHandler\DeleteRuleHandler;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Acl\AclInterface;
 
 final class DeleteRuleHandlerFactory
 {
     public function __invoke(ContainerInterface $container): DeleteRuleHandler
     {
+        $config = $container->get('config');
+
         return new DeleteRuleHandler(
-            $container->get(AclRepositoryInterface::class),
+            $config[AclInterface::class] ?? [],
         );
     }
 }

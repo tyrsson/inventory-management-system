@@ -16,7 +16,7 @@ namespace Webware\Acl\Admin\CommandHandler;
 
 use Override;
 use Webware\Acl\Admin\Command\SaveRuleCommand;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Acl\AclInterface;
 use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandResultInterface;
 use Webware\CommandBus\Command\CommandStatus;
@@ -26,7 +26,7 @@ use Webware\CommandBus\CommandInterface;
 final class SaveRuleHandler implements CommandHandlerInterface
 {
     public function __construct(
-        private readonly AclRepositoryInterface $aclRepository,
+        private readonly array $config,
     ) {}
 
     #[Override]
@@ -34,13 +34,7 @@ final class SaveRuleHandler implements CommandHandlerInterface
     {
         assert($command instanceof SaveRuleCommand);
 
-        $this->aclRepository->saveRule(
-            $command->rolePk,
-            $command->resourcePk,
-            $command->privilegePk,
-            $command->type,
-        );
-        $this->aclRepository->incrementVersion();
+        // @todo Implement config-driven rule save via ConfigSaveEvent
 
         return new CommandResult($command, CommandStatus::Success, null);
     }

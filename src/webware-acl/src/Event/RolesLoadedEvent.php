@@ -20,9 +20,9 @@ use Laminas\Permissions\Acl\Acl;
  * Fired after all roles and parent relationships have been added to the Acl.
  * Listeners may add plugin-provided roles with inheritance.
  */
-final class RolesLoadedEvent
+final readonly class RolesLoadedEvent
 {
-    public function __construct(public readonly Acl $acl)
-    {
-    }
+    public function __construct(
+        public Acl $acl
+    ) {}
 }

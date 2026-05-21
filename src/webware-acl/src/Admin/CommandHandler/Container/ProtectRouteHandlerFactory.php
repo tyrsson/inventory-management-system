@@ -5,17 +5,23 @@ declare(strict_types=1);
 namespace Webware\Acl\Admin\CommandHandler\Container;
 
 use Psr\Container\ContainerInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Webware\Acl\Admin\CommandHandler\ProtectRouteHandler;
-use Webware\Acl\Cache\AclCacheInterface;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Acl\AclInterface;
 
 final class ProtectRouteHandlerFactory
 {
     public function __invoke(ContainerInterface $container): ProtectRouteHandler
     {
+        $config = $container->get('config');
+
+        $events = $container->has(EventDispatcherInterface::class)
+            ? $container->get(EventDispatcherInterface::class)
+            : null;
+
         return new ProtectRouteHandler(
-            $container->get(AclRepositoryInterface::class),
-            $container->get(AclCacheInterface::class),
+            config: $config[AclInterface::class] ?? [],
+            events: $events,
         );
     }
 }

@@ -17,21 +17,21 @@ namespace Webware\Acl\Container;
 use Psr\Container\ContainerInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Webware\Acl\AclBuilder;
-use Webware\Acl\Cache\AclCacheInterface;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Acl\AclInterface;
 
 final class AclBuilderFactory
 {
     public function __invoke(ContainerInterface $container): AclBuilder
     {
+        $config = $container->get('config');
+
         $events = $container->has(EventDispatcherInterface::class)
             ? $container->get(EventDispatcherInterface::class)
             : null;
 
         return new AclBuilder(
-            repository: $container->get(AclRepositoryInterface::class),
-            cache:      $container->get(AclCacheInterface::class),
-            events:     $events,
+            config: $config[AclInterface::class] ?? [],
+            events: $events,
         );
     }
 }

@@ -9,7 +9,7 @@ $this->headTitle('Roles');
 <!-- Breadcrumb -->
 <nav aria-label="breadcrumb" class="mb-2">
     <ol class="breadcrumb small mb-0">
-        <li class="breadcrumb-item"><a href="<?= $this->url('admin.dashboard.read') ?>">Admin</a></li>
+        <li class="breadcrumb-item"><a href="<?= $this->adminUrl('dashboard.read') ?>">Admin</a></li>
         <li class="breadcrumb-item active" aria-current="page">Roles</li>
     </ol>
 </nav>
@@ -75,6 +75,7 @@ $this->headTitle('Roles');
                                     data-role-id="<?= $this->escapeHtmlAttr($role->roleId) ?>"
                                     data-parent-id="<?= $this->escapeHtmlAttr((string) ($parentPks[0] ?? '')) ?>"
                                     data-user-count="0"
+                                    data-has-children="<?= isset($this->rolesWithChildren[$pk]) ? 'true' : 'false' ?>"
                                 >
                                     <i class="bi bi-pencil"></i>
                                 </button>
@@ -104,8 +105,8 @@ $this->headTitle('Roles');
                 <form
                     id="addRoleForm"
                     method="POST"
-                    action="<?= $this->url('admin.acl.roles.create') ?>"
-                    hx-post="<?= $this->url('admin.acl.roles.create') ?>"
+                    action="<?= $this->adminUrl('acl.roles.create') ?>"
+                    hx-post="<?= $this->adminUrl('acl.roles.create') ?>"
                     hx-target="main"
                     hx-swap="innerHTML"
                 >
@@ -150,8 +151,8 @@ $this->headTitle('Roles');
                 <form
                     id="editRoleForm"
                     method="POST"
-                    action="<?= $this->url('admin.acl.roles.create') ?>"
-                    hx-post="<?= $this->url('admin.acl.roles.create') ?>"
+                    action="<?= $this->adminUrl('acl.roles.create') ?>"
+                    hx-post="<?= $this->adminUrl('acl.roles.create') ?>"
                     hx-target="main"
                     hx-swap="innerHTML"
                 >

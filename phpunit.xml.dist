@@ -46,6 +46,12 @@
         <testsuite name="webware-usermanager-integration">
             <directory>src/webware-usermanager/test/integration</directory>
         </testsuite>
+        <testsuite name="webware-configmanager">
+            <directory>src/webware-configmanager/test/unit</directory>
+        </testsuite>
+        <testsuite name="webware-configmanager-integration">
+            <directory>src/webware-configmanager/test/integration</directory>
+        </testsuite>
     </testsuites>
     <source restrictNotices="true">
         <include>

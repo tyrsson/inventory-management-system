@@ -10,6 +10,7 @@ use FilterIterator;
 use Mezzio\Router\Route;
 use Override;
 use Webware\Acl\AclInterface;
+use Webware\UserManager\UserInterface;
 
 use function is_array;
 use function is_string;
@@ -17,7 +18,7 @@ use function in_array;
 
 /**
  * Filters a list<Route> to those belonging to a given navigation identifier
- * that the current user's roles are ACL-permitted to access.
+ * that the current user is ACL-permitted to access.
  *
  * Decouples ACL evaluation from the Navigation view helper — the helper only
  * iterates; this class decides what is visible.
@@ -27,13 +28,12 @@ use function in_array;
 final class NavigationFilterIterator extends FilterIterator
 {
     /**
-     * @param list<Route>  $routes
-     * @param string[]     $roles
+     * @param list<Route> $routes
      */
     public function __construct(
         array $routes,
         private readonly string $navId,
-        private readonly array $roles,
+        private readonly UserInterface|null $user,
         private readonly AclInterface $acl,
     ) {
         parent::__construct(new ArrayIterator($routes));
@@ -47,7 +47,7 @@ final class NavigationFilterIterator extends FilterIterator
         $options = $route->getOptions();
 
         return self::belongsToNav($options, $this->navId)
-            && $this->acl->isAllowedByRouteName($route->getName(), $this->roles);
+            && $this->acl->isAllowed($this->user, $route->getName(), null);
     }
 
     /** @param array<string, mixed> $options */

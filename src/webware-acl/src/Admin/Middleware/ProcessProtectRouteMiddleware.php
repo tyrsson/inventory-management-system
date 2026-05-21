@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Webware\Acl\Admin\Middleware;
 
 use Axleus\Message\SystemMessengerInterface;
-use Mezzio\Router\RouteCollectorInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -19,6 +18,7 @@ use Webware\Core\HttpMethodProcessorTrait;
 use function array_filter;
 use function array_map;
 use function array_values;
+use function in_array;
 use function is_array;
 use function strval;
 
@@ -28,7 +28,6 @@ final class ProcessProtectRouteMiddleware implements MiddlewareInterface
 
     public function __construct(
         private readonly CommandBusInterface $commandBus,
-        private readonly RouteCollectorInterface $routeCollector,
     ) {}
 
     public function processPost(
@@ -36,25 +35,38 @@ final class ProcessProtectRouteMiddleware implements MiddlewareInterface
         RequestHandlerInterface $handler,
     ): ResponseInterface {
         $body      = (array) $request->getParsedBody();
-        $routeName = (string) ($body['routeName'] ?? '');
         $messenger = $request->getAttribute(SystemMessengerInterface::class);
 
-        // Resolve allowed methods from the registered route definition
-        $allowedMethods = ['GET'];
-        foreach ($this->routeCollector->getRoutes() as $route) {
-            if ($route->getName() === $routeName) {
-                $allowedMethods = $route->getAllowedMethods() ?? ['GET'];
-                break;
-            }
+        $routeName     = (string) ($body['route_name']       ?? '');
+        $grantMode     = (string) ($body['grant_mode']       ?? 'explicit');
+        $ruleType      = (string) ($body['rule_type']        ?? 'allow');
+        $roleId        = (string) ($body['role_id']          ?? '');
+        $assertionFqcn = (string) ($body['assertion_fqcn']   ?? '');
+        $assertionMode = (string) ($body['assertion_mode']   ?? 'none');
+
+        // Sanitise rule_type — only 'allow' and 'deny' are valid
+        if (! in_array($ruleType, ['allow', 'deny'], true)) {
+            $ruleType = 'allow';
         }
 
-        $roles = array_values(array_filter(array_map(
-            strval(...),
-            is_array($body['role'] ?? null) ? $body['role'] : [],
-        )));
+        // Gather privilege names from privileges[] + optional custom_privilege
+        $rawPrivs = is_array($body['privileges'] ?? null) ? $body['privileges'] : [];
+        $privileges = array_values(array_filter(array_map(strval(...), $rawPrivs)));
+        $customPriv = (string) ($body['custom_privilege'] ?? '');
+        if ($customPriv !== '') {
+            $privileges[] = $customPriv;
+        }
 
         $result = $this->commandBus->handle(
-            new ProtectRouteCommand($routeName, $allowedMethods, $roles)
+            new ProtectRouteCommand(
+                $routeName,
+                $grantMode,
+                $ruleType,
+                $roleId,
+                $privileges,
+                $assertionFqcn,
+                $assertionMode,
+            )
         );
 
         if ($result->getStatus() === CommandStatus::Success) {

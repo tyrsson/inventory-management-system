@@ -35,7 +35,7 @@ $this->headTitle('Sign In');
                         <h1 class="h4 fw-bold mb-1">Sign In</h1>
                         <p class="text-secondary small mb-4">Welcome back. Enter your credentials to continue.</p>
 
-                        <form action="<?= $this->url('user.login') ?>" method="post" novalidate>
+                        <form action="<?= $this->userUrl('session.create') ?>" method="post" novalidate>
 
                             <div class="mb-3">
                                 <label class="form-label form-label-sm fw-semibold" for="login-email">Email</label>
@@ -80,7 +80,7 @@ $this->headTitle('Sign In');
                             </div>
                             <div class="text-center small">
                                 Don't have an account?
-                                <a href="<?= $this->url('user.register') ?>" class="text-primary">Create one</a>
+                                <a href="<?= $this->userUrl('account.read') ?>" class="text-primary">Create one</a>
                             </div>
 
                         </form>

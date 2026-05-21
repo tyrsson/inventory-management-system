@@ -76,7 +76,7 @@ final readonly class User implements UserInterface
     #[Override]
     public function getRoleId(): int
     {
-        return $this->roles[0] ?? 'guest';
+        return $this->roles[0] ?? 'Guest';
     }
 
     /** @return string[] */

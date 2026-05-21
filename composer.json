@@ -59,7 +59,8 @@
             "Webware\\Acl\\": "src/webware-acl/src/",
             "Webware\\Admin\\": "src/webware-admin/src/",
             "Webware\\Event\\":  "src/webware-event/src/",
-            "Webware\\Navigation\\": "src/webware-navigation/src/"
+            "Webware\\Navigation\\": "src/webware-navigation/src/",
+            "Webware\\ConfigManager\\": "src/webware-configmanager/src/"
         }
     },
     "autoload-dev": {
@@ -75,7 +76,10 @@
             "Webware\\NavigationTest\\": "src/webware-navigation/test/unit/",
             "Webware\\NavigationIntegrationTest\\": "src/webware-navigation/test/integration/",            "Webware\\EventTest\\":  "src/webware-event/test/unit/",
             "Webware\\EventIntegrationTest\\": "src/webware-event/test/integration/",            "Webware\\UserManagerTest\\": "src/webware-usermanager/test/unit/",
-            "Webware\\UserManagerIntegrationTest\\": "src/webware-usermanager/test/integration/"
+            "Webware\\UserManagerIntegrationTest\\": "src/webware-usermanager/test/integration/",
+            "Webware\\ConfigManagerTest\\": "src/webware-configmanager/test/unit/",
+            "Webware\\ConfigManagerIntegrationTest\\": "src/webware-configmanager/test/integration/",
+            "Webware\\ConfigManagerTestResource\\": "src/webware-configmanager/test/resource/"
         }
     },
     "minimum-stability": "dev",

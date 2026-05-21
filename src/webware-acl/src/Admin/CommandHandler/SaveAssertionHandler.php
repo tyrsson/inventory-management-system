@@ -16,7 +16,7 @@ namespace Webware\Acl\Admin\CommandHandler;
 
 use Override;
 use Webware\Acl\Admin\Command\SaveAssertionCommand;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Acl\AclInterface;
 use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandResultInterface;
 use Webware\CommandBus\Command\CommandStatus;
@@ -26,7 +26,7 @@ use Webware\CommandBus\CommandInterface;
 final class SaveAssertionHandler implements CommandHandlerInterface
 {
     public function __construct(
-        private readonly AclRepositoryInterface $aclRepository,
+        private readonly array $config,
     ) {}
 
     #[Override]
@@ -34,14 +34,8 @@ final class SaveAssertionHandler implements CommandHandlerInterface
     {
         assert($command instanceof SaveAssertionCommand);
 
-        $id = $this->aclRepository->saveRuleAssertion(
-            $command->rulePk,
-            $command->assertion,
-            $command->mode,
-            $command->sortOrder,
-        );
-        $this->aclRepository->incrementVersion();
+        // @todo Implement config-driven assertion save via ConfigSaveEvent
 
-        return new CommandResult($command, CommandStatus::Success, $id);
+        return new CommandResult($command, CommandStatus::Success, null);
     }
 }

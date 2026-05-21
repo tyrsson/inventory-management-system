@@ -12,14 +12,14 @@
  * @var array<int, array{role_id: string, role_pk: int, depth: int, parent_ids: string[], state: string, rule_id: int|null, via: string, redundant_descendants: string[], elevated_descendants: string[]}>|null $hierarchyRows
  */
 $this->headTitle('Rules');
-$createUrl    = $this->url('admin.acl.rules.create');
-$rulesBaseUrl = $this->url('admin.acl.rules.read');
+$createUrl    = $this->adminUrl('acl.rules.create');
+$rulesBaseUrl = $this->adminUrl('acl.rules.read');
 ?>
 
 <!-- Breadcrumb -->
 <nav aria-label="breadcrumb" class="mb-2">
     <ol class="breadcrumb small mb-0">
-        <li class="breadcrumb-item"><a href="<?= $this->url('admin.dashboard.read') ?>">Admin</a></li>
+        <li class="breadcrumb-item"><a href="<?= $this->adminUrl('dashboard.read') ?>">Admin</a></li>
         <li class="breadcrumb-item active" aria-current="page">Rules</li>
     </ol>
 </nav>

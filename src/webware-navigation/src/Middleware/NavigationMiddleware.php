@@ -30,7 +30,7 @@ final class NavigationMiddleware implements MiddlewareInterface
         $user = $request->getAttribute(UserInterface::class);
 
         if ($user !== null) {
-            $this->helper->setRoles([...$user->getRoles()]);
+            $this->helper->setUser($user);
         }
 
         $routeResult = $request->getAttribute(RouteResult::class);

@@ -9,7 +9,6 @@ use Laminas\Permissions\Acl\Resource\ResourceInterface;
 use Laminas\Permissions\Acl\Role\RoleInterface;
 use Mezzio\Router\RouteResult;
 use Psr\Http\Message\ServerRequestInterface;
-use Webware\Acl\PrivilegeInterface;
 use Webware\Acl\RoleProviderInterface;
 use Webware\UserManager\UserInterface;
 
@@ -17,8 +16,7 @@ use Webware\UserManager\UserInterface;
  * Bridges a Mezzio RouteResult into a Laminas ACL resource.
  *
  * Resource ID  = matched route name
- * Privilege    = HTTP method mapped to create/read/update/delete
- * Role         = authenticated UserInterface from request attribute
+ * Role         = authenticated UserInterface or default Guest from request attribute
  * OwnerId      = resolved from route param → query string → request attribute
  *                using three-level config: per-route options > global param map > convention
  *
@@ -29,17 +27,8 @@ use Webware\UserManager\UserInterface;
 final class RouteResource implements
     ResourceInterface,
     RoleProviderInterface,
-    PrivilegeInterface,
     StoreOwnedResourceInterface
 {
-    private const array METHOD_PRIVILEGE_MAP = [
-        'GET'    => PrivilegeInterface::READ,
-        'POST'   => PrivilegeInterface::CREATE,
-        'PUT'    => PrivilegeInterface::UPDATE,
-        'PATCH'  => PrivilegeInterface::UPDATE,
-        'DELETE' => PrivilegeInterface::DELETE,
-    ];
-
     public function __construct(
         private readonly RouteResult $routeResult,
         private readonly ServerRequestInterface $request,
@@ -49,12 +38,6 @@ final class RouteResource implements
     public function getResourceId(): string
     {
         return $this->routeResult->getMatchedRouteName();
-    }
-
-    public function getPrivilegeId(): string
-    {
-        return self::METHOD_PRIVILEGE_MAP[$this->request->getMethod()]
-            ?? PrivilegeInterface::READ;
     }
 
     public function getRole(): RoleInterface

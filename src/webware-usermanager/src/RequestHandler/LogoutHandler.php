@@ -22,11 +22,15 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 final class LogoutHandler implements RequestHandlerInterface
 {
+    public function __construct(
+        private readonly string $loginUrl,
+    ) {}
+
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $session = $request->getAttribute(SessionMiddleware::SESSION_ATTRIBUTE);
         $session?->clear();
 
-        return new RedirectResponse('/login');
+        return new RedirectResponse($this->loginUrl);
     }
 }

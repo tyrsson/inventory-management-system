@@ -13,7 +13,7 @@ $this->headTitle('Admin Dashboard');
         <div class="card-header d-flex align-items-center gap-2 py-2">
             <i class="bi bi-shield-lock text-primary"></i>
             <span class="fw-semibold small">ACL Management</span>
-            <a href="<?= $this->url('admin.acl.read') ?>" class="ms-auto btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:.75rem;">
+            <a href="<?= $this->adminUrl('acl.read') ?>" class="ms-auto btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:.75rem;">
                 Manage <i class="bi bi-arrow-right"></i>
             </a>
         </div>
@@ -39,13 +39,13 @@ $this->headTitle('Admin Dashboard');
             </div>
             <!-- Quick links -->
             <div class="d-flex flex-column gap-1">
-                <a href="<?= $this->url('admin.acl.roles.read') ?>" class="btn btn-sm btn-outline-secondary text-start">
+                <a href="<?= $this->adminUrl('acl.roles.read') ?>" class="btn btn-sm btn-outline-secondary text-start">
                     <i class="bi bi-people me-1"></i> Manage Roles
                 </a>
-                <a href="<?= $this->url('admin.acl.resources.read') ?>" class="btn btn-sm btn-outline-secondary text-start">
+                <a href="<?= $this->adminUrl('acl.resources.read') ?>" class="btn btn-sm btn-outline-secondary text-start">
                     <i class="bi bi-file-earmark-lock me-1"></i> Manage Resources
                 </a>
-                <a href="<?= $this->url('admin.acl.rules.read') ?>" class="btn btn-sm btn-outline-secondary text-start">
+                <a href="<?= $this->adminUrl('acl.rules.read') ?>" class="btn btn-sm btn-outline-secondary text-start">
                     <i class="bi bi-toggles me-1"></i> Manage Rules
                 </a>
             </div>

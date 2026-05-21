@@ -17,13 +17,17 @@ namespace Webware\UserManager\RequestHandler\Container;
 use Mezzio\Template\TemplateRendererInterface;
 use Psr\Container\ContainerInterface;
 use Webware\UserManager\RequestHandler\RegistrationHandler;
+use Webware\UserManager\View\Helper\UserUrl;
 
 final class RegistrationHandlerFactory
 {
     public function __invoke(ContainerInterface $container): RegistrationHandler
     {
+        $userUrl = $container->get(UserUrl::class);
+
         return new RegistrationHandler(
             $container->get(TemplateRendererInterface::class),
+            loginUrl: $userUrl('session.read'),
         );
     }
 }

@@ -43,6 +43,7 @@ final class ResendVerificationHandler implements RequestHandlerInterface
         private readonly string $fromName,
         private readonly string $baseUrl,
         private readonly string $verificationSubject,
+        private readonly string $loginUrl,
     ) {}
 
     #[Override]
@@ -67,7 +68,7 @@ final class ResendVerificationHandler implements RequestHandlerInterface
 
         // Already-active users have no business here — send them to login.
         if ($user !== null && $user->active === true) {
-            return new RedirectResponse('/login');
+            return new RedirectResponse($this->loginUrl);
         }
 
         // Silently skip unknown emails — do not reveal whether the address is registered

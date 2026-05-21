@@ -33,6 +33,7 @@ final class VerifyEmailHandler implements RequestHandlerInterface
         private readonly TemplateRendererInterface $template,
         private readonly UserRepositoryInterface $users,
         private readonly int $tokenTtl,
+        private readonly string $loginUrl,
     ) {}
 
     #[Override]
@@ -82,6 +83,6 @@ final class VerifyEmailHandler implements RequestHandlerInterface
         $messenger = $request->getAttribute(SystemMessengerInterface::class);
         $messenger?->success('Email verified! You may now sign in.', hops: 1, now: false);
 
-        return new RedirectResponse('/login');
+        return new RedirectResponse($this->loginUrl);
     }
 }

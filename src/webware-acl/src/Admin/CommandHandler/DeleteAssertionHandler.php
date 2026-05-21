@@ -16,7 +16,7 @@ namespace Webware\Acl\Admin\CommandHandler;
 
 use Override;
 use Webware\Acl\Admin\Command\DeleteAssertionCommand;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Acl\AclInterface;
 use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandResultInterface;
 use Webware\CommandBus\Command\CommandStatus;
@@ -26,7 +26,7 @@ use Webware\CommandBus\CommandInterface;
 final class DeleteAssertionHandler implements CommandHandlerInterface
 {
     public function __construct(
-        private readonly AclRepositoryInterface $aclRepository,
+        private readonly array $config,
     ) {}
 
     #[Override]
@@ -34,8 +34,7 @@ final class DeleteAssertionHandler implements CommandHandlerInterface
     {
         assert($command instanceof DeleteAssertionCommand);
 
-        $this->aclRepository->deleteRuleAssertion($command->id);
-        $this->aclRepository->incrementVersion();
+        // @todo Implement config-driven assertion delete via ConfigSaveEvent
 
         return new CommandResult($command, CommandStatus::Success, null);
     }

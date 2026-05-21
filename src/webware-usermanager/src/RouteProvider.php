@@ -18,6 +18,7 @@ use Htmx\Middleware\DisableBodyMiddleware;
 use Mezzio\MiddlewareFactoryInterface;
 use Mezzio\Router\RouteCollectorInterface;
 use Mezzio\Router\RouteProviderInterface;
+use Override;
 use Webware\UserManager\Admin\RequestHandler\CreateUserHandler;
 use Webware\UserManager\Admin\RequestHandler\ToggleUserActiveHandler;
 use Webware\UserManager\Admin\RequestHandler\UpdateUserHandler;
@@ -29,49 +30,59 @@ use Webware\UserManager\RequestHandler\ResendVerificationHandler;
 use Webware\UserManager\RequestHandler\UserListHandler;
 use Webware\UserManager\RequestHandler\VerifyEmailHandler;
 
-final class RouteProvider implements RouteProviderInterface
+use function rtrim;
+
+final readonly class RouteProvider implements RouteProviderInterface
 {
+    public function __construct(
+        private string $routeSegment,
+        private string $routeNamePrefix,
+        private string $adminRouteSegment,
+        private string $adminRouteNamePrefix,
+    ) {}
+
+    #[Override]
     public function registerRoutes(
         RouteCollectorInterface $routeCollector,
         MiddlewareFactoryInterface $middlewareFactory,
     ): void {
         // Login routes — AclMiddleware runs before Auth (login/register are guest grants)
         $routeCollector->get(
-            '/login',
+            '/' . $this->routeSegment . '/login',
             $middlewareFactory->prepare(
                 [
                     DisableBodyMiddleware::class,
                     LoginHandler::class,
                 ]
             ),
-            'user.login'
+            $this->routeNamePrefix . 'session.read'
         );
 
         $routeCollector->post(
-            '/login',
+            '/' . $this->routeSegment . '/login',
             $middlewareFactory->prepare(
                 [
                     DisableBodyMiddleware::class,
                     LoginHandler::class,
                 ]
             ),
-            'user.login.post'
+            $this->routeNamePrefix . 'session.create'
         );
 
         // Registration routes
         $routeCollector->get(
-            '/register',
+            '/' . $this->routeSegment . '/register',
             $middlewareFactory->prepare(
                 [
                     DisableBodyMiddleware::class,
                     RegistrationHandler::class,
                 ]
             ),
-            'user.register'
+            $this->routeNamePrefix . 'account.read'
         );
 
         $routeCollector->post(
-            '/register',
+            '/' . $this->routeSegment . '/register',
             $middlewareFactory->prepare(
                 [
                     DisableBodyMiddleware::class,
@@ -79,40 +90,50 @@ final class RouteProvider implements RouteProviderInterface
                     RegistrationHandler::class,
                 ]
             ),
-            'user.register.post'
+            $this->routeNamePrefix . 'account.create'
         );
 
         $routeCollector->get(
-            '/verify-email/{token}',
+            '/' . $this->routeSegment . '/verify.email/{token}',
             $middlewareFactory->prepare(
                 [
                     DisableBodyMiddleware::class,
                     VerifyEmailHandler::class,
                 ]
             ),
-            'user.verify-email'
+            $this->routeNamePrefix . 'verify.email.read'
         );
 
-        $routeCollector->route(
-            '/resend-verification',
+        $routeCollector->get(
+            '/' . $this->routeSegment . '/resend.verification',
             $middlewareFactory->prepare(
                 [
                     DisableBodyMiddleware::class,
                     ResendVerificationHandler::class,
                 ]
             ),
-            ['GET', 'POST'],
-            'user.verify-email.resend'
+            $this->routeNamePrefix . 'resend.verification.read'
+        );
+
+        $routeCollector->post(
+            '/' . $this->routeSegment . '/resend.verification',
+            $middlewareFactory->prepare(
+                [
+                    DisableBodyMiddleware::class,
+                    ResendVerificationHandler::class,
+                ]
+            ),
+            $this->routeNamePrefix . 'resend.verification.create'
         );
 
         $routeCollector->get(
-            '/logout',
+            '/' . $this->routeSegment . '/logout',
             $middlewareFactory->prepare(
                 [
                     LogoutHandler::class,
                 ]
             ),
-            'user.logout'
+            $this->routeNamePrefix . 'logout.read'
         )->setOptions([
             'navigation' => 'user',
             'label'      => 'Logout',
@@ -123,13 +144,13 @@ final class RouteProvider implements RouteProviderInterface
 
         // Admin
         $routeCollector->get(
-            '/admin/user',
+            '/' . $this->adminRouteSegment,
             $middlewareFactory->prepare(
                 [
                     UserListHandler::class,
                 ]
             ),
-            'admin.user.list.read'
+            rtrim($this->adminRouteNamePrefix, '.')
         )->setOptions([
             'navigation' => 'admin',
             'label'      => 'Users',
@@ -139,41 +160,42 @@ final class RouteProvider implements RouteProviderInterface
         ]);
 
         $routeCollector->route(
-            '/admin/user/create',
+            '/' . $this->adminRouteSegment . '/create',
             $middlewareFactory->prepare(
                 [
                     CreateUserHandler::class,
                 ]
             ),
             ['GET', 'POST'],
-            'admin.user.create'
+            $this->adminRouteNamePrefix . 'create'
         )->setOptions([
             'navigation' => 'admin',
             'label'      => 'Create User',
             'icon'       => 'bi-person-plus-fill',
-            'parent'     => 'admin.user.list.read',
+            'parent'     => rtrim($this->adminRouteNamePrefix, '.'),
             'order'      => 10,
         ]);
 
         $routeCollector->route(
-            '/admin/user/{id:\d+}',
+            '/' . $this->adminRouteSegment . '/{id:\d+}',
             $middlewareFactory->prepare(
                 [
                     UpdateUserHandler::class,
                 ]
             ),
             ['GET', 'POST'],
-            'admin.user.update'
+            $this->adminRouteNamePrefix . 'update'
         );
 
         $routeCollector->post(
-            '/admin/user/{id:\d+}/toggle',
+            '/' . $this->adminRouteSegment . '/{id:\d+}/toggle',
             $middlewareFactory->prepare(
                 [
                     ToggleUserActiveHandler::class,
                 ]
             ),
-            'admin.user.toggle.update'
+            $this->adminRouteNamePrefix . 'toggle.update'
         );
     }
 }
+

@@ -16,14 +16,16 @@ namespace Webware\Acl\Admin\CommandHandler\Container;
 
 use Psr\Container\ContainerInterface;
 use Webware\Acl\Admin\CommandHandler\SaveAssertionHandler;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Acl\AclInterface;
 
 final class SaveAssertionHandlerFactory
 {
     public function __invoke(ContainerInterface $container): SaveAssertionHandler
     {
+        $config = $container->get('config');
+
         return new SaveAssertionHandler(
-            $container->get(AclRepositoryInterface::class),
+            $config[AclInterface::class] ?? [],
         );
     }
 }

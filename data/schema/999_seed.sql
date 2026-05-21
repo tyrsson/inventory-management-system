@@ -53,17 +53,15 @@ JOIN (
 ) p ON r.resource_id = 'public'
 ON DUPLICATE KEY UPDATE label = VALUES(label);
 
--- user resource
+-- user resource — standard CRUD only; no named-action privileges
 INSERT INTO acl_privilege (resource_pk, privilege_id, label)
 SELECT r.resource_pk, p.privilege_id, p.label
 FROM acl_resource r
 JOIN (
-    SELECT 'read'     AS privilege_id, 'Read'     AS label UNION ALL
-    SELECT 'create',                   'Create'            UNION ALL
-    SELECT 'update',                   'Update'            UNION ALL
-    SELECT 'delete',                   'Delete'            UNION ALL
-    SELECT 'login',                    'Login'             UNION ALL
-    SELECT 'register',                 'Register'
+    SELECT 'read'   AS privilege_id, 'Read'   AS label UNION ALL
+    SELECT 'create',                 'Create'          UNION ALL
+    SELECT 'update',                 'Update'          UNION ALL
+    SELECT 'delete',                 'Delete'
 ) p ON r.resource_id = 'user'
 ON DUPLICATE KEY UPDATE label = VALUES(label);
 
@@ -90,8 +88,9 @@ ON DUPLICATE KEY UPDATE parent_pk = VALUES(parent_pk);
 
 -- -----------------------------------------------------------------------------
 -- ACL: Baseline rules
--- guest is allowed: public/read, user/login, user/register
--- All authenticated roles (inherit guest) are denied: user/login, user/register
+-- guest: public/read, user/read (login + register forms), user/create (form POSTs)
+-- Authenticated roles (member+): deny user/read and user/create to block access
+-- to login and register pages; they have no business submitting those forms.
 -- -----------------------------------------------------------------------------
 
 -- guest allow: public → read
@@ -103,40 +102,41 @@ JOIN acl_resource  re ON re.resource_pk  = pr.resource_pk AND re.resource_id = '
 WHERE ro.role_id = 'guest'
 ON DUPLICATE KEY UPDATE type = VALUES(type);
 
--- guest allow: user → login
+-- guest allow: user → read (login form GET, register form GET)
 INSERT INTO acl_rule (role_pk, resource_pk, privilege_pk, type)
 SELECT ro.id, pr.resource_pk, pr.privilege_pk, 'allow'
 FROM role ro
-JOIN acl_privilege pr ON pr.privilege_id = 'login'
+JOIN acl_privilege pr ON pr.privilege_id = 'read'
 JOIN acl_resource  re ON re.resource_pk  = pr.resource_pk AND re.resource_id = 'user'
 WHERE ro.role_id = 'guest'
 ON DUPLICATE KEY UPDATE type = VALUES(type);
 
--- guest allow: user → register
+-- guest allow: user → create (login form POST, register form POST)
 INSERT INTO acl_rule (role_pk, resource_pk, privilege_pk, type)
 SELECT ro.id, pr.resource_pk, pr.privilege_pk, 'allow'
 FROM role ro
-JOIN acl_privilege pr ON pr.privilege_id = 'register'
+JOIN acl_privilege pr ON pr.privilege_id = 'create'
 JOIN acl_resource  re ON re.resource_pk  = pr.resource_pk AND re.resource_id = 'user'
 WHERE ro.role_id = 'guest'
 ON DUPLICATE KEY UPDATE type = VALUES(type);
 
--- All authenticated roles deny: user → login
+-- Authenticated roles deny: user → read
 -- Denying on member propagates down the entire authenticated hierarchy.
+-- Prevents authenticated users reaching login / register pages.
 INSERT INTO acl_rule (role_pk, resource_pk, privilege_pk, type)
 SELECT ro.id, pr.resource_pk, pr.privilege_pk, 'deny'
 FROM role ro
-JOIN acl_privilege pr ON pr.privilege_id = 'login'
+JOIN acl_privilege pr ON pr.privilege_id = 'read'
 JOIN acl_resource  re ON re.resource_pk  = pr.resource_pk AND re.resource_id = 'user'
 WHERE ro.role_id = 'member'
 ON DUPLICATE KEY UPDATE type = VALUES(type);
 
--- All authenticated roles deny: user → register
--- Denying on member propagates down the entire authenticated hierarchy.
+-- Authenticated roles deny: user → create
+-- Prevents authenticated users from submitting login / register forms.
 INSERT INTO acl_rule (role_pk, resource_pk, privilege_pk, type)
 SELECT ro.id, pr.resource_pk, pr.privilege_pk, 'deny'
 FROM role ro
-JOIN acl_privilege pr ON pr.privilege_id = 'register'
+JOIN acl_privilege pr ON pr.privilege_id = 'create'
 JOIN acl_resource  re ON re.resource_pk  = pr.resource_pk AND re.resource_id = 'user'
 WHERE ro.role_id = 'member'
 ON DUPLICATE KEY UPDATE type = VALUES(type);
@@ -156,14 +156,6 @@ ON DUPLICATE KEY UPDATE label = VALUES(label), `system` = VALUES(`system`);
 INSERT INTO acl_privilege (resource_pk, privilege_id, label)
 SELECT r.resource_pk, 'read', 'Read'
 FROM acl_resource r WHERE r.resource_id IN ('dashboard', 'admin.manifest')
-ON DUPLICATE KEY UPDATE label = VALUES(label);
-
--- -----------------------------------------------------------------------------
--- ACL: Privileges for user resource — logout
--- -----------------------------------------------------------------------------
-INSERT INTO acl_privilege (resource_pk, privilege_id, label)
-SELECT r.resource_pk, 'logout', 'Logout'
-FROM acl_resource r WHERE r.resource_id = 'user'
 ON DUPLICATE KEY UPDATE label = VALUES(label);
 
 -- -----------------------------------------------------------------------------
