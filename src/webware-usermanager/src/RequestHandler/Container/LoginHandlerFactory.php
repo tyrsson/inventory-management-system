@@ -16,19 +16,14 @@ namespace Webware\UserManager\RequestHandler\Container;
 
 use Mezzio\Template\TemplateRendererInterface;
 use Psr\Container\ContainerInterface;
-use Webware\Acl\AclInterface;
 use Webware\UserManager\RequestHandler\LoginHandler;
 
 final class LoginHandlerFactory
 {
     public function __invoke(ContainerInterface $container): LoginHandler
     {
-        $config   = $container->get('config');
-        $baseRole = $config[AclInterface::class]['base_role'] ?? 'Guest';
-
         return new LoginHandler(
             $container->get(TemplateRendererInterface::class),
-            $baseRole,
         );
     }
 }

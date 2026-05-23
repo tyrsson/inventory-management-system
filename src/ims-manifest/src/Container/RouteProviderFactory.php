@@ -21,6 +21,9 @@ final class RouteProviderFactory
 {
     public function __invoke(ContainerInterface $container): RouteProvider
     {
-        return new RouteProvider();
+        return new RouteProvider(
+            routeSegment:    Configuration::getRouteSegment($container, self::class),
+            routeNamePrefix: Configuration::getRouteNamePrefix($container, self::class),
+        );
     }
 }

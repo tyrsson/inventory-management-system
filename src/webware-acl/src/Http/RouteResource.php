@@ -37,6 +37,7 @@ final class RouteResource implements
 
     public function getResourceId(): string
     {
+        $matchedRoute = $this->routeResult->getMatchedRoute();
         return $this->routeResult->getMatchedRouteName();
     }
 

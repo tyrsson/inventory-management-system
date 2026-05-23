@@ -51,6 +51,7 @@ $aggregator = new ConfigAggregator([
     WebwareAclConfigProvider::class,
     Webware\Admin\ConfigProvider::class,
     WebwareNavigationConfigProvider::class,
+    Ims\Store\ConfigProvider::class,
     Ims\Manifest\ConfigProvider::class,
     // Default App module config
     ConfigProvider::class,

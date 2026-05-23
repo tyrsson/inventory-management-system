@@ -16,6 +16,7 @@ namespace Webware\UserManager\Entity;
 
 use DateTimeImmutable;
 use Override;
+use SensitiveParameter;
 use Webware\UserManager\UserInterface;
 
 use function array_merge;
@@ -30,9 +31,11 @@ final readonly class User implements UserInterface
         public string $firstName,
         public string $lastName,
         public string $email,
+        #[SensitiveParameter]
         public string $passwordHash,
         public bool $active,
         public DateTimeImmutable $createdAt,
+        #[SensitiveParameter]
         public ?string $verificationToken = null,
         public ?DateTimeImmutable $tokenCreatedAt = null,
         /** @var string[] */
@@ -76,7 +79,7 @@ final readonly class User implements UserInterface
     #[Override]
     public function getRoleId(): int
     {
-        return $this->roles[0] ?? 'Guest';
+        return $this->roles[0];
     }
 
     /** @return string[] */

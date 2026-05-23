@@ -35,15 +35,13 @@ final class LoginHandler implements RequestHandlerInterface
 {
     public function __construct(
         private readonly TemplateRendererInterface $template,
-        private readonly string $baseRole,
     ) {}
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $user  = $request->getAttribute(UserInterface::class);
-        $roles = [...$user->getRoles()];
+        $user = $request->getAttribute(UserInterface::class);
 
-        if (! in_array($this->baseRole, $roles, true)) {
+        if (! $user->isGuest()) {
             // Authenticated — redirect; HTMX boosted forms need HX-Redirect
             if ($request->getAttribute(Attribute::Request->value) === true) {
                 return new EmptyResponse(200, [Header::Redirect->value => '/']);

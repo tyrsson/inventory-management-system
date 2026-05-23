@@ -21,18 +21,26 @@ use Ims\Manifest\RequestHandler\ManifestUploadHandler;
 use Mezzio\MiddlewareFactoryInterface;
 use Mezzio\Router\RouteCollectorInterface;
 use Mezzio\Router\RouteProviderInterface;
-final class RouteProvider implements RouteProviderInterface
+use Override;
+
+final readonly class RouteProvider implements RouteProviderInterface
 {
+    public function __construct(
+        private string $routeSegment,
+        private string $routeNamePrefix,
+    ) {}
+
+    #[Override]
     public function registerRoutes(
         RouteCollectorInterface $routeCollector,
         MiddlewareFactoryInterface $middlewareFactory,
     ): void {
         $routeCollector->get(
-            '/manifests',
+            '/' . $this->routeSegment,
             $middlewareFactory->prepare([
                 ManifestListHandler::class,
             ]),
-            'manifest.list'
+            $this->routeNamePrefix . 'list'
         )->setOptions([
             'navigation' => 'main',
             'label'      => 'Manifests',
@@ -42,28 +50,28 @@ final class RouteProvider implements RouteProviderInterface
         ]);
 
         $routeCollector->get(
-            '/manifest/upload',
+            '/' . $this->routeSegment . '/upload',
             $middlewareFactory->prepare([
                 ManifestUploadHandler::class,
             ]),
-            'manifest.upload'
+            $this->routeNamePrefix . 'upload'
         );
 
         $routeCollector->post(
-            '/manifest/upload',
+            '/' . $this->routeSegment . '/upload',
             $middlewareFactory->prepare([
                 ProcessManifestUploadMiddleware::class,
                 ManifestUploadHandler::class,
             ]),
-            'manifest.upload.store'
+            $this->routeNamePrefix . 'upload.store'
         );
 
         $routeCollector->get(
-            '/manifest/{id:\d+}',
+            '/' . $this->routeSegment . '/{id:\d+}',
             $middlewareFactory->prepare([
                 ManifestDetailHandler::class,
             ]),
-            'manifest.detail'
+            $this->routeNamePrefix . 'detail'
         );
     }
 }

@@ -18,11 +18,7 @@ use Mezzio\Authentication\AuthenticationInterface;
 use Mezzio\Authentication\Session\PhpSession;
 use Mezzio\Authentication\UserRepositoryInterface;
 use Webware\Acl\AclInterface;
-use Webware\Acl\Event\ResourcesLoadedEvent;
-use Webware\Acl\Event\RulesLoadedEvent;
 use Webware\CommandBus\CommandBusInterface;
-use Webware\UserManager\Listener\RegisterUserManagerResourcesListener;
-use Webware\UserManager\Listener\RegisterUserManagerRulesListener;
 use Webware\UserManager\Repository\UserRepositoryInterface as UserRepositoryContract;
 use Webware\UserManager\UserInterface;
 use Webware\UserManager\View\Helper\UserAdminUrl;
@@ -36,7 +32,6 @@ final class ConfigProvider
     {
         return [
             'dependencies'             => $this->getDependencies(),
-            'listeners'                => $this->getListeners(),
             'router'                   => $this->getRouteProviders(),
             'templates'                => $this->getTemplates(),
             'view_helpers'             => $this->getViewHelpers(),
@@ -76,8 +71,6 @@ final class ConfigProvider
                 RequestHandler\UserListHandler::class               => RequestHandler\Container\UserListHandlerFactory::class,
                 RequestHandler\VerifyEmailHandler::class            => RequestHandler\Container\VerifyEmailHandlerFactory::class,
                 Listener\SendVerificationEmailListener::class       => Listener\Container\SendVerificationEmailListenerFactory::class,
-                Listener\RegisterUserManagerResourcesListener::class => Listener\Container\RegisterUserManagerResourcesListenerFactory::class,
-                Listener\RegisterUserManagerRulesListener::class     => Listener\Container\RegisterUserManagerRulesListenerFactory::class,
             ],
         ];
     }
@@ -132,18 +125,6 @@ final class ConfigProvider
         ];
     }
 
-    public function getListeners(): array
-    {
-        return [
-            ResourcesLoadedEvent::class => [
-                ['listener' => RegisterUserManagerResourcesListener::class, 'priority' => 1],
-            ],
-            RulesLoadedEvent::class     => [
-                ['listener' => RegisterUserManagerRulesListener::class, 'priority' => 1],
-            ],
-        ];
-    }
-
     public function getAuthenticationConfig(): array
     {
         return [
@@ -164,11 +145,47 @@ final class ConfigProvider
             'resources'  => [
                 Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.read',
                 Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.create',
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'register.read',
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'register.create',
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'verify.email.read',
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'resend.verification.read',
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'resend.verification.create',
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'logout.read',
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'account.read',
+                rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
+                Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'create',
+                Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'update',
+                Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'toggle.update',
             ],
             'allow'      => [
-                'Guest' => [
+                'Guest'         => [
                     Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.read',
                     Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.create',
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'register.read',
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'register.create',
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'verify.email.read',
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'resend.verification.read',
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'resend.verification.create',
+                ],
+                'Member'        => [
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'logout.read',
+                ],
+                'Administrator' => [
+                    rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
+                    Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'create',
+                    Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'update',
+                    Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'toggle.update',
+                ],
+            ],
+            'deny'       => [
+                'Member' => [
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.read',
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.create',
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'register.read',
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'register.create',
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'verify.email.read',
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'resend.verification.read',
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'resend.verification.create',
                 ],
             ],
         ];

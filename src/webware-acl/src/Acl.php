@@ -48,7 +48,7 @@ final class Acl implements AclInterface
         // FAIL CLOSED — intentional, do not change to true.
         // Routes must be explicitly registered as ACL resources to be accessible.
         // This is a hard requirement; unregistered routes are always denied.
-        if (! $this->acl->hasResource($resource->getResourceId())) {
+        if (! $this->acl->hasResource($resource)) {
             return false;
         }
 

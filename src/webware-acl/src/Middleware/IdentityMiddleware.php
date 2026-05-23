@@ -43,7 +43,6 @@ final class IdentityMiddleware implements MiddlewareInterface
      */
     public function __construct(
         callable $userFactory,
-        private readonly string $baseRole,
         private readonly AuthenticationInterface $auth,
     ) {
         $this->userFactory = $userFactory;
@@ -58,7 +57,7 @@ final class IdentityMiddleware implements MiddlewareInterface
             return $handler->handle(
                 $request->withAttribute(
                     UserInterface::class,
-                    ($this->userFactory)('guest', [$this->baseRole], []),
+                    ($this->userFactory)('Guest', [], []),
                 )
             );
         }

@@ -14,9 +14,9 @@ declare(strict_types=1);
 
 namespace Ims\Manifest;
 
-use Webware\Acl\Event\AclBuiltEvent;
-use Webware\Acl\Event\ResourcesLoadedEvent;
-use Webware\Acl\Event\RulesLoadedEvent;
+use Ims\Manifest\Container\Configuration;
+use Ims\Store\Acl\StoreOwnedResourceAssertion;
+use Webware\Acl\AclInterface;
 use Webware\Admin\Event\RegisterWidgetEvent;
 use Webware\CommandBus\CommandBusInterface;
 use Webware\CommandBus\ConfigProvider as BusProvider;
@@ -26,11 +26,13 @@ final readonly class ConfigProvider
     public function __invoke(): array
     {
         return [
-            'dependencies'           => $this->getDependencies(),
-            'listeners'              => $this->getListeners(),
-            'router'                 => $this->getRouteProviders(),
-            'templates'              => $this->getTemplates(),
+            'dependencies'             => $this->getDependencies(),
+            'listeners'                => $this->getListeners(),
+            'router'                   => $this->getRouteProviders(),
+            'templates'                => $this->getTemplates(),
             CommandBusInterface::class => $this->getBusConfig(),
+            AclInterface::class        => $this->getAclConfig(),
+            Configuration::CONFIG_KEY  => $this->getDefaultConfig(),
         ];
     }
 
@@ -48,8 +50,6 @@ final readonly class ConfigProvider
                 Middleware\ProcessManifestUploadMiddleware::class                                  => Middleware\Container\ProcessManifestUploadMiddlewareFactory::class,
                 Csv\ManifestCsvParser::class                                                      => Csv\ManifestCsvParserFactory::class,
                 RouteProvider::class                                                               => Container\RouteProviderFactory::class,
-                Listener\RegisterManifestResourcesListener::class                                 => Container\RegisterManifestResourcesListenerFactory::class,
-                Listener\RegisterManifestRulesListener::class                                     => Container\RegisterManifestRulesListenerFactory::class,
                 Listener\RegisterManifestWidgetListener::class                                    => Container\RegisterManifestWidgetListenerFactory::class,
                 CommandHandler\UploadManifestHandler::class                                       => CommandHandler\Container\UploadManifestHandlerFactory::class,
             ],
@@ -59,14 +59,8 @@ final readonly class ConfigProvider
     public function getListeners(): array
     {
         return [
-            RegisterWidgetEvent::class  => [
+            RegisterWidgetEvent::class => [
                 ['listener' => Listener\RegisterManifestWidgetListener::class, 'priority' => 1],
-            ],
-            ResourcesLoadedEvent::class => [
-                ['listener' => Listener\RegisterManifestResourcesListener::class, 'priority' => 1],
-            ],
-            RulesLoadedEvent::class     => [
-                ['listener' => Listener\RegisterManifestRulesListener::class, 'priority' => 1],
             ],
         ];
     }
@@ -95,6 +89,36 @@ final readonly class ConfigProvider
             BusProvider::COMMAND_MAP_KEY => [
                 Command\UploadManifestCommand::class => CommandHandler\UploadManifestHandler::class,
             ],
+        ];
+    }
+
+    public function getAclConfig(): array
+    {
+        return [
+            'resources' => [
+                Configuration::ROUTE_NAME_PREFIX_VALUE . 'list',
+                Configuration::ROUTE_NAME_PREFIX_VALUE . 'upload',
+                Configuration::ROUTE_NAME_PREFIX_VALUE . 'upload.store',
+                Configuration::ROUTE_NAME_PREFIX_VALUE . 'detail',
+            ],
+            'allow'     => [
+                'Member' => [
+                    Configuration::ROUTE_NAME_PREFIX_VALUE . 'list',
+                    Configuration::ROUTE_NAME_PREFIX_VALUE . 'detail',
+                ],
+                'Warehouse' => [
+                    Configuration::ROUTE_NAME_PREFIX_VALUE . 'upload'       => [StoreOwnedResourceAssertion::class],
+                    Configuration::ROUTE_NAME_PREFIX_VALUE . 'upload.store' => [StoreOwnedResourceAssertion::class],
+                ],
+            ],
+        ];
+    }
+
+    public function getDefaultConfig(): array
+    {
+        return [
+            Configuration::ROUTE_SEGMENT_KEY     => Configuration::ROUTE_SEGMENT_VALUE,
+            Configuration::ROUTE_NAME_PREFIX_KEY => Configuration::ROUTE_NAME_PREFIX_VALUE,
         ];
     }
 }

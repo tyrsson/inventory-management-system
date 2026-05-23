@@ -62,15 +62,7 @@ use Webware\Acl\Admin\RequestHandler\Container\RuleManagerHandlerFactory;
 use Webware\Acl\Admin\RequestHandler\ResourceListHandler;
 use Webware\Acl\Admin\RequestHandler\RoleListHandler;
 use Webware\Acl\Admin\RequestHandler\RuleManagerHandler;
-use Webware\Acl\Event\AclBuiltEvent;
-use Webware\Acl\Event\ResourcesLoadedEvent;
-use Webware\Acl\Event\RulesLoadedEvent;
-use Webware\Acl\Listener\Container\RegisterAclResourcesListenerFactory;
-use Webware\Acl\Listener\Container\RegisterAclRulesListenerFactory;
-use Webware\Acl\Listener\Container\RegisterOwnershipAssertionListenerFactory;
-use Webware\Acl\Listener\RegisterAclResourcesListener;
-use Webware\Acl\Listener\RegisterAclRulesListener;
-use Webware\Acl\Listener\RegisterOwnershipAssertionListener;
+use Webware\Admin\Container\Configuration as AdminConfiguration;
 use Webware\Admin\Event\RegisterWidgetEvent;
 use Webware\CommandBus\CommandBusInterface;
 use Webware\CommandBus\ConfigProvider as BusProvider;
@@ -112,10 +104,7 @@ final class ConfigProvider
                 AclOverviewHandler::class            => AclOverviewHandlerFactory::class,
                 AuthorizationMiddleware::class       => AuthorizationMiddlewareFactory::class,
                 IdentityMiddleware::class            => IdentityMiddlewareFactory::class,
-                RegisterAclResourcesListener::class       => RegisterAclResourcesListenerFactory::class,
-                RegisterAclRulesListener::class           => RegisterAclRulesListenerFactory::class,
-                RegisterWidgetListener::class             => RegisterWidgetListenerFactory::class,
-                RegisterOwnershipAssertionListener::class => RegisterOwnershipAssertionListenerFactory::class,
+                RegisterWidgetListener::class        => RegisterWidgetListenerFactory::class,
                 ResourceListHandler::class           => ResourceListHandlerFactory::class,
                 RoleListHandler::class               => RoleListHandlerFactory::class,
                 RouteProvider::class                 => RouteProviderFactory::class,
@@ -158,17 +147,8 @@ final class ConfigProvider
     public function getListeners(): array
     {
         return [
-            RegisterWidgetEvent::class  => [
+            RegisterWidgetEvent::class => [
                 ['listener' => RegisterWidgetListener::class, 'priority' => 1],
-            ],
-            ResourcesLoadedEvent::class => [
-                ['listener' => RegisterAclResourcesListener::class, 'priority' => 1],
-            ],
-            RulesLoadedEvent::class     => [
-                ['listener' => RegisterAclRulesListener::class, 'priority' => 1],
-            ],
-            AclBuiltEvent::class        => [
-                ['listener' => RegisterOwnershipAssertionListener::class, 'priority' => 1],
             ],
         ];
     }
@@ -179,11 +159,18 @@ final class ConfigProvider
             'route_param_map'     => [],
             'forbidden_redirect'  => '/',
             'forbidden_template'  => null,
-            'base_role'           => 'Guest',
             Container\Configuration::ADMIN_ROUTE_SEGMENT_KEY     => Container\Configuration::ADMIN_ROUTE_SEGMENT_VALUE,
             Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_KEY => Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE,
-            'roles' => [
+            'roles'     => [
                 'Developer' => ['Administrator'],
+            ],
+            'resources' => [
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
+            ],
+            'allow'     => [
+                'Developer' => [
+                    AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
+                ],
             ],
         ];
     }

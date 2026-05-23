@@ -78,7 +78,7 @@ final readonly class RouteProvider implements RouteProviderInterface
                     RegistrationHandler::class,
                 ]
             ),
-            $this->routeNamePrefix . 'account.read'
+            $this->routeNamePrefix . 'register.read'
         );
 
         $routeCollector->post(
@@ -90,7 +90,7 @@ final readonly class RouteProvider implements RouteProviderInterface
                     RegistrationHandler::class,
                 ]
             ),
-            $this->routeNamePrefix . 'account.create'
+            $this->routeNamePrefix . 'register.create'
         );
 
         $routeCollector->get(
