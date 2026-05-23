@@ -14,10 +14,9 @@ declare(strict_types=1);
 
 namespace Webware\Acl\Container;
 
-use Mezzio\Authentication\AuthenticationInterface;
-use Mezzio\Authentication\UserInterface;
 use Psr\Container\ContainerInterface;
 use Webware\Acl\Middleware\IdentityMiddleware;
+use Webware\UserManager\UserInterface;
 
 final class IdentityMiddlewareFactory
 {
@@ -25,7 +24,6 @@ final class IdentityMiddlewareFactory
     {
         return new IdentityMiddleware(
             userFactory: $container->get(UserInterface::class),
-            auth:        $container->get(AuthenticationInterface::class),
         );
     }
 }

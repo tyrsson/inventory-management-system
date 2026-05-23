@@ -4,9 +4,9 @@ Two middleware classes make up the per-request access control layer:
 
 - **`IdentityMiddleware`** — runs in the **global pipeline** once per request;
   resolves the authenticated user and attaches it to the request.
-- **`AuthorizingDispatchMiddleware`** — runs in the **global pipeline** in place
-  of Mezzio's built-in `DispatchMiddleware`; checks `AclInterface::isAllowedRoute()`
-  and either dispatches the matched route handler or delegates to `ForbiddenHandlerInterface`.
+- **`AuthorizationMiddleware`** — runs in the **global pipeline before**
+  Mezzio's `DispatchMiddleware`; checks `AclInterface::isAllowedRoute()`
+  and either passes through to the next middleware or delegates to `ForbiddenHandlerInterface`.
 
 ---
 
@@ -40,7 +40,7 @@ flowchart LR
 |---|---|
 | `UserInterface::class` | `User` (logged in) or `GuestUser` (anonymous) |
 
-This attribute is consumed downstream by `AuthorizingDispatchMiddleware` and by
+This attribute is consumed downstream by `AuthorizationMiddleware` and by
 handlers that need to know the current user.
 
 > `SystemMessengerInterface` is **not** attached by `IdentityMiddleware`. That
@@ -49,15 +49,15 @@ handlers that need to know the current user.
 
 ---
 
-## AuthorizingDispatchMiddleware
+## AuthorizationMiddleware
 
 ### Location
 
-`src/Middleware/AuthorizingDispatchMiddleware.php`  
-Registered in: **global pipeline, in place of Mezzio's `DispatchMiddleware`**.
+`src/Middleware/AuthorizationMiddleware.php`  
+Registered in: **global pipeline, before Mezzio's `DispatchMiddleware`**.
 
-This middleware replaces `DispatchMiddleware` — it is not added to individual
-route stacks. Every request passes through it once.
+This middleware is not added to individual route stacks. Every request passes
+through it once. `DispatchMiddleware` remains in the pipeline and runs after it.
 
 ### Constructor dependencies
 
@@ -89,7 +89,7 @@ hardcoded paths or response logic.
 sequenceDiagram
     participant Request
     participant IdentMW as IdentityMiddleware (already ran)
-    participant AuthMW as AuthorizingDispatchMiddleware
+    participant AuthMW as AuthorizationMiddleware
     participant Acl as AclInterface
     participant FH as ForbiddenHandlerInterface
     participant Handler
@@ -104,7 +104,7 @@ sequenceDiagram
         AuthMW->>Acl: isAllowedRoute(request, roles)
         alt Allowed
             Acl-->>AuthMW: true
-            AuthMW->>Handler: routeResult->process(request, handler)
+            AuthMW->>Handler: handle(request) — DispatchMiddleware dispatches
             Handler-->>Request: Response
         else Denied
             Acl-->>AuthMW: false
@@ -190,11 +190,11 @@ All keys live under `AclInterface::class` in the merged config:
 
 | Mistake | Consequence |
 |---|---|
-| Adding `AuthorizingDispatchMiddleware` to a route stack instead of global pipeline | Double ACL check; route handler may never be reached |
-| Leaving Mezzio's `DispatchMiddleware` in the global pipeline alongside `AuthorizingDispatchMiddleware` | Routes are dispatched twice |
-| Not registering the route in a `RegisterXxxRouteMappingsListener` | Route maps to no resource → always denied |
+| Adding `AuthorizationMiddleware` to a route stack instead of global pipeline | Double ACL check; route handler may never be reached |
+| Removing `DispatchMiddleware` from the pipeline | Routes are never dispatched after ACL pass |
+| Not registering the route in any module's `getAclConfig()` resources array | `isAllowedRoute` is fail-closed → always denied |
 | `UserInterface::class` attribute absent from request | `$user?->getRoles()` returns `[]` → every route denied |
-| Not calling `IdentityMiddleware` before `AuthorizingDispatchMiddleware` in the pipeline | User attribute missing; all routes denied |
+| Not placing `IdentityMiddleware` before `AuthorizationMiddleware` in the pipeline | User attribute missing; all routes denied |
 
 
 ---

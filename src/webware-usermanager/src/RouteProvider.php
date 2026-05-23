@@ -22,6 +22,7 @@ use Override;
 use Webware\UserManager\Admin\RequestHandler\CreateUserHandler;
 use Webware\UserManager\Admin\RequestHandler\ToggleUserActiveHandler;
 use Webware\UserManager\Admin\RequestHandler\UpdateUserHandler;
+use Webware\UserManager\Middleware\LoginMiddleware;
 use Webware\UserManager\Middleware\RegistrationMiddleware;
 use Webware\UserManager\RequestHandler\LoginHandler;
 use Webware\UserManager\RequestHandler\LogoutHandler;
@@ -63,6 +64,7 @@ final readonly class RouteProvider implements RouteProviderInterface
             $middlewareFactory->prepare(
                 [
                     DisableBodyMiddleware::class,
+                    LoginMiddleware::class,
                     LoginHandler::class,
                 ]
             ),

@@ -27,9 +27,11 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**
- * Renders Login page for GET
- * Post Request never reaches this handler as its Handled by
- * the LoginMiddleware. This handler is only for rendering the login page on GET request.
+ * Renders the login page.
+ *
+ * GET: renders the form.
+ * POST failure: LoginMiddleware passes through on bad credentials; this handler re-renders with errors.
+ * POST success: LoginMiddleware redirects before this handler is reached.
  */
 final class LoginHandler implements RequestHandlerInterface
 {

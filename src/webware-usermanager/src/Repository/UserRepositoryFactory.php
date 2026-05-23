@@ -14,7 +14,6 @@ declare(strict_types=1);
 
 namespace Webware\UserManager\Repository;
 
-use Mezzio\Authentication\UserInterface;
 use PhpDb\Adapter\AdapterInterface;
 use Psr\Container\ContainerInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -31,9 +30,8 @@ final class UserRepositoryFactory
     public function __invoke(ContainerInterface $container): UserRepository
     {
         return new UserRepository(
-            adapter:     $container->get(AdapterInterface::class),
-            userFactory: $container->get(UserInterface::class),
-            dispatcher:  $container->get(EventDispatcherInterface::class),
+            adapter:    $container->get(AdapterInterface::class),
+            dispatcher: $container->get(EventDispatcherInterface::class),
         );
     }
 }

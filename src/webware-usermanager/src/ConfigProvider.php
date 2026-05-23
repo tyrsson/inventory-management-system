@@ -14,10 +14,9 @@ declare(strict_types=1);
 
 namespace Webware\UserManager;
 
-use Mezzio\Authentication\AuthenticationInterface;
-use Mezzio\Authentication\Session\PhpSession;
 use Mezzio\Authentication\UserRepositoryInterface;
 use Webware\Acl\AclInterface;
+use Webware\Admin\Container\Configuration as AdminConfiguration;
 use Webware\CommandBus\CommandBusInterface;
 use Webware\UserManager\Repository\UserRepositoryInterface as UserRepositoryContract;
 use Webware\UserManager\UserInterface;
@@ -51,7 +50,6 @@ final class ConfigProvider
                 // Bind mezzio-authentication interfaces to our implementations
                 UserRepositoryInterface::class => UserRepositoryContract::class,
                 UserRepositoryContract::class  => Repository\UserRepository::class,
-                AuthenticationInterface::class => PhpSession::class,
             ],
             'factories' => [
                 // Registers the user factory under our own interface key.
@@ -62,6 +60,7 @@ final class ConfigProvider
                 Admin\RequestHandler\ToggleUserActiveHandler::class => Admin\RequestHandler\Container\ToggleUserActiveHandlerFactory::class,
                 CommandHandler\SaveUserHandler::class               => CommandHandler\Container\SaveUserHandlerFactory::class,
                 Middleware\RegistrationMiddleware::class            => Middleware\Container\RegistrationMiddlewareFactory::class,
+                Middleware\LoginMiddleware::class                   => Middleware\Container\LoginMiddlewareFactory::class,
                 Repository\UserRepository::class                    => Repository\UserRepositoryFactory::class,
                 RouteProvider::class                                => Container\RouteProviderFactory::class,
                 RequestHandler\LoginHandler::class                  => RequestHandler\Container\LoginHandlerFactory::class,
@@ -128,9 +127,10 @@ final class ConfigProvider
     public function getAuthenticationConfig(): array
     {
         return [
-            'redirect' => '/' . Container\Configuration::ROUTE_SEGMENT_VALUE . '/login',
-            'username' => 'email',
-            'password' => 'password',
+            'redirect'                                        => '/' . Container\Configuration::ROUTE_SEGMENT_VALUE . '/login',
+            'username'                                        => 'email',
+            'password'                                        => 'password',
+            Container\Configuration::POST_LOGIN_REDIRECT_KEY => Container\Configuration::POST_LOGIN_REDIRECT_VALUE,
         ];
     }
 
@@ -152,10 +152,10 @@ final class ConfigProvider
                 Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'resend.verification.create',
                 Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'logout.read',
                 Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'account.read',
-                rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
-                Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'create',
-                Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'update',
-                Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'toggle.update',
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'create',
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'update',
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'toggle.update',
             ],
             'allow'      => [
                 'Guest'         => [
@@ -171,10 +171,10 @@ final class ConfigProvider
                     Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'logout.read',
                 ],
                 'Administrator' => [
-                    rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
-                    Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'create',
-                    Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'update',
-                    Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'toggle.update',
+                    AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
+                    AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'create',
+                    AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'update',
+                    AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'toggle.update',
                 ],
             ],
             'deny'       => [

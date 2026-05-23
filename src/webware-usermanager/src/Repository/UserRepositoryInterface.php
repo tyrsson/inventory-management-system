@@ -16,9 +16,18 @@ namespace Webware\UserManager\Repository;
 
 use Mezzio\Authentication\UserRepositoryInterface as UserRepositoryContract;
 use Webware\UserManager\Entity\User;
+use Webware\UserManager\UserInterface;
 
 interface UserRepositoryInterface extends UserRepositoryContract
 {
+    /**
+     * Authenticate a user by credential and password.
+     *
+     * Narrows the return type from the parent interface — a successful
+     * authentication always returns a fully-hydrated User entity.
+     */
+    public function authenticate(string $credential, ?string $password = null): (User&UserInterface)|null;
+
     /**
      * Find a user by their email address, or null if not found.
      */

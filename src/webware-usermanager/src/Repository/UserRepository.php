@@ -33,14 +33,12 @@ final class UserRepository implements UserRepositoryInterface
 
     public function __construct(
         private readonly AdapterInterface $adapter,
-        /** @var callable(string, string[], array<string,mixed>): UserInterface */
-        private readonly mixed $userFactory,
         private readonly EventDispatcherInterface $dispatcher,
     ) {
         $this->gateway = new TableGateway('user', $adapter);
     }
 
-    public function authenticate(string $credential, ?string $password = null): ?UserInterface
+    public function authenticate(string $credential, ?string $password = null): (User&UserInterface)|null
     {
         $user = $this->findByEmail($credential);
 
@@ -52,11 +50,7 @@ final class UserRepository implements UserRepositoryInterface
             return null;
         }
 
-        $authenticatedUser = ($this->userFactory)(
-            $user->getIdentity(),
-            $user->getRoles(),
-            $user->getDetails(),
-        );
+        $authenticatedUser = $user;
 
         $this->dispatcher->dispatch(
             (new LogEvent(LogChannel::Security, Level::Info))

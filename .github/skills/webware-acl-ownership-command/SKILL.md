@@ -151,13 +151,13 @@ params at the ACL check layer, before the route stack executes.
 
 ### How it works
 
-1. `RouteMiddleware` (override of upstream) builds a `RouteResource` from the matched `RouteResult`
+1. `RouteMiddleware` builds a `RouteResource` from the matched `RouteResult`
    and attaches it as `RouteResource::class` request attribute.
-2. `AuthorizingDispatchMiddleware` (override of upstream `DispatchMiddleware`) reads `RouteResource::class`,
-   calls `Acl::isAllowedRoute(request, roles)`, and short-circuits with `ForbiddenHandlerInterface`
+2. `AuthorizationMiddleware` (global pipeline, before `DispatchMiddleware`) reads `RouteResource::class`,
+   calls `Acl::isAllowedRoute($user, $routeResource)`, and short-circuits with `ForbiddenHandlerInterface`
    on deny — the route stack never executes for denied requests.
-3. `Acl::isAllowedRoute()` uses `$this->acl->hasResource($routeName)` to check opt-in status.
-   **Unregistered route → `true` (opt-in protection model).**
+3. `Acl::isAllowedRoute()` is **fail-closed** — `$this->acl->hasResource($routeResource)` returns `false`
+   for unregistered routes, which denies access. Every accessible route must be registered.
 4. `StoreOwnedResourceAssertion` receives the `RouteResource` as `$resource` — `getOwnerId()`
    reads the owner ID from route params using a three-level config:
    - Per-route options array (`$route->getOptions()['acl']['ownerId']`)
@@ -211,7 +211,7 @@ inside the command bus (rather than at the HTTP route layer).
 
 **Status:** `AuthorizableCommandInterface` and `CommandHandlerMiddleware` exist in
 `src/webware-acl/src/CommandBus/` but are not wired for this application. All route-level
-ACL is handled by `AuthorizingDispatchMiddleware`. Implement command-level ACL in a future PR
+ACL is handled by `AuthorizationMiddleware`. Implement command-level ACL in a future PR
 when commands need to be dispatchable from non-HTTP contexts (CLI, queues, internal services).
 
 ---
@@ -229,7 +229,7 @@ Tests cover:
 ## Commands That Do NOT Require Ownership Interfaces
 
 Some commands mutate ACL configuration data itself and run in the admin context where ownership
-is already asserted by the global `AuthorizingDispatchMiddleware` pipeline. These commands are
+is already asserted by the global `AuthorizationMiddleware` pipeline. These commands are
 **exempt** from `RoleProviderInterface` + `StoreOwnedResourceInterface`:
 
 | Command | Reason |

@@ -193,17 +193,16 @@ another module's listener runs (rare).
 
 ## Step 5 — No Per-Route Middleware Required
 
-`AuthorizingDispatchMiddleware` runs in the **global pipeline** in place of
+`AuthorizationMiddleware` runs in the **global pipeline before**
 Mezzio's `DispatchMiddleware`. You do **not** add any ACL middleware to
 individual route stacks.
 
 Protection is determined entirely by the route-to-resource mapping registered
-in `RegisterXxxRouteMappingsListener`. If a route has no mapping, it is denied.
-If a route is intentionally public (e.g. `/login`), simply omit it from the
-mapping — `AuthorizingDispatchMiddleware` will pass it through only when
-the user is allowed; otherwise `ForbiddenHandlerInterface` handles the denial.
+in `RegisterXxxRouteMappingsListener`. If a route has no mapping, it is denied
+(**fail-closed** — intentional). Intentionally public routes (e.g. `/login`)
+must still be registered and explicitly allowed for the `Guest` role.
 
-> **Never** add `AuthorizingDispatchMiddleware` to a route stack. It must only
+> **Never** add `AuthorizationMiddleware` to a route stack. It must only
 > appear once, in the global pipeline.
 
 ---
@@ -240,7 +239,7 @@ After seeding, call `AclRepository::incrementVersion()` or truncate
 □ Privilege constants used (PrivilegeInterface::READ etc.) — no hardcoded strings
 □ DB seed: Administrator default rules for new resource
 □ Cache invalidated after seeding (AclRepository::incrementVersion())
-□ AuthorizingDispatchMiddleware in global pipeline (not in route stacks)
+□ AuthorizationMiddleware in global pipeline (not in route stacks)
 ```
 
 ---
@@ -251,8 +250,8 @@ After seeding, call `AclRepository::incrementVersion()` or truncate
 |---|---|
 | Listener not in `ConfigProvider::getListeners()` | Resource/rule/mapping silently missing from ACL on rebuild |
 | Route name typo in `addRouteMapping()` | Route always returns 403 — no mapping found |
-| Adding `AuthorizingDispatchMiddleware` to a route stack | Double ACL check; unexpected behaviour |
-| Leaving Mezzio's `DispatchMiddleware` in the global pipeline | Routes dispatched twice |
+| Adding `AuthorizationMiddleware` to a route stack | Double ACL check; unexpected behaviour |
+| Removing Mezzio's `DispatchMiddleware` from the global pipeline | Routes never dispatched after ACL pass |
 | Hardcoded privilege string (`'read'`) instead of `PrivilegeInterface::READ` | Fragile — breaks if the constant value changes |
 | Forgetting `incrementVersion()` after seeding DB rules | Cache not invalidated; stale ACL persists |
 | Resolving `Mezzio\Authentication\UserInterface` without the alias | `isAllowed()` fails — `GuestUser` does not satisfy `RoleInterface` without proper wiring |

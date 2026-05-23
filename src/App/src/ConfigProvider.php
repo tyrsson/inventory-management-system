@@ -16,6 +16,8 @@ namespace App;
 
 use App\CommandBus\Middleware\CommandLoggingMiddleware;
 use App\CommandBus\Middleware\Container\CommandLoggingMiddlewareFactory;
+use App\Container\Configuration;
+use Webware\Acl\AclInterface;
 use Webware\CommandBus\CommandBusInterface;
 use Webware\CommandBus\ConfigProvider as BusProvider;
 
@@ -52,6 +54,7 @@ class ConfigProvider
             'templates'                => $this->getTemplates(),
             'view_helpers'             => $this->getViewHelpers(),
             CommandBusInterface::class => $this->getBusConfig(),
+            AclInterface::class        => $this->getAclConfig(),
         ];
     }
 
@@ -132,6 +135,20 @@ class ConfigProvider
                 'error' => [__DIR__ . '/../templates/error'],
             ],
             'default_layout' => 'layout::default',
+        ];
+    }
+
+    public function getAclConfig(): array
+    {
+        return [
+            'resources' => [
+                Configuration::ROUTE_NAME_PREFIX_VALUE . 'dashboard',
+            ],
+            'allow'     => [
+                'Member' => [
+                    Configuration::ROUTE_NAME_PREFIX_VALUE . 'dashboard',
+                ],
+            ],
         ];
     }
 }
