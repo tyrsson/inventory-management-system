@@ -91,7 +91,8 @@ foreach ($this->privileges as $priv) {
             <div id="<?= $this->escapeHtmlAttr($accId) ?>-body" class="accordion-collapse collapse">
                 <div class="accordion-body py-2 px-3">
                     <form
-                        hx-post="<?= $this->adminUrl('acl.resources.protect') ?>"
+                        <?php /* TODO: was 'acl.resources.protect' (ProtectRouteCommand, deleted). Protecting = creating a rule. */ ?>
+                        hx-post="<?= $this->adminUrl('acl.manager.rule.create') ?>"
                         hx-target="main"
                         hx-swap="innerHTML"
                     >
@@ -139,11 +140,18 @@ foreach ($this->privileges as $priv) {
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <?php
+                /*
+                 * TODO: 'acl.resources.create' route deleted — resources are route-derived (from RouteCollector),
+                 * not manually created. This entire "Add Resource" modal and form needs to be redesigned
+                 * or removed. Leaving in place until the admin-resources sub-page is reworked.
+                 */
+                ?>
                 <form
                     id="addResourceForm"
                     method="POST"
-                    action="<?= $this->adminUrl('acl.resources.create') ?>"
-                    hx-post="<?= $this->adminUrl('acl.resources.create') ?>"
+                    action=""
+                    hx-post=""
                     hx-target="main"
                     hx-swap="innerHTML"
                 >

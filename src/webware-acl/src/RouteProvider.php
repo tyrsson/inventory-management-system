@@ -11,8 +11,6 @@ use Mezzio\Router\RouteCollectorInterface;
 use Mezzio\Router\RouteProviderInterface;
 use Override;
 use Webware\Acl\Admin\Middleware\BuildAccessControlMiddleware;
-use Webware\Acl\Admin\Middleware\ProcessAssertionMiddleware;
-use Webware\Acl\Admin\Middleware\ProcessProtectRouteMiddleware;
 use Webware\Acl\Admin\Middleware\ProcessRoleMiddleware;
 use Webware\Acl\Admin\Middleware\ProcessRuleMiddleware;
 use Webware\Acl\Admin\RequestHandler\AclOverviewHandler;
@@ -129,23 +127,6 @@ final readonly class RouteProvider implements RouteProviderInterface
             $middlewareFactory->prepare([BodyParamsMiddleware::class, ProcessRuleMiddleware::class, RuleManagerHandler::class]),
             $this->adminRouteNamePrefix . 'rule.update'
         );
-        $routeCollector->delete(
-            '/' . $this->adminRouteSegment . '/rule/{id:\d+}',
-            $middlewareFactory->prepare([ProcessRuleMiddleware::class, RuleManagerHandler::class]),
-            $this->adminRouteNamePrefix . 'rule.delete'
-        );
-
-        // Assertion management
-        $routeCollector->post(
-            '/' . $this->adminRouteSegment . '/rule/{rule_id:\d+}/assertions',
-            $middlewareFactory->prepare([BodyParamsMiddleware::class, ProcessAssertionMiddleware::class, RuleManagerHandler::class]),
-            $this->adminRouteNamePrefix . 'assertion.create'
-        );
-        $routeCollector->delete(
-            '/' . $this->adminRouteSegment . '/rule/{rule_id:\d+}/assertions/{id:\d+}',
-            $middlewareFactory->prepare([ProcessAssertionMiddleware::class, RuleManagerHandler::class]),
-            $this->adminRouteNamePrefix . 'assertion.delete'
-        );
 
         // Roles write/delete
         $routeCollector->post(
@@ -157,18 +138,6 @@ final readonly class RouteProvider implements RouteProviderInterface
             '/' . $this->adminRouteSegment . '/role/{pk:\d+}',
             $middlewareFactory->prepare([ProcessRoleMiddleware::class, RoleListHandler::class]),
             $this->adminRouteNamePrefix . 'role.delete'
-        );
-
-        // Protect a route — POST registers it as an ACL resource
-        $routeCollector->post(
-            '/' . $this->adminRouteSegment . '/resource/protect',
-            $middlewareFactory->prepare([
-                BodyParamsMiddleware::class,
-                ProcessProtectRouteMiddleware::class,
-                BuildAccessControlMiddleware::class,
-                AclOverviewHandler::class,
-            ]),
-            $this->adminRouteNamePrefix . 'resource.protect'
         );
 
         // Resources write/delete routes removed — resources are route-derived

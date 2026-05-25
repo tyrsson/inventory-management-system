@@ -12,8 +12,10 @@
  * @var array<int, array{role_id: string, role_pk: int, depth: int, parent_ids: string[], state: string, rule_id: int|null, via: string, redundant_descendants: string[], elevated_descendants: string[]}>|null $hierarchyRows
  */
 $this->headTitle('Rules');
-$createUrl    = $this->adminUrl('acl.rules.create');
-$rulesBaseUrl = $this->adminUrl('acl.rules.read');
+// TODO: was 'acl.rules.create' — renamed to 'acl.manager.rule.create'.
+$createUrl    = $this->adminUrl('acl.manager.rule.create');
+// TODO: 'acl.rules.read' route not yet registered — pointing to overview until sub-page route is added.
+$rulesBaseUrl = $this->adminUrl('acl.manager');
 ?>
 
 <!-- Breadcrumb -->

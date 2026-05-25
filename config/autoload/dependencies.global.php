@@ -20,10 +20,6 @@ return [
         // Use 'aliases' to alias a service name to another service. The
         // key is the alias name, the value is the service to which it points.
         'aliases'    => [
-            // Mezzio's authentication layer resolves UserInterface::class from the container.
-            // Alias it to our richer interface so the factory registered in
-            // webware-usermanager ConfigProvider is used for both.
-            \Mezzio\Authentication\UserInterface::class => \Webware\UserManager\UserInterface::class,
         ],
         // Use 'invokables' for constructor-less services, or services that do
         // not require arguments to the constructor. Map a service name to the

@@ -21,27 +21,36 @@ use Webware\UserManager\UserInterface;
 
 use function array_merge;
 use function array_values;
+use function json_decode;
 
-final readonly class User implements UserInterface
+final class User implements UserInterface
 {
     public function __construct(
-        public int $id,
-        public int $storeId,
-        public int $roleId,
-        public string $firstName,
-        public string $lastName,
-        public string $email,
+        public readonly int $id,
+        public readonly int $storeId,
+        public readonly string $firstName,
+        public readonly string $lastName,
+        public readonly string $email,
         #[SensitiveParameter]
-        public string $passwordHash,
-        public bool $active,
-        public DateTimeImmutable $createdAt,
+        public readonly string $passwordHash,
+        public readonly bool $active,
+        public readonly DateTimeImmutable $createdAt,
         #[SensitiveParameter]
-        public ?string $verificationToken = null,
-        public ?DateTimeImmutable $tokenCreatedAt = null,
+        public readonly ?string $verificationToken = null,
+        public readonly ?DateTimeImmutable $tokenCreatedAt = null,
         /** @var string[] */
-        private array $roles = [],
+        public string|array $roles = [] {
+            set(string|array $value) {
+                if (is_string($value)) {
+                    $decoded      = json_decode($value, true);
+                    $this->roles  = is_array($decoded) ? $decoded : [];
+                } else {
+                    $this->roles = $value;
+                }
+            }
+        },
         /** @var array<string, mixed> */
-        private array $details = [],
+        private readonly array $details = [],
     ) {}
 
     public function displayName(): string
@@ -77,9 +86,9 @@ final readonly class User implements UserInterface
     }
 
     #[Override]
-    public function getRoleId(): int
+    public function getRoleId(): string
     {
-        return $this->roles[0];
+        return $this->roles[0] ?? '';
     }
 
     /** @return string[] */
@@ -114,26 +123,6 @@ final readonly class User implements UserInterface
         return new self(
             $this->id,
             $storeId,
-            $this->roleId,
-            $this->firstName,
-            $this->lastName,
-            $this->email,
-            $this->passwordHash,
-            $this->active,
-            $this->createdAt,
-            $this->verificationToken,
-            $this->tokenCreatedAt,
-            $this->roles,
-            $this->details,
-        );
-    }
-
-    public function withRoleId(int $roleId): self
-    {
-        return new self(
-            $this->id,
-            $this->storeId,
-            $roleId,
             $this->firstName,
             $this->lastName,
             $this->email,
@@ -152,7 +141,6 @@ final readonly class User implements UserInterface
         return new self(
             $this->id,
             $this->storeId,
-            $this->roleId,
             $firstName,
             $this->lastName,
             $this->email,
@@ -171,7 +159,6 @@ final readonly class User implements UserInterface
         return new self(
             $this->id,
             $this->storeId,
-            $this->roleId,
             $this->firstName,
             $lastName,
             $this->email,
@@ -190,7 +177,6 @@ final readonly class User implements UserInterface
         return new self(
             $this->id,
             $this->storeId,
-            $this->roleId,
             $this->firstName,
             $this->lastName,
             $email,
@@ -209,7 +195,6 @@ final readonly class User implements UserInterface
         return new self(
             $this->id,
             $this->storeId,
-            $this->roleId,
             $this->firstName,
             $this->lastName,
             $this->email,
@@ -228,7 +213,6 @@ final readonly class User implements UserInterface
         return new self(
             $this->id,
             $this->storeId,
-            $this->roleId,
             $this->firstName,
             $this->lastName,
             $this->email,
@@ -248,7 +232,6 @@ final readonly class User implements UserInterface
         return new self(
             $this->id,
             $this->storeId,
-            $this->roleId,
             $this->firstName,
             $this->lastName,
             $this->email,
@@ -267,7 +250,6 @@ final readonly class User implements UserInterface
         return new self(
             $this->id,
             $this->storeId,
-            $this->roleId,
             $this->firstName,
             $this->lastName,
             $this->email,

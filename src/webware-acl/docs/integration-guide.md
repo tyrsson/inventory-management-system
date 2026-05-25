@@ -1,17 +1,20 @@
 # Integration Guide
 
 This guide walks through the steps required to integrate a new Mezzio module
-with webware-acl, so that its routes are protected and its resources can be
-managed via the ACL Admin UI.
+with webware-acl so that its routes are protected by `AuthorizationMiddleware`.
+
+> **ACL is entirely config-driven. There are no DB tables in use.**
+> All roles, resources, and rules are declared in `ConfigProvider::getAclConfig()`.
+> Configs from every loaded module are deep-merged by Laminas Config before the
+> `AclFactory` builds the `Laminas\Permissions\Acl\Acl` instance.
 
 ---
 
 ## Prerequisites
 
-- `webware/acl` is installed and its `ConfigProvider` is loaded
-- `IdentityMiddleware` is registered in the global pipeline (before route dispatch)
-- The DB schema tables (`role`, `acl_resource`, `acl_privilege`, `acl_rule`,
-  `acl_route_mapping`, `acl_version`) exist and are seeded with the base roles
+- `webware/acl` is installed and its `ConfigProvider` is loaded in `config/config.php`
+- `IdentityMiddleware` is registered in the global pipeline before `AuthorizationMiddleware`
+- `AuthorizationMiddleware` is registered in the global pipeline before `DispatchMiddleware`
 - **`Mezzio\Authentication\UserInterface` is aliased to `Webware\UserManager\UserInterface`
   in the host-application's container** (see [User Identity Requirements](#user-identity-requirements) below)
 
@@ -19,227 +22,122 @@ managed via the ACL Admin UI.
 
 ## Overview
 
-Integrating a module requires **three listener classes** and **three
-`ConfigProvider` registrations**:
-
-| Step | What to create | Event |
-|---|---|---|
-| 1 | `RegisterXxxResourcesListener` | `ResourcesLoadedEvent` |
-| 2 | `RegisterXxxRulesListener` | `RulesLoadedEvent` |
-| 3 | `RegisterXxxRouteMappingsListener` | `AclBuiltEvent` |
-
----
-
-## Step 1 — Register Resources
-
-Create a listener that adds the module's ACL resource(s) to the Laminas Acl:
+Integrating a module requires **one method** in the module's `ConfigProvider`:
 
 ```php
-<?php
-
-declare(strict_types=1);
-
-namespace Ims\Manifest\Acl;
-
-use Webware\Acl\Event\ResourcesLoadedEvent;
-
-final class RegisterManifestResourcesListener
-{
-    public function __invoke(ResourcesLoadedEvent $event): void
-    {
-        $event->acl->addResource('manifest');
-    }
-}
+public function getAclConfig(): array
 ```
 
-**Rules:**
-
-- One resource per conceptual domain (e.g. `manifest`, `ticket`, `transfer`).
-  Do not add one resource per entity subtype unless ACL granularity requires it.
-- The resource ID string must be unique across all modules.
-- Do not add privileges here — privileges are added by the DB or Admin UI.
+This method returns an array that is registered under the `AclInterface::class`
+config key. `AclFactory` reads the merged config at container build time and
+constructs the ACL — no events, no database, no cache.
 
 ---
 
-## Step 2 — Register Built-in Rules
-
-Create a listener that adds rules which must be immutable (non-DB-manageable):
+## Step 1 — Implement `getAclConfig()` in `ConfigProvider`
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-namespace Ims\Manifest\Acl;
+namespace Acme\Widget;
 
-use Webware\Acl\Entity\Privilege;
-use Webware\Acl\Event\RulesLoadedEvent;
-
-final class RegisterManifestRulesListener
-{
-    public function __invoke(RulesLoadedEvent $event): void
-    {
-        // Developer always has full access — not configurable via Admin UI
-        $event->acl->allow('Developer', 'manifest', [
-            PrivilegeInterface::READ,
-            PrivilegeInterface::CREATE,
-            PrivilegeInterface::UPDATE,
-            PrivilegeInterface::DELETE,
-        ]);
-    }
-}
-```
-
-**Rules:**
-
-- Restrict this to **built-in grants only** — Developer super-access, or rules
-  that must never be overridden by an Administrator.
-- Do not replicate rules that belong in the DB (those are for Administrator
-  configuration via the UI).
-- Always use `PrivilegeInterface::READ / CREATE / UPDATE / DELETE` constants.
-  **Never** hardcode strings like `'read'`.
-
----
-
-## Step 3 — Register Route Mappings
-
-Create a listener that maps every protected named route to a resource+privilege:
-
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace Ims\Manifest\Acl;
-
-use Webware\Acl\Entity\Privilege;
-use Webware\Acl\Event\AclBuiltEvent;
-
-final class RegisterManifestRouteMappingsListener
-{
-    public function __invoke(AclBuiltEvent $event): void
-    {
-        $event->addRouteMapping('manifest.list',         'manifest', PrivilegeInterface::READ);
-        $event->addRouteMapping('manifest.detail',       'manifest', PrivilegeInterface::READ);
-        $event->addRouteMapping('manifest.upload',       'manifest', PrivilegeInterface::READ);
-        $event->addRouteMapping('manifest.upload.store', 'manifest', PrivilegeInterface::CREATE);
-        $event->addRouteMapping('manifest.process',      'manifest', PrivilegeInterface::UPDATE);
-        $event->addRouteMapping('manifest.finish',       'manifest', PrivilegeInterface::UPDATE);
-    }
-}
-```
-
-**Rules:**
-
-- Map **every protected route** — `GET` and `POST` routes typically need
-  separate entries with different privileges (`READ` vs `CREATE`/`UPDATE`).
-- Route names must match exactly the names used in `RouteProvider.php`.
-- Routes with no mapping are treated as **denied** by `AuthorizationMiddleware`.
-  An unmapped public route (e.g. `/login`) should simply not have
-  `AuthorizationMiddleware` in its stack.
-
----
-
-## Step 4 — Register Listeners in ConfigProvider
-
-Add all three listeners to the module's `ConfigProvider`:
-
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace Ims\Manifest;
-
-use Ims\Manifest\Acl\RegisterManifestResourcesListener;
-use Ims\Manifest\Acl\RegisterManifestRulesListener;
-use Ims\Manifest\Acl\RegisterManifestRouteMappingsListener;
-use Webware\Acl\Event\AclBuiltEvent;
-use Webware\Acl\Event\ResourcesLoadedEvent;
-use Webware\Acl\Event\RulesLoadedEvent;
+use Webware\Acl\AclInterface;
 
 final class ConfigProvider
 {
     public function __invoke(): array
     {
         return [
-            'dependencies' => $this->getDependencies(),
-            'listeners'    => $this->getListeners(),
+            AclInterface::class => $this->getAclConfig(),
+            // ... other keys
         ];
     }
 
-    public function getListeners(): array
+    public function getAclConfig(): array
     {
         return [
-            ResourcesLoadedEvent::class => [
-                ['listener' => RegisterManifestResourcesListener::class, 'priority' => 1],
+            'resources' => [
+                'acme.widget.list',
+                'acme.widget.detail',
+                'acme.widget.create',
+                'acme.widget.update',
             ],
-            RulesLoadedEvent::class => [
-                ['listener' => RegisterManifestRulesListener::class, 'priority' => 1],
+            'allow' => [
+                'Member' => [
+                    'acme.widget.list',
+                    'acme.widget.detail',
+                ],
+                'Editor' => [
+                    'acme.widget.create' => [\Acme\Widget\Acl\OwnershipAssertion::class],
+                    'acme.widget.update' => [\Acme\Widget\Acl\OwnershipAssertion::class],
+                ],
             ],
-            AclBuiltEvent::class => [
-                ['listener' => RegisterManifestRouteMappingsListener::class, 'priority' => 1],
-            ],
+            'deny' => [],
         ];
     }
 }
 ```
 
-**Priority**: Higher numbers run first. For most modules the default `1` is
-correct. Use higher priority if your listener must extend the ACL before
-another module's listener runs (rare).
+### Config array shape
+
+| Key | Type | Description |
+|---|---|---|
+| `roles` | `array<string, string[]>` | Role hierarchy: `roleId => [parentRoleId, ...]`. Define only once in the central module that owns the role domain. |
+| `resources` | `string[]` | Flat list of **route name strings** to protect. Must match `RouteProvider` exactly. |
+| `allow` | `array<string, list\|assoc>` | Role → resource grant. Plain list for no assertion; associative for per-resource assertion class list. |
+| `deny` | `array<string, list\|assoc>` | Same structure as `allow`. Explicit denials override inherited allows. |
+
+> **Resources are route names.** `RouteResource::getResourceId()` returns the matched
+> route name, and `AclFactory` registers those same strings as Laminas ACL resources.
+> There is no separate "abstract resource" concept — one route name = one resource.
+
+### Role hierarchy
+
+Roles are defined once — in whichever module owns the role domain for the
+application — and inherited by all feature modules through config merging.
+**Do not redeclare the role hierarchy in a feature module.** Only add
+`resources` and `allow`/`deny` for your module's routes.
+
+### Assertion classes
+
+When a rule requires an ownership or context check, pass a list of
+fully-qualified assertion class names as the value for that resource.
+`AclFactory` will resolve each class from the container (it must implement
+`Laminas\Permissions\Acl\Assertion\AssertionInterface`) and wrap multiple
+assertions in an `AssertionAggregate`.
 
 ---
 
-## Step 5 — No Per-Route Middleware Required
+## Step 2 — No Per-Route Middleware Required
 
 `AuthorizationMiddleware` runs in the **global pipeline before**
 Mezzio's `DispatchMiddleware`. You do **not** add any ACL middleware to
 individual route stacks.
 
-Protection is determined entirely by the route-to-resource mapping registered
-in `RegisterXxxRouteMappingsListener`. If a route has no mapping, it is denied
-(**fail-closed** — intentional). Intentionally public routes (e.g. `/login`)
-must still be registered and explicitly allowed for the `Guest` role.
+The ACL is checked for every matched request. If a route name is not registered
+as a resource, `Acl::isAllowedRoute()` returns `false` (**fail-closed** —
+intentional). Routes that must be publicly accessible (e.g. login, registration)
+must still be listed in `resources` and granted to the `Guest` role in `allow`.
 
 > **Never** add `AuthorizationMiddleware` to a route stack. It must only
 > appear once, in the global pipeline.
 
 ---
 
-## Step 6 — Seed Base Rules in the Database
-
-After deploying the new module, seed the DB with the Administrator's default
-rules for the new resource. This is typically done in a migration or seed file:
-
-```sql
--- Allow Administrator to read and create manifests (as a starting point)
-INSERT INTO acl_rule (role_pk, resource_pk, privilege_pk, type)
-SELECT r.id, res.id, priv.id, 'allow'
-FROM   role r
-JOIN   acl_resource res ON res.resource_id = 'manifest'
-JOIN   acl_privilege priv ON priv.privilege_id IN ('read', 'create')
-                         AND priv.resource_pk = res.id
-WHERE  r.role_id = 'Administrator';
-```
-
-After seeding, call `AclRepository::incrementVersion()` or truncate
-`data/cache/acl.cache` so the next request triggers a cache rebuild.
-
----
-
 ## Checklist
 
 ```
-□ RegisterXxxResourcesListener — adds resource(s) to Laminas Acl
-□ RegisterXxxRulesListener — adds built-in immutable rules
-□ RegisterXxxRouteMappingsListener — maps all protected routes
-□ Three listeners registered in ConfigProvider::getListeners()
-□ Route names in addRouteMapping() match RouteProvider exactly
-□ Privilege constants used (PrivilegeInterface::READ etc.) — no hardcoded strings
-□ DB seed: Administrator default rules for new resource
-□ Cache invalidated after seeding (AclRepository::incrementVersion())
+□ getAclConfig() implemented in ConfigProvider
+□ AclInterface::class => $this->getAclConfig() in ConfigProvider::__invoke()
+□ All protected route names listed in 'resources'
+□ Allow rules declared for every role that needs access
+□ Guest routes explicitly allowed for 'Guest' role
+□ Route names in getAclConfig() match RouteProvider exactly
+□ Role hierarchy NOT redeclared — only ims-store owns 'roles'
 □ AuthorizationMiddleware in global pipeline (not in route stacks)
+□ DispatchMiddleware still present in global pipeline (after AuthorizationMiddleware)
 ```
 
 ---
@@ -248,12 +146,12 @@ After seeding, call `AclRepository::incrementVersion()` or truncate
 
 | Mistake | Symptom |
 |---|---|
-| Listener not in `ConfigProvider::getListeners()` | Resource/rule/mapping silently missing from ACL on rebuild |
-| Route name typo in `addRouteMapping()` | Route always returns 403 — no mapping found |
+| Route name typo in `resources` or `allow` | Route always returns 403 — resource not registered or rule not matched |
+| Route listed in `allow` but missing from `resources` | `isAllowedRoute()` returns `false` — resource must be registered before allow rules can apply |
+| Redeclaring `roles` in a feature module | Role hierarchy merges incorrectly; parent resolution may fail |
 | Adding `AuthorizationMiddleware` to a route stack | Double ACL check; unexpected behaviour |
 | Removing Mezzio's `DispatchMiddleware` from the global pipeline | Routes never dispatched after ACL pass |
-| Hardcoded privilege string (`'read'`) instead of `PrivilegeInterface::READ` | Fragile — breaks if the constant value changes |
-| Forgetting `incrementVersion()` after seeding DB rules | Cache not invalidated; stale ACL persists |
+| Public route (e.g. login) not in `resources` + `allow Guest` | Guest users get 403 on the login page |
 | Resolving `Mezzio\Authentication\UserInterface` without the alias | `isAllowed()` fails — `GuestUser` does not satisfy `RoleInterface` without proper wiring |
 
 ---

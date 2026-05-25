@@ -225,7 +225,9 @@ $filters = $this->routeFilters ?? ['all' => 0, 'unprotected' => 0, 'protected' =
     'roles'        => $this->roles,
     'roleChildren' => $this->roleChildren,
     'roleTree'     => $this->roleTree,
-    'protectUrl'   => $this->adminUrl('acl.resources.protect'),
+    // TODO: was 'acl.resources.protect' (ProtectRouteCommand, now deleted).
+    // Protecting a resource = creating a rule, so this now points to rule.create.
+    'protectUrl'   => $this->adminUrl('acl.manager.rule.create'),
 ]) ?>
 
 <!-- ── Delete rule confirmation modal ───────────────────── -->

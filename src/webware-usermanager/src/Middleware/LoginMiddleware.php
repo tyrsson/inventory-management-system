@@ -66,7 +66,6 @@ final class LoginMiddleware implements MiddlewareInterface
             'details'  => [
                 'id'                 => $user->id,
                 'store_id'           => $user->storeId,
-                'role_id'            => $user->roleId,
                 'first_name'         => $user->firstName,
                 'last_name'          => $user->lastName,
                 'active'             => $user->active,

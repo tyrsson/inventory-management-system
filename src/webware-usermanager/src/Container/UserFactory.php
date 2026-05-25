@@ -14,8 +14,8 @@ declare(strict_types=1);
 
 namespace Webware\UserManager\Container;
 
-use Mezzio\Authentication\UserInterface;
 use Psr\Container\ContainerInterface;
+use Webware\UserManager\UserInterface;
 use DateTimeImmutable;
 use Webmozart\Assert\Assert;
 use Webware\UserManager\Entity\GuestUser;
@@ -42,11 +42,10 @@ final class UserFactory
             Assert::allString($roles);
             Assert::isMap($details);
 
-            if (isset($details['id'], $details['role_id'], $details['first_name'])) {
+            if (isset($details['id'], $details['store_id'], $details['first_name'])) {
                 return new User(
                     id:                $details['id'],
                     storeId:           $details['store_id'],
-                    roleId:            $details['role_id'],
                     firstName:         $details['first_name'],
                     lastName:          $details['last_name'],
                     email:             $identity,

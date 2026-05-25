@@ -37,7 +37,6 @@ final class ToggleUserActiveHandler implements RequestHandlerInterface
 
         $this->users->update($id, [
             'store_id' => $user->storeId,
-            'role_id'  => $user->roleId,
             'name'     => $user->name,
             'email'    => $user->email,
             'active'   => $user->active ? 0 : 1,

@@ -30,7 +30,7 @@ $this->headTitle('Manifests');
         $pieces  = $manifest->totalPieces();
         $damaged = $manifest->damagedLines();
     ?>
-    <a href="<?= $this->url('manifest.detail', ['id' => $manifest->id]) ?>"
+    <a href="<?= $this->manifestUrl('detail', ['id' => $manifest->id]) ?>"
        class="card text-decoration-none text-body"
        hx-boost="true">
         <div class="card-body">
@@ -82,19 +82,19 @@ $this->headTitle('Manifests');
     <ul class="pagination pagination-sm justify-content-center">
         <li class="page-item <?= $currentPage <= 1 ? 'disabled' : '' ?>">
             <a class="page-link"
-               href="<?= $this->url('manifest.list', [], ['query' => ['page' => $currentPage - 1]]) ?>"
+               href="<?= $this->manifestUrl('list', [], ['query' => ['page' => $currentPage - 1]]) ?>"
                hx-boost="true">Previous</a>
         </li>
         <?php for ($p = 1; $p <= $pages; $p++): ?>
         <li class="page-item <?= $p === $currentPage ? 'active' : '' ?>">
             <a class="page-link"
-               href="<?= $this->url('manifest.list', [], ['query' => ['page' => $p]]) ?>"
+               href="<?= $this->manifestUrl('list', [], ['query' => ['page' => $p]]) ?>"
                hx-boost="true"><?= $p ?></a>
         </li>
         <?php endfor; ?>
         <li class="page-item <?= $currentPage >= $pages ? 'disabled' : '' ?>">
             <a class="page-link"
-               href="<?= $this->url('manifest.list', [], ['query' => ['page' => $currentPage + 1]]) ?>"
+               href="<?= $this->manifestUrl('list', [], ['query' => ['page' => $currentPage + 1]]) ?>"
                hx-boost="true">Next</a>
         </li>
     </ul>
@@ -114,7 +114,7 @@ $this->headTitle('Manifests');
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post"
-                  action="<?= $this->url('manifest.upload.store') ?>"
+                  action="<?= $this->manifestUrl('upload.store') ?>"
                   enctype="multipart/form-data"
                   novalidate>
                 <div class="modal-body">

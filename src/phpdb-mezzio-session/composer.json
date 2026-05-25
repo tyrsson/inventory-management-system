@@ -1,0 +1,29 @@
+{
+    "name": "php-db/phpdb-mezzio-session",
+    "description": "PhpDb-backed session persistence for Mezzio (mezzio-session-ext drop-in replacement).",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "mezzio",
+        "session",
+        "phpdb",
+        "session-handler"
+    ],
+    "require": {
+        "php": "~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0 || ~8.6.0",
+        "mezzio/mezzio-session": "^1.0",
+        "php-db/phpdb": "0.4.x-dev"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "PhpDb\\Session\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "PhpDb\\SessionTest\\": "test/"
+        }
+    }
+}

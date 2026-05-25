@@ -65,7 +65,6 @@ final class UserRepository implements UserRepositoryInterface
     {
         $sql    = $this->gateway->getSql();
         $select = $sql->select()
-            ->join('role', 'role.id = user.role_id', ['role_name' => 'role_id'])
             ->where(['user.email' => $email])
             ->limit(1);
 
@@ -81,7 +80,6 @@ final class UserRepository implements UserRepositoryInterface
     {
         $sql    = $this->gateway->getSql();
         $select = $sql->select()
-            ->join('role', 'role.id = user.role_id', ['role_name' => 'role_id'])
             ->where(['user.id' => $id])
             ->limit(1);
 
@@ -98,7 +96,6 @@ final class UserRepository implements UserRepositoryInterface
     {
         $sql    = $this->gateway->getSql();
         $select = $sql->select()
-            ->join('role', 'role.id = user.role_id', ['role_name' => 'role_id'])
             ->order('user.last_name ASC');
 
         if ($storeId !== null) {
@@ -137,7 +134,6 @@ final class UserRepository implements UserRepositoryInterface
     {
         $sql    = $this->gateway->getSql();
         $select = $sql->select()
-            ->join('role', 'role.id = user.role_id', ['role_name' => 'role_id'])
             ->where(['user.verification_token' => $token])
             ->limit(1);
 
@@ -149,13 +145,9 @@ final class UserRepository implements UserRepositoryInterface
         return $this->hydrate((array) $row);
     }
 
-    public function findRoleIdByName(string $roleName): ?int
+    public function findRoleIdByName(string $roleName): string
     {
-        $sql    = new Sql($this->adapter);
-        $select = $sql->select('role')->columns(['id'])->where(['role_id' => $roleName])->limit(1);
-        $row    = $sql->prepareStatementForSqlObject($select)->execute()->current();
-
-        return $row !== null ? (int) $row['id'] : null;
+        return $roleName;
     }
 
     /** @param array<string, mixed> $row */
@@ -164,7 +156,6 @@ final class UserRepository implements UserRepositoryInterface
         return new User(
             id: (int) $row['id'],
             storeId: (int) $row['store_id'],
-            roleId: (int) $row['role_id'],
             firstName: (string) $row['first_name'],
             lastName: (string) $row['last_name'],
             email: (string) $row['email'],
@@ -173,7 +164,7 @@ final class UserRepository implements UserRepositoryInterface
             createdAt: new DateTimeImmutable((string) $row['created_at']),
             verificationToken: isset($row['verification_token']) ? (string) $row['verification_token'] : null,
             tokenCreatedAt: isset($row['token_created_at']) ? new DateTimeImmutable((string) $row['token_created_at']) : null,
-            roles: [(string) $row['role_name']],
+            roles: $row['role_id'],
             details: [
                 'id'       => (int) $row['id'],
                 'store_id' => (int) $row['store_id'],

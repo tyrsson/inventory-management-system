@@ -14,7 +14,6 @@ declare(strict_types=1);
 
 namespace Webware\UserManager;
 
-use Mezzio\Authentication\UserRepositoryInterface;
 use Webware\Acl\AclInterface;
 use Webware\Admin\Container\Configuration as AdminConfiguration;
 use Webware\CommandBus\CommandBusInterface;
@@ -47,9 +46,7 @@ final class ConfigProvider
     {
         return [
             'aliases'   => [
-                // Bind mezzio-authentication interfaces to our implementations
-                UserRepositoryInterface::class => UserRepositoryContract::class,
-                UserRepositoryContract::class  => Repository\UserRepository::class,
+                UserRepositoryContract::class => Repository\UserRepository::class,
             ],
             'factories' => [
                 // Registers the user factory under our own interface key.

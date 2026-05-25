@@ -17,11 +17,9 @@ $cacheConfig = [
 ];
 
 $aggregator = new ConfigAggregator([
-    \Mezzio\Authentication\Session\ConfigProvider::class,
-    \Mezzio\Authentication\ConfigProvider::class,
     \Axleus\Message\ConfigProvider::class,
-    \Mezzio\Session\Ext\ConfigProvider::class,
     \Mezzio\Session\ConfigProvider::class,
+    \PhpDb\Session\ConfigProvider::class,
     \Webware\CommandBus\ConfigProvider::class,
     \Axleus\Mailer\ConfigProvider::class,
     \PhpDb\ConfigProvider::class,

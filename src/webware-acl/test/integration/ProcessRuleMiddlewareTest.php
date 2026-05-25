@@ -13,7 +13,6 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Webware\Acl\Admin\Command\DeleteRuleCommand;
 use Webware\Acl\Admin\Command\SaveRuleCommand;
 use Webware\Acl\Admin\Command\UpdateRuleTypeCommand;
 use Webware\Acl\Admin\Middleware\ProcessRuleMiddleware;
@@ -72,47 +71,6 @@ final class ProcessRuleMiddlewareTest extends TestCase
         $handler    = $this->capturingHandler();
         $middleware = new ProcessRuleMiddleware($bus);
         $middleware->process($request, $handler);
-
-        $result = $handler->received?->getAttribute(CommandResult::class);
-        self::assertInstanceOf(CommandResult::class, $result);
-        self::assertSame(CommandStatus::Failure, $result->getStatus());
-    }
-
-    #[Test]
-    public function deleteWithValidIdDispatchesDeleteRuleCommandAndSetsSuccess(): void
-    {
-        $bus = $this->createMock(CommandBusInterface::class);
-        $bus->expects($this->once())
-            ->method('handle')
-            ->with($this->isInstanceOf(DeleteRuleCommand::class))
-            ->willReturnCallback(fn($cmd) => new CommandResult($cmd, CommandStatus::Success, null));
-
-        $messenger = $this->createStub(SystemMessengerInterface::class);
-
-        $request = (new ServerRequest([], [], '/', 'DELETE'))
-            ->withAttribute('id', '42')
-            ->withAttribute(SystemMessengerInterface::class, $messenger);
-
-        $handler    = $this->capturingHandler();
-        $middleware = new ProcessRuleMiddleware($bus);
-        $middleware->processDelete($request, $handler);
-
-        $result = $handler->received?->getAttribute(CommandResult::class);
-        self::assertInstanceOf(CommandResult::class, $result);
-        self::assertSame(CommandStatus::Success, $result->getStatus());
-    }
-
-    #[Test]
-    public function deleteWithZeroIdSetsFailure(): void
-    {
-        $bus = $this->createStub(CommandBusInterface::class);
-
-        $request = (new ServerRequest([], [], '/', 'DELETE'))
-            ->withAttribute('id', '0');
-
-        $handler    = $this->capturingHandler();
-        $middleware = new ProcessRuleMiddleware($bus);
-        $middleware->processDelete($request, $handler);
 
         $result = $handler->received?->getAttribute(CommandResult::class);
         self::assertInstanceOf(CommandResult::class, $result);

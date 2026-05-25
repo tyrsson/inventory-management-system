@@ -11,7 +11,7 @@ $this->headTitle('Upload Manifest');
     <div>
         <h1 class="h4 fw-bold mb-0">Upload Manifest</h1>
         <p class="text-secondary small mb-0">
-            <a href="<?= $this->url('manifest.list') ?>" class="text-secondary text-decoration-none">
+            <a href="<?= $this->manifestUrl('list') ?>" class="text-secondary text-decoration-none">
                 <i class="bi bi-arrow-left me-1"></i>Back to Manifests
             </a>
         </p>
@@ -26,7 +26,7 @@ $this->headTitle('Upload Manifest');
             </div>
             <div class="card-body">
                 <form method="post"
-                      action="<?= $this->url('manifest.upload.store') ?>"
+                      action="<?= $this->manifestUrl('upload.store') ?>"
                       enctype="multipart/form-data"
                       novalidate>
 
@@ -64,7 +64,7 @@ $this->headTitle('Upload Manifest');
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-upload me-1"></i>Import Manifest
                         </button>
-                        <a href="<?= $this->url('manifest.list') ?>" class="btn btn-outline-secondary">
+                        <a href="<?= $this->manifestUrl('list') ?>" class="btn btn-outline-secondary">
                             Cancel
                         </a>
                     </div>

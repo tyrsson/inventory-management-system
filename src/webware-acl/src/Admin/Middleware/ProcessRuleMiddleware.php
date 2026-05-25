@@ -19,7 +19,6 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Webware\Acl\Admin\Command\DeleteRuleCommand;
 use Webware\Acl\Admin\Command\SaveRuleCommand;
 use Webware\Acl\Admin\Command\UpdateRuleTypeCommand;
 use Webware\CommandBus\Command\CommandResult;
@@ -61,27 +60,6 @@ final class ProcessRuleMiddleware implements MiddlewareInterface
             $result = $this->commandBus->handle(new UpdateRuleTypeCommand($id, $type));
             if ($result->getStatus() === CommandStatus::Success) {
                 $messenger?->success('Rule updated.');
-            }
-        }
-
-        return $handler->handle($request->withAttribute(CommandResult::class, $result));
-    }
-
-    public function processDelete(
-        ServerRequestInterface $request,
-        RequestHandlerInterface $handler
-    ): ResponseInterface {
-        $id = (int) $request->getAttribute('id');
-
-        /** @var SystemMessengerInterface|null $messenger */
-        $messenger = $request->getAttribute(SystemMessengerInterface::class);
-
-        $result = new CommandResult(new DeleteRuleCommand(0), CommandStatus::Failure, null);
-
-        if ($id > 0) {
-            $result = $this->commandBus->handle(new DeleteRuleCommand($id));
-            if ($result->getStatus() === CommandStatus::Success) {
-                $messenger?->success('Rule deleted.');
             }
         }
 

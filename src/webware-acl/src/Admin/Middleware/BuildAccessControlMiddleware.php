@@ -11,10 +11,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Webware\Acl\AclInterface;
-use Webware\Acl\Entity\Privilege;
 
 use function array_keys;
-use function array_map;
 use function count;
 
 /**
@@ -45,11 +43,20 @@ final class BuildAccessControlMiddleware implements MiddlewareInterface
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
+        // TODO: resources are route names (strings) in the config-driven model.
+        // Replace this entire block with a RouteCollector-based approach:
+        // iterate $this->routeCollector->getRoutes(), check against config allow/deny arrays.
         $resources   = $this->config['resources'] ?? [];
+        // TODO: privileges do not exist in the config-driven model — remove this variable
+        // and all code that references $privs / $privilegesByResource.
         $privileges  = [];
+        // TODO: rules format is config allow/deny arrays, not DB row arrays.
+        // Shape: config[AclInterface::class]['allow'] / ['deny'] keyed by role => resource.
         $rules       = $this->config['rules'] ?? [];
         $assertions  = $this->config['assertions'] ?? [];
+        // TODO: roles come from config[AclInterface::class]['roles'] — replace hardcoded [].
         $roles       = [];
+        // TODO: roleParents come from config[AclInterface::class]['roles'] parents — replace hardcoded [].
         $roleParents = [];
 
         // resourceId → resourcePk
@@ -105,7 +112,9 @@ final class BuildAccessControlMiddleware implements MiddlewareInterface
 
             $protectedRoutes[$name] = [
                 'methods'           => $route->getAllowedMethods() ?? ['GET'],
-                'derivedPrivileges' => array_map(static fn(Privilege $p): string => $p->privilegeId, $privs),
+                // TODO: derivedPrivileges was DB-era (Privilege entity PKs). In the config-driven
+                // model there are no privilege objects — populate from config allow/deny for this resource.
+                'derivedPrivileges' => [],
                 'ruleCount'         => count($resourceRules),
                 'roles'             => array_keys($rolesOnResource),
                 'hasAssertions'     => $hasAssertions,

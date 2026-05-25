@@ -15,6 +15,8 @@ declare(strict_types=1);
 namespace Ims\Manifest;
 
 use Ims\Manifest\Container\Configuration;
+use Ims\Manifest\View\Helper\ManifestUrl;
+use Ims\Manifest\View\Helper\ManifestUrlFactory;
 use Ims\Store\Acl\StoreOwnedResourceAssertion;
 use Webware\Acl\AclInterface;
 use Webware\Admin\Event\RegisterWidgetEvent;
@@ -30,6 +32,7 @@ final readonly class ConfigProvider
             'listeners'                => $this->getListeners(),
             'router'                   => $this->getRouteProviders(),
             'templates'                => $this->getTemplates(),
+            'view_helpers'             => $this->getViewHelpers(),
             CommandBusInterface::class => $this->getBusConfig(),
             AclInterface::class        => $this->getAclConfig(),
             Configuration::CONFIG_KEY  => $this->getDefaultConfig(),
@@ -52,6 +55,7 @@ final readonly class ConfigProvider
                 RouteProvider::class                                                               => Container\RouteProviderFactory::class,
                 Listener\RegisterManifestWidgetListener::class                                    => Container\RegisterManifestWidgetListenerFactory::class,
                 CommandHandler\UploadManifestHandler::class                                       => CommandHandler\Container\UploadManifestHandlerFactory::class,
+                ManifestUrl::class                                                                 => ManifestUrlFactory::class,
             ],
         ];
     }
@@ -100,6 +104,10 @@ final readonly class ConfigProvider
                 Configuration::ROUTE_NAME_PREFIX_VALUE . 'upload',
                 Configuration::ROUTE_NAME_PREFIX_VALUE . 'upload.store',
                 Configuration::ROUTE_NAME_PREFIX_VALUE . 'detail',
+                // TODO: 'admin.manifest' is a legacy non-route resource ID used by ManifestDashboardWidget.
+                // Replace with a proper admin route name (e.g. ims.manifest.admin.manager) once the
+                // manifest module is refactored to follow the manager route pattern.
+                'admin.manifest',
             ],
             'allow'     => [
                 'Member' => [
@@ -110,6 +118,22 @@ final readonly class ConfigProvider
                     Configuration::ROUTE_NAME_PREFIX_VALUE . 'upload'       => [StoreOwnedResourceAssertion::class],
                     Configuration::ROUTE_NAME_PREFIX_VALUE . 'upload.store' => [StoreOwnedResourceAssertion::class],
                 ],
+                // TODO: placeholder rule — move to a proper admin route allow entry during manifest refactor.
+                'Warehouse Supervisor' => [
+                    'admin.manifest',
+                ],
+            ],
+        ];
+    }
+
+    public function getViewHelpers(): array
+    {
+        return [
+            'aliases'   => [
+                'manifestUrl' => ManifestUrl::class,
+            ],
+            'factories' => [
+                ManifestUrl::class => ManifestUrlFactory::class,
             ],
         ];
     }

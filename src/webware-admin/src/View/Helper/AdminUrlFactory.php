@@ -15,7 +15,7 @@ final readonly class AdminUrlFactory
     {
         return new AdminUrl(
             urlHelper:       $container->get(UrlHelper::class),
-            routeNamePrefix: Configuration::getRouteNamePrefix($container, self::class),
+            routeNamePrefix: Configuration::getAdminRouteNamePrefix($container, self::class),
         );
     }
 }

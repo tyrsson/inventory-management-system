@@ -28,8 +28,6 @@
         "laminas/laminas-stdlib": "^3.21",
         "laminas/laminas-view": "^3.0",
         "mezzio/mezzio": "^3.26",
-        "mezzio/mezzio-authentication": "^1.13",
-        "mezzio/mezzio-authentication-session": "*",
         "mezzio/mezzio-fastroute": "^3.14",
         "mezzio/mezzio-helpers": "^5.20",
         "mezzio/mezzio-laminasviewrenderer": "^3.0",
@@ -60,6 +58,7 @@
             "Webware\\Admin\\": "src/webware-admin/src/",
             "Webware\\Event\\":  "src/webware-event/src/",
             "Webware\\Navigation\\": "src/webware-navigation/src/",
+            "PhpDb\\Session\\": "src/phpdb-mezzio-session/src/",
             "Webware\\ConfigManager\\": "src/webware-configmanager/src/"
         }
     },

@@ -105,8 +105,9 @@ $this->headTitle('Roles');
                 <form
                     id="addRoleForm"
                     method="POST"
-                    action="<?= $this->adminUrl('acl.roles.create') ?>"
-                    hx-post="<?= $this->adminUrl('acl.roles.create') ?>"
+                    <?php /* TODO: was 'acl.roles.create' — renamed to 'acl.manager.role.create'. */ ?>
+                    action="<?= $this->adminUrl('acl.manager.role.create') ?>"
+                    hx-post="<?= $this->adminUrl('acl.manager.role.create') ?>"
                     hx-target="main"
                     hx-swap="innerHTML"
                 >
@@ -151,8 +152,9 @@ $this->headTitle('Roles');
                 <form
                     id="editRoleForm"
                     method="POST"
-                    action="<?= $this->adminUrl('acl.roles.create') ?>"
-                    hx-post="<?= $this->adminUrl('acl.roles.create') ?>"
+                    <?php /* TODO: was 'acl.roles.create' — renamed to 'acl.manager.role.create'. */ ?>
+                    action="<?= $this->adminUrl('acl.manager.role.create') ?>"
+                    hx-post="<?= $this->adminUrl('acl.manager.role.create') ?>"
                     hx-target="main"
                     hx-swap="innerHTML"
                 >
