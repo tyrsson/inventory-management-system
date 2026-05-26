@@ -330,8 +330,7 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
         ruleType:       'allow',
         roleId:         '',
         selectedPrivs:  [],
-        customPriv:     '',
-        assertionFqcn:  '',
+        assertionAlias: '',
         assertionMode:  'none',
     };
 
@@ -380,9 +379,8 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
         _state.ruleType      = 'allow';
         _state.roleId        = '';
         _state.selectedPrivs = [];
-        _state.customPriv    = '';
-        _state.assertionFqcn = '';
-        _state.assertionMode = 'none';
+        _state.assertionAlias = '';
+        _state.assertionMode  = 'none';
 
         // Route context in header
         var routeDisplay = document.getElementById('wiz-route-display');
@@ -402,15 +400,17 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
             }).join('');
         }
 
-        // Populate privilege cards for step 3
+        // Populate privilege cards for step 3 (auto-selected, display-only)
         var privCards = document.getElementById('wiz-priv-cards');
         if (privCards) {
             privCards.innerHTML = _state.privs.map(function (p) {
-                return '<div class="ims-acl-priv-card" data-priv="' + p + '" tabindex="0">'
+                return '<div class="ims-acl-priv-card selected-' + p + '" data-priv="' + p + '">'
                      + '<i class="bi bi-key-fill me-1"></i>' + p
                      + '</div>';
             }).join('');
         }
+        _state.selectedPrivs = _state.privs.slice();
+        _syncPrivilegeInputs();
 
         // Reset radios
         var allowRadio = document.getElementById('wiz-rule-allow');
@@ -426,14 +426,6 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
             el.classList.remove('selected');
             el.setAttribute('aria-selected', 'false');
         });
-
-        // Reset custom priv toggle
-        var customToggle = document.getElementById('ims-acl-add-custom-priv');
-        if (customToggle) { customToggle.checked = false; }
-        var customWrap = document.getElementById('wiz-custom-priv-wrap');
-        if (customWrap) customWrap.classList.add('d-none');
-        var customInput = document.getElementById('wiz-custom-priv-input');
-        if (customInput) customInput.value = '';
 
         // Reset search inputs
         var roleSearch = document.getElementById('ims-acl-role-search');
@@ -496,35 +488,20 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
     function _filterRoleTree(query) {
         var q = query.toLowerCase();
         document.querySelectorAll('.ims-acl-role-item').forEach(function (el) {
-            var label = (el.dataset.roleId || '').toLowerCase();
-            el.style.display = (!q || label.includes(q)) ? '' : 'none';
+            var label    = (el.dataset.roleId  || '').toLowerCase();
+            var ancestry = (el.dataset.ancestry || '').toLowerCase();
+            el.style.display = (!q || label.includes(q) || ancestry.includes(q)) ? '' : 'none';
         });
     }
 
-    // ── Privileges (step 3) ──────────────────────────────────────────────────
-
-    function _togglePrivCard(el) {
-        var priv = el.dataset.priv;
-        if (!priv) return;
-        var idx = _state.selectedPrivs.indexOf(priv);
-        if (idx === -1) {
-            _state.selectedPrivs.push(priv);
-            el.classList.add('selected-' + priv);
-        } else {
-            _state.selectedPrivs.splice(idx, 1);
-            el.classList.remove('selected-' + priv);
-        }
-        _syncPrivilegeInputs();
-    }
+    // ── Privileges (step 3 — auto-selected, display-only) ───────────────────
 
     function _syncPrivilegeInputs() {
         // Remove existing privilege[] inputs
         document.querySelectorAll('input[name="privileges[]"]').forEach(function (el) { el.remove(); });
         var form = document.getElementById('wiz-form');
         if (!form) return;
-        var privs = _state.selectedPrivs.slice();
-        if (_state.customPriv) privs.push(_state.customPriv);
-        privs.forEach(function (p) {
+        _state.selectedPrivs.forEach(function (p) {
             var inp = document.createElement('input');
             inp.type  = 'hidden';
             inp.name  = 'privileges[]';
@@ -538,12 +515,13 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
     function _selectAssertion(el) {
         document.querySelectorAll('.ims-acl-assertion-card').forEach(function (c) { c.classList.remove('selected'); });
         el.classList.add('selected');
-        _state.assertionFqcn = el.dataset.assertionFqcn || '';
-        _state.assertionMode = el.dataset.assertion === 'none' ? 'none' : 'must';
-        document.getElementById('wiz-input-assertion-fqcn').value = _state.assertionFqcn;
-        document.getElementById('wiz-input-assertion-mode').value = _state.assertionMode;
+        var isNone = el.dataset.assertion === 'none';
+        _state.assertionAlias = isNone ? '' : (el.dataset.assertionAlias || '');
+        _state.assertionMode  = isNone ? 'none' : 'must';
+        document.getElementById('wiz-input-assertion-alias').value = _state.assertionAlias;
+        document.getElementById('wiz-input-assertion-mode').value  = _state.assertionMode;
         var modeWrap = document.getElementById('wiz-assertion-mode-wrap');
-        if (modeWrap) modeWrap.classList.toggle('d-none', el.dataset.assertion === 'none');
+        if (modeWrap) modeWrap.classList.toggle('d-none', isNone);
     }
 
     // ── Review (step 5) ──────────────────────────────────────────────────────
@@ -566,9 +544,8 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
 
         var privsEl = document.getElementById('wiz-review-privs');
         if (privsEl) {
-            var allPrivs = _state.selectedPrivs.concat(_state.customPriv ? [_state.customPriv] : []);
-            privsEl.innerHTML = allPrivs.length
-                ? allPrivs.map(function (p) {
+            privsEl.innerHTML = _state.selectedPrivs.length
+                ? _state.selectedPrivs.map(function (p) {
                     return '<span class="badge bg-transparent border ims-acl-priv-' + p + ' ims-badge-xs">' + p + '</span>';
                   }).join('')
                 : '<span class="text-secondary">(none)</span>';
@@ -576,9 +553,9 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
 
         var assertRow = document.getElementById('wiz-review-assert-row');
         var assertEl  = document.getElementById('wiz-review-assertion');
-        if (_state.assertionFqcn) {
+        if (_state.assertionAlias) {
             if (assertRow) assertRow.classList.remove('d-none');
-            if (assertEl)  assertEl.textContent = _state.assertionFqcn + ' [' + _state.assertionMode + ']';
+            if (assertEl)  assertEl.textContent = _state.assertionAlias + ' [' + _state.assertionMode + ']';
         } else {
             if (assertRow) assertRow.classList.add('d-none');
         }
@@ -589,8 +566,7 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
     function _canAdvance() {
         if (_state.step === 1) return !!document.querySelector('.ims-acl-grant-card.selected');
         if (_state.step === 2) return !!_state.roleId;
-        if (_state.step === 3) return (_state.selectedPrivs.length > 0) || !!_state.customPriv;
-        return true; // steps 4 and 5 are always advanceable
+        return true; // steps 3, 4 and 5 are always advanceable
     }
 
     // ── Route list filter ────────────────────────────────────────────────────
@@ -669,13 +645,6 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
                 return;
             }
 
-            // Step 3 — priv card
-            var privCard = e.target.closest('.ims-acl-priv-card');
-            if (privCard && modal.contains(privCard)) {
-                _togglePrivCard(privCard);
-                return;
-            }
-
             // Step 4 — assertion card
             var assertCard = e.target.closest('.ims-acl-assertion-card');
             if (assertCard && modal.contains(assertCard)) {
@@ -709,29 +678,10 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
                 _filterRoleTree(e.target.value);
                 return;
             }
-            // Custom priv input
-            if (e.target.id === 'wiz-custom-priv-input') {
-                _state.customPriv = e.target.value.trim();
-                document.getElementById('wiz-input-custom-priv').value = _state.customPriv;
-                _syncPrivilegeInputs();
-                return;
-            }
         });
 
-        // Custom priv toggle (change event)
+        // Rule type / assertion radio changes
         document.addEventListener('change', function (e) {
-            if (e.target.id === 'ims-acl-add-custom-priv') {
-                var wrap = document.getElementById('wiz-custom-priv-wrap');
-                if (wrap) wrap.classList.toggle('d-none', !e.target.checked);
-                if (!e.target.checked) {
-                    _state.customPriv = '';
-                    document.getElementById('wiz-input-custom-priv').value = '';
-                    var inp = document.getElementById('wiz-custom-priv-input');
-                    if (inp) inp.value = '';
-                    _syncPrivilegeInputs();
-                }
-                return;
-            }
             // Rule type radio
             if (e.target.name === 'rule_type_ui') {
                 _state.ruleType = e.target.value;
@@ -752,7 +702,6 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
             var t = e.target;
             if (t.matches('[data-acl-step-grant]') && modal.contains(t)) { e.preventDefault(); _selectGrant(t); }
             if (t.matches('.ims-acl-role-item')    && modal.contains(t)) { e.preventDefault(); _selectRole(t); }
-            if (t.matches('.ims-acl-priv-card')    && modal.contains(t)) { e.preventDefault(); _togglePrivCard(t); }
             if (t.matches('.ims-acl-assertion-card') && modal.contains(t)) { e.preventDefault(); _selectAssertion(t); }
         });
     }

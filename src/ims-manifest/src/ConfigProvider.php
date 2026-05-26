@@ -100,19 +100,19 @@ final readonly class ConfigProvider
     {
         return [
             'resources' => [
-                Configuration::ROUTE_NAME_PREFIX_VALUE . 'list',
-                Configuration::ROUTE_NAME_PREFIX_VALUE . 'upload',
-                Configuration::ROUTE_NAME_PREFIX_VALUE . 'upload.store',
-                Configuration::ROUTE_NAME_PREFIX_VALUE . 'detail',
+                Configuration::ROUTE_NAME_PREFIX_VALUE . 'list'         => true,
+                Configuration::ROUTE_NAME_PREFIX_VALUE . 'upload'       => true,
+                Configuration::ROUTE_NAME_PREFIX_VALUE . 'upload.store' => true,
+                Configuration::ROUTE_NAME_PREFIX_VALUE . 'detail'       => true,
                 // TODO: 'admin.manifest' is a legacy non-route resource ID used by ManifestDashboardWidget.
                 // Replace with a proper admin route name (e.g. ims.manifest.admin.manager) once the
                 // manifest module is refactored to follow the manager route pattern.
-                'admin.manifest',
+                'admin.manifest' => true,
             ],
             'allow'     => [
                 'Member' => [
-                    Configuration::ROUTE_NAME_PREFIX_VALUE . 'list',
-                    Configuration::ROUTE_NAME_PREFIX_VALUE . 'detail',
+                    Configuration::ROUTE_NAME_PREFIX_VALUE . 'list'   => [],
+                    Configuration::ROUTE_NAME_PREFIX_VALUE . 'detail' => [],
                 ],
                 'Warehouse' => [
                     Configuration::ROUTE_NAME_PREFIX_VALUE . 'upload'       => [StoreOwnedResourceAssertion::class],
@@ -120,7 +120,7 @@ final readonly class ConfigProvider
                 ],
                 // TODO: placeholder rule — move to a proper admin route allow entry during manifest refactor.
                 'Warehouse Supervisor' => [
-                    'admin.manifest',
+                    'admin.manifest' => [],
                 ],
             ],
         ];

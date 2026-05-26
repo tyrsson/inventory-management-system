@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace Ims\Store;
 
 use Webware\Acl\AclInterface;
+use Webware\Acl\AssertionManager;
 
 final class ConfigProvider
 {
     public function __invoke(): array
     {
         return [
-            AclInterface::class => $this->getAclConfig(),
+            AclInterface::class     => $this->getAclConfig(),
+            AssertionManager::class => $this->getAssertionManagerConfig(),
         ];
     }
 
@@ -29,6 +31,18 @@ final class ConfigProvider
             ],
             'resources' => [],
             'allow'     => [],
+        ];
+    }
+
+    public function getAssertionManagerConfig(): array
+    {
+        return [
+            'aliases' => [
+                'Store Owned Resource' => Acl\StoreOwnedResourceAssertion::class,
+            ],
+            'factories' => [
+                Acl\StoreOwnedResourceAssertion::class => Acl\StoreOwnedResourceAssertion::class,
+            ],
         ];
     }
 }

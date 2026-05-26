@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Webware\Acl\Admin\CommandHandler\Container;
 
 use Psr\Container\ContainerInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Webware\Acl\Admin\CommandHandler\UpdateRuleTypeHandler;
 use Webware\Acl\AclInterface;
 
@@ -25,7 +26,8 @@ final class UpdateRuleTypeHandlerFactory
         $config = $container->get('config');
 
         return new UpdateRuleTypeHandler(
-            $config[AclInterface::class] ?? [],
+            config:          $config[AclInterface::class] ?? [],
+            eventDispatcher: $container->get(EventDispatcherInterface::class),
         );
     }
 }

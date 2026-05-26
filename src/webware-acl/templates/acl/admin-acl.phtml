@@ -75,7 +75,7 @@ $filters = $this->routeFilters ?? ['all' => 0, 'unprotected' => 0, 'protected' =
 
 <!-- ── UNPROTECTED ROUTES ───────────────────────────────── -->
 <?php if (! empty($this->unprotectedRoutes)): ?>
-<div class="card border-warning mb-3" id="ims-acl-section-unprotected">
+<div class="card border-warning mb-3 overflow-hidden" id="ims-acl-section-unprotected">
     <div class="card-header d-flex align-items-center gap-2 py-2 bg-transparent border-warning">
         <i class="bi bi-shield-exclamation text-warning"></i>
         <span class="fw-semibold small text-warning">Unprotected Routes</span>
@@ -121,7 +121,7 @@ $filters = $this->routeFilters ?? ['all' => 0, 'unprotected' => 0, 'protected' =
 
 <!-- ── PROTECTED ROUTES ─────────────────────────────────── -->
 <?php if (! empty($this->protectedRoutes)): ?>
-<div class="card border-secondary" id="ims-acl-section-protected">
+<div class="card border-secondary overflow-hidden" id="ims-acl-section-protected">
     <div class="card-header d-flex align-items-center gap-2 py-2 bg-transparent">
         <i class="bi bi-shield-check text-success"></i>
         <span class="fw-semibold small">Protected Routes</span>
@@ -225,6 +225,7 @@ $filters = $this->routeFilters ?? ['all' => 0, 'unprotected' => 0, 'protected' =
     'roles'        => $this->roles,
     'roleChildren' => $this->roleChildren,
     'roleTree'     => $this->roleTree,
+    'assertions'   => $this->assertions,
     // TODO: was 'acl.resources.protect' (ProtectRouteCommand, now deleted).
     // Protecting a resource = creating a rule, so this now points to rule.create.
     'protectUrl'   => $this->adminUrl('acl.manager.rule.create'),

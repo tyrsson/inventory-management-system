@@ -47,17 +47,18 @@ final class ProcessRuleMiddleware implements MiddlewareInterface
         ServerRequestInterface $request,
         RequestHandlerInterface $handler
     ): ResponseInterface {
-        $id   = (int)    $request->getAttribute('id');
-        $body = (array)  $request->getParsedBody();
-        $type = (string) ($body['type'] ?? 'allow');
+        $body       = (array)  $request->getParsedBody();
+        $roleId     = (string) ($body['role_id']     ?? '');
+        $resourceId = (string) ($body['route_name']  ?? '');
+        $type       = (string) ($body['type']        ?? 'allow');
 
         /** @var SystemMessengerInterface|null $messenger */
         $messenger = $request->getAttribute(SystemMessengerInterface::class);
 
-        $result = new CommandResult(new UpdateRuleTypeCommand(0, 'allow'), CommandStatus::Failure, null);
+        $result = new CommandResult(new UpdateRuleTypeCommand('', '', 'allow'), CommandStatus::Failure, null);
 
-        if ($id > 0 && in_array($type, ['allow', 'deny'], true)) {
-            $result = $this->commandBus->handle(new UpdateRuleTypeCommand($id, $type));
+        if ($roleId !== '' && $resourceId !== '' && in_array($type, ['allow', 'deny'], true)) {
+            $result = $this->commandBus->handle(new UpdateRuleTypeCommand($roleId, $resourceId, $type));
             if ($result->getStatus() === CommandStatus::Success) {
                 $messenger?->success('Rule updated.');
             }
@@ -70,19 +71,23 @@ final class ProcessRuleMiddleware implements MiddlewareInterface
         ServerRequestInterface $request,
         RequestHandlerInterface $handler
     ): ResponseInterface {
-        $body        = (array) $request->getParsedBody();
-        $rolePk      = (int)    ($body['role_pk']      ?? 0);
-        $resourcePk  = (int)    ($body['resource_pk']  ?? 0);
-        $privilegePk = (int)    ($body['privilege_pk'] ?? 0);
-        $type        = (string) ($body['type']          ?? 'allow');
+        $body       = (array) $request->getParsedBody();
+        $roleId     = $body['role_id']       ?? '';
+        $resourceId = $body['route_name']    ?? '';
+        $type       = $body['rule_type']     ?? 'allow';
+        $assertions = [];
+
+        if (isset($body['assertion_alias']) && $body['assertion_alias'] !== '') {
+            $assertions = [$body['assertion_alias']];
+        }
 
         /** @var SystemMessengerInterface|null $messenger */
         $messenger = $request->getAttribute(SystemMessengerInterface::class);
 
-        $result = new CommandResult(new SaveRuleCommand(0, 0, 0, 'allow'), CommandStatus::Failure, null);
+        $result = new CommandResult(new SaveRuleCommand('', '', 'allow'), CommandStatus::Failure, null);
 
-        if ($rolePk > 0 && $resourcePk > 0 && $privilegePk > 0) {
-            $result = $this->commandBus->handle(new SaveRuleCommand($rolePk, $resourcePk, $privilegePk, $type));
+        if ($roleId !== '' && $resourceId !== '' && in_array($type, ['allow', 'deny'], true)) {
+            $result = $this->commandBus->handle(new SaveRuleCommand($roleId, $resourceId, $type, $assertions));
             if ($result->getStatus() === CommandStatus::Success) {
                 $messenger?->success('Rule saved.');
             }

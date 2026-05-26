@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Webware\UserManager\RequestHandler\Container;
 
 use Axleus\Mailer\MailerInterface;
+use Laminas\View\HelperPluginManager;
 use Mezzio\Template\TemplateRendererInterface;
 use Psr\Container\ContainerInterface;
 use Webware\UserManager\Repository\UserRepositoryInterface;
@@ -29,7 +30,9 @@ final class ResendVerificationHandlerFactory
         $config      = $container->get('config');
         $userConf    = $config['user'] ?? [];
         $mailerConf  = $config[MailerInterface::class] ?? [];
-        $userUrl     = $container->get(UserUrl::class);
+        /** @var HelperPluginManager $helperManager */
+        $helperManager = $container->get(HelperPluginManager::class);
+        $userUrl       = $helperManager->get(UserUrl::class);
 
         return new ResendVerificationHandler(
             template:            $container->get(TemplateRendererInterface::class),

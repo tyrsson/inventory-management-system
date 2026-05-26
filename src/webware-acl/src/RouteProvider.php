@@ -16,7 +16,7 @@ use Webware\Acl\Admin\Middleware\ProcessRuleMiddleware;
 use Webware\Acl\Admin\RequestHandler\AclOverviewHandler;
 use Webware\Acl\Admin\RequestHandler\ResourceListHandler;
 use Webware\Acl\Admin\RequestHandler\RoleListHandler;
-use Webware\Acl\Admin\RequestHandler\RuleManagerHandler;
+
 
 use function rtrim;
 
@@ -119,12 +119,12 @@ final readonly class RouteProvider implements RouteProviderInterface
         // Rules write/delete
         $routeCollector->post(
             '/' . $this->adminRouteSegment . '/rule',
-            $middlewareFactory->prepare([ProcessRuleMiddleware::class, RuleManagerHandler::class]),
+            $middlewareFactory->prepare([ProcessRuleMiddleware::class, BuildAccessControlMiddleware::class, AclOverviewHandler::class]),
             $this->adminRouteNamePrefix . 'rule.create'
         );
         $routeCollector->patch(
-            '/' . $this->adminRouteSegment . '/rule/{id:\d+}',
-            $middlewareFactory->prepare([BodyParamsMiddleware::class, ProcessRuleMiddleware::class, RuleManagerHandler::class]),
+            '/' . $this->adminRouteSegment . '/rule',
+            $middlewareFactory->prepare([BodyParamsMiddleware::class, ProcessRuleMiddleware::class, BuildAccessControlMiddleware::class, AclOverviewHandler::class]),
             $this->adminRouteNamePrefix . 'rule.update'
         );
 

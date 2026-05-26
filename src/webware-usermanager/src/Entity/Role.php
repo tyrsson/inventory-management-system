@@ -14,6 +14,9 @@ declare(strict_types=1);
 
 namespace Webware\UserManager\Entity;
 
+/**
+ * @deprecated Roles are now config-driven with no DB table. Use \Webware\Acl\Entity\Role instead.
+ */
 final readonly class Role
 {
     public function __construct(

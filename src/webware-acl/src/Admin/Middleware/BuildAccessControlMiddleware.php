@@ -10,10 +10,17 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Webware\Acl\AclInterface;
+use Webware\Acl\AssertionManager;
+use Webware\Acl\Entity\Role;
+use Webware\Acl\PrivilegeInterface;
 
+use function array_flip;
 use function array_keys;
+use function array_map;
+use function array_unique;
+use function array_values;
 use function count;
+use function is_int;
 
 /**
  * Assembles the Access Control page view model and attaches it to the request
@@ -26,55 +33,45 @@ use function count;
  * Attribute key: BuildAccessControlMiddleware::class
  *
  * View model shape:
- *   unprotectedRoutes  array<string, string[]>            routeName → allowedMethods
- *   protectedRoutes    array<string, array{...}>           routeName → summary
- *   roleTree           array<int, array{...}>              rolePk → {id, roleId, parents}
- *   roleChildren       array<int, int[]>                   parentPk → childPks
+ *   unprotectedRoutes  array<string, string[]>                                   routeName → allowedMethods
+ *   protectedRoutes    array<string, array{methods:string[], derivedPrivileges:string[], ruleCount:int, roles:string[], hasAssertions:bool, rules:array<int,array<string,mixed>>, resourcePk:int}>
+ *   roleTree           array<int, array{id:int, roleId:string, parents:int[]}>   rolePk → node
+ *   roleChildren       array<int, int[]>                                         parentPk → childPks
  *   routeFilters       array{all:int, unprotected:int, protected:int}
- *   roles              array<int, Role>
- *   roleParents        array<int, int[]>
+ *   roles              array<int, \Webware\Acl\Entity\Role>
+ *   roleParents        array<int, int[]>                                         childPk → parentPks
  */
-final class BuildAccessControlMiddleware implements MiddlewareInterface
+final readonly class BuildAccessControlMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private readonly array $config,
-        private readonly RouteCollectorInterface $routeCollector,
+        private array $config,
+        private RouteCollectorInterface $routeCollector,
+        private AssertionManager $assertionManager
     ) {}
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        // TODO: resources are route names (strings) in the config-driven model.
-        // Replace this entire block with a RouteCollector-based approach:
-        // iterate $this->routeCollector->getRoutes(), check against config allow/deny arrays.
-        $resources   = $this->config['resources'] ?? [];
-        // TODO: privileges do not exist in the config-driven model — remove this variable
-        // and all code that references $privs / $privilegesByResource.
-        $privileges  = [];
-        // TODO: rules format is config allow/deny arrays, not DB row arrays.
-        // Shape: config[AclInterface::class]['allow'] / ['deny'] keyed by role => resource.
-        $rules       = $this->config['rules'] ?? [];
-        $assertions  = $this->config['assertions'] ?? [];
-        // TODO: roles come from config[AclInterface::class]['roles'] — replace hardcoded [].
-        $roles       = [];
-        // TODO: roleParents come from config[AclInterface::class]['roles'] parents — replace hardcoded [].
-        $roleParents = [];
+        $configRoles     = $this->config['roles'] ?? [];     // [roleName => parentsArray[]]
+        $configResources = $this->config['resources'] ?? []; // ['routeName' => true, ...]
+        $configAllow     = $this->config['allow'] ?? [];     // [roleName => [routeName, ...]]
+        $configDeny      = $this->config['deny'] ?? [];      // [roleName => [routeName, ...]]
+        $assertionOptions = $this->assertionManager->getAssertionOptions(); // [['label' => string, 'value' => alias], ...]
 
-        // resourceId → resourcePk
-        $registeredIds = [];
-        foreach ($resources as $pk => $resource) {
-            $registeredIds[$resource->resourceId] = $pk;
+        // Stable synthetic PK assignment: array index → roleName
+        $roleNames = array_keys($configRoles);
+        $rolePkMap = array_flip($roleNames); // roleName → pk
+
+        // Build the protected set: union of all three sources
+        $protectedSet = $configResources;
+        foreach ($configAllow as $routeList) {
+            foreach (array_keys($this->normalizeRouteList($routeList)) as $routeName) {
+                $protectedSet[$routeName] = true;
+            }
         }
-
-        // resourcePk → Privilege[]
-        $privilegesByResource = [];
-        foreach ($privileges as $priv) {
-            $privilegesByResource[$priv->resourcePk][] = $priv;
-        }
-
-        // resourceId → rule row[]
-        $rulesByResource = [];
-        foreach ($rules as $rule) {
-            $rulesByResource[$rule['resource_id']][] = $rule;
+        foreach ($configDeny as $routeList) {
+            foreach (array_keys($this->normalizeRouteList($routeList)) as $routeName) {
+                $protectedSet[$routeName] = true;
+            }
         }
 
         $unprotectedRoutes = [];
@@ -86,54 +83,93 @@ final class BuildAccessControlMiddleware implements MiddlewareInterface
                 continue;
             }
 
-            if (! isset($registeredIds[$name])) {
-                $unprotectedRoutes[$name] = $route->getAllowedMethods() ?? ['GET'];
+            $methods = $route->getAllowedMethods() ?? ['GET'];
+
+            if (! isset($protectedSet[$name])) {
+                $unprotectedRoutes[$name] = $methods;
                 continue;
             }
 
-            $resourcePk    = $registeredIds[$name];
-            $privs         = $privilegesByResource[$resourcePk] ?? [];
-            $resourceRules = $rulesByResource[$name] ?? [];
-
+            // Build rule rows from config allow/deny for this resource
+            $rules           = [];
             $rolesOnResource = [];
+            $syntheticId     = 0;
             $hasAssertions   = false;
-            foreach ($resourceRules as $rule) {
-                $rolesOnResource[$rule['role_id']] = true;
-                if (! empty($assertions[$rule['id']] ?? [])) {
-                    $hasAssertions = true;
+
+            foreach ($configAllow as $roleId => $allowedRoutes) {
+                $normalized = $this->normalizeRouteList($allowedRoutes);
+                if (isset($normalized[$name])) {
+                    $assertions               = $normalized[$name];
+                    $rules[]                  = [
+                        'id'           => ++$syntheticId,
+                        'role_id'      => $roleId,
+                        'resource_id'  => $name,
+                        'privilege_id' => '',
+                        'type'         => 'allow',
+                        'assertions'   => $assertions,
+                    ];
+                    $rolesOnResource[$roleId] = true;
+                    if ($assertions !== []) {
+                        $hasAssertions = true;
+                    }
                 }
             }
 
-            // Enrich each rule row with its assertion data
-            $enrichedRules = [];
-            foreach ($resourceRules as $rule) {
-                $enrichedRules[] = $rule + ['assertions' => $assertions[$rule['id']] ?? []];
+            foreach ($configDeny as $roleId => $deniedRoutes) {
+                $normalized = $this->normalizeRouteList($deniedRoutes);
+                if (isset($normalized[$name])) {
+                    $rules[]                  = [
+                        'id'           => ++$syntheticId,
+                        'role_id'      => $roleId,
+                        'resource_id'  => $name,
+                        'privilege_id' => '',
+                        'type'         => 'deny',
+                        'assertions'   => [],
+                    ];
+                    $rolesOnResource[$roleId] = true;
+                }
             }
 
+            $derivedPrivileges = array_values(array_unique(array_map(
+                static fn(string $m): string => PrivilegeInterface::METHOD_PRIVILEGE_MAP[$m] ?? PrivilegeInterface::READ,
+                $methods,
+            )));
+
             $protectedRoutes[$name] = [
-                'methods'           => $route->getAllowedMethods() ?? ['GET'],
-                // TODO: derivedPrivileges was DB-era (Privilege entity PKs). In the config-driven
-                // model there are no privilege objects — populate from config allow/deny for this resource.
-                'derivedPrivileges' => [],
-                'ruleCount'         => count($resourceRules),
+                'methods'           => $methods,
+                'derivedPrivileges' => $derivedPrivileges,
+                'ruleCount'         => count($rules),
                 'roles'             => array_keys($rolesOnResource),
                 'hasAssertions'     => $hasAssertions,
-                'rules'             => $enrichedRules,
-                'resourcePk'        => $resourcePk,
+                'rules'             => $rules,
+                'resourcePk'        => 0,
             ];
         }
 
-        // Role tree for the wizard role-selection step
+        // Build roles, roleParents, roleTree, and roleChildren from config
+        $roles       = [];
+        $roleParents = [];
+
+        foreach ($roleNames as $pk => $roleId) {
+            $roles[$pk]  = new Role($roleId);
+            $parentPks   = [];
+            foreach ($configRoles[$roleId] as $parentName) {
+                if (isset($rolePkMap[$parentName])) {
+                    $parentPks[] = $rolePkMap[$parentName];
+                }
+            }
+            $roleParents[$pk] = $parentPks;
+        }
+
         $roleTree = [];
         foreach ($roles as $pk => $role) {
             $roleTree[$pk] = [
                 'id'      => $pk,
                 'roleId'  => $role->roleId,
-                'parents' => $roleParents[$pk] ?? [],
+                'parents' => $roleParents[$pk],
             ];
         }
 
-        // parentPk → childPk[] for tree rendering
         $roleChildren = [];
         foreach ($roleParents as $childPk => $parentPks) {
             foreach ($parentPks as $parentPk) {
@@ -156,8 +192,32 @@ final class BuildAccessControlMiddleware implements MiddlewareInterface
             ],
             'roles'       => $roles,
             'roleParents' => $roleParents,
+            'assertions'  => $assertionOptions,
         ];
 
         return $handler->handle($request->withAttribute(self::class, $viewModel));
+    }
+
+    /**
+     * Normalises an allow/deny route list to routeName => assertions[].
+     *
+     * Supports two config formats:
+     *   Flat:        [0 => 'route.name', 1 => 'route.other']
+     *   Associative: ['route.name' => ['AssertionFQCN'], ...]
+     *
+     * @param  array<int|string, string|string[]> $list
+     * @return array<string, string[]>
+     */
+    private function normalizeRouteList(array $list): array
+    {
+        $result = [];
+        foreach ($list as $key => $value) {
+            if (is_int($key)) {
+                $result[$value] = [];
+            } else {
+                $result[$key] = $value;
+            }
+        }
+        return $result;
     }
 }

@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace Webware\Acl\Http;
 
-use Ims\Store\Acl\StoreOwnedResourceInterface;
-use Laminas\Permissions\Acl\Resource\ResourceInterface;
 use Laminas\Permissions\Acl\Role\RoleInterface;
 use Mezzio\Router\RouteResult;
 use Psr\Http\Message\ServerRequestInterface;
-use Webware\Acl\RoleProviderInterface;
 use Webware\UserManager\UserInterface;
 
 /**
@@ -24,10 +21,7 @@ use Webware\UserManager\UserInterface;
  *       webware-acl as a standalone ecosystem package, move the interface or provide
  *       a webware-acl-store bridge package.
  */
-final class RouteResource implements
-    ResourceInterface,
-    RoleProviderInterface,
-    StoreOwnedResourceInterface
+final class RouteResource implements RouteResourceInterface
 {
     public function __construct(
         private readonly RouteResult $routeResult,

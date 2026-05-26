@@ -142,11 +142,11 @@ class ConfigProvider
     {
         return [
             'resources' => [
-                Configuration::ROUTE_NAME_PREFIX_VALUE . 'dashboard',
+                Configuration::ROUTE_NAME_PREFIX_VALUE . 'dashboard' => true,
             ],
             'allow'     => [
                 'Member' => [
-                    Configuration::ROUTE_NAME_PREFIX_VALUE . 'dashboard',
+                    Configuration::ROUTE_NAME_PREFIX_VALUE . 'dashboard' => [],
                 ],
             ],
         ];

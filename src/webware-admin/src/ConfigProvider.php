@@ -85,11 +85,11 @@ final readonly class ConfigProvider
                 'Administrator' => ['Member'],
             ],
             'resources' => [
-                Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'dashboard.read',
+                Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'dashboard.read' => true,
             ],
             'allow' => [
                 'Administrator' => [
-                    Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'dashboard.read',
+                    Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'dashboard.read' => [],
                 ],
             ],
         ];

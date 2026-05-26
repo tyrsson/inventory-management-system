@@ -21,11 +21,15 @@ use Psr\Http\Message\ServerRequestInterface;
 
 use function bin2hex;
 use function date;
+use function filter_var;
 use function ini_get;
 use function random_bytes;
 use function serialize;
 use function time;
 use function unserialize;
+
+use const FILTER_NULL_ON_FAILURE;
+use const FILTER_VALIDATE_BOOLEAN;
 
 /**
  * Async-safe PhpDb-backed session persistence.
@@ -49,13 +53,52 @@ final class PhpDbSessionPersistence implements
 
     private readonly Sql $sql;
 
+    private int $gcMaxLifetime;
+
     public function __construct(AdapterInterface $adapter)
     {
-        $this->sql          = new Sql($adapter, 'session');
-        $this->cacheLimiter = ini_get('session.cache_limiter') ?: 'nocache';
-        $this->cacheExpire  = (int) ini_get('session.cache_expire');
-        $this->cookieName   = ini_get('session.name') ?: 'PHPSESSID';
-        $this->cookiePath   = ini_get('session.cookie_path') ?: '/';
+        $this->sql            = new Sql($adapter, 'session');
+        $this->cacheLimiter   = ini_get('session.cache_limiter') ?: 'nocache';
+        $this->cacheExpire    = (int) ini_get('session.cache_expire');
+        $this->cookieName     = ini_get('session.name') ?: 'PHPSESSID';
+        $this->cookiePath     = ini_get('session.cookie_path') ?: '/';
+        $this->cookieLifetime = (int) ini_get('session.cookie_lifetime');
+        $this->cookieDomain   = ini_get('session.cookie_domain') ?: '';
+        $this->cookieSecure   = (bool) filter_var(
+            ini_get('session.cookie_secure'),
+            FILTER_VALIDATE_BOOLEAN,
+            FILTER_NULL_ON_FAILURE
+        );
+        $this->cookieHttpOnly = (bool) filter_var(
+            ini_get('session.cookie_httponly'),
+            FILTER_VALIDATE_BOOLEAN,
+            FILTER_NULL_ON_FAILURE
+        );
+        $this->cookieSameSite = ini_get('session.cookie_samesite') ?: '';
+        $this->gcMaxLifetime  = (int) ini_get('session.gc_maxlifetime') ?: 1440;
+    }
+
+    /**
+     * @param array{gc_maxlifetime?:int, cache_limiter?:string, cache_expire?:int, name?:string,
+     *              cookie_lifetime?:int, cookie_path?:string, cookie_domain?:string,
+     *              cookie_secure?:bool, cookie_httponly?:bool, cookie_samesite?:string} $sessionConfig
+     */
+    public static function fromConfigArray(AdapterInterface $adapter, array $sessionConfig = []): self
+    {
+        $instance = new self($adapter);
+
+        $instance->gcMaxLifetime  = $sessionConfig['gc_maxlifetime']  ?? $instance->gcMaxLifetime;
+        $instance->cacheLimiter   = $sessionConfig['cache_limiter']   ?? $instance->cacheLimiter;
+        $instance->cacheExpire    = $sessionConfig['cache_expire']    ?? $instance->cacheExpire;
+        $instance->cookieName     = $sessionConfig['name']            ?? $instance->cookieName;
+        $instance->cookieLifetime = $sessionConfig['cookie_lifetime'] ?? $instance->cookieLifetime;
+        $instance->cookiePath     = $sessionConfig['cookie_path']     ?? $instance->cookiePath;
+        $instance->cookieDomain   = $sessionConfig['cookie_domain']   ?? $instance->cookieDomain;
+        $instance->cookieSecure   = $sessionConfig['cookie_secure']   ?? $instance->cookieSecure;
+        $instance->cookieHttpOnly = $sessionConfig['cookie_httponly'] ?? $instance->cookieHttpOnly;
+        $instance->cookieSameSite = $sessionConfig['cookie_samesite'] ?? $instance->cookieSameSite;
+
+        return $instance;
     }
 
     #[\Override]
@@ -116,7 +159,7 @@ final class PhpDbSessionPersistence implements
 
         $ttl = $session instanceof SessionCookiePersistenceInterface && $session->getSessionLifetime() > 0
             ? $session->getSessionLifetime()
-            : (int) ini_get('session.gc_maxlifetime');
+            : $this->gcMaxLifetime;
 
         $expiresAt = date('Y-m-d H:i:s', time() + $ttl);
         $now       = date('Y-m-d H:i:s');

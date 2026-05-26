@@ -18,10 +18,13 @@ final class ConfigSaveListener
     public function __invoke(ConfigSaveEvent $event): void
     {
         try {
-            $configWriter = new ConfigWriter([
-                new ArrayProvider([$event->target => $this->config[$event->target] ?? []]),
-                new ArrayProvider([$event->target => $event->updatedConfig]),
-            ]);
+            $providers = $event->replace
+                ? [new ArrayProvider([$event->target => $event->updatedConfig])]
+                : [
+                    new ArrayProvider([$event->target => $this->config[$event->target] ?? []]),
+                    new ArrayProvider([$event->target => $event->updatedConfig]),
+                ];
+            $configWriter = new ConfigWriter($providers);
             $configWriter->writeConfig($event->targetFile);
         } catch (FileWriterException $e) {
             $event->stopPropagation();

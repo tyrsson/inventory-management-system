@@ -5,7 +5,7 @@
  * Rendered as a partial inside admin-acl.phtml.
  * All data already assembled by BuildAccessControlMiddleware.
  *
- * @var array<int, \Webware\Acl\Entity\Role> $roles
+ * @var array<int, \Webware\Acl\Entity\Role> $roles  — keyed by synthetic PK
  * @var array<int, int[]>                    $roleChildren  parentPk → childPks[]
  * @var array<int, array{id:int, roleId:string, parents:int[]}>  $roleTree
  * @var string                               $protectUrl
@@ -22,49 +22,58 @@ foreach ($this->roleTree as $pk => $node) {
     }
 }
 
-// Root PKs: nodes with no parents
-$rootPks = [];
-foreach ($this->roleTree as $pk => $node) {
+$roleTree     = $this->roleTree;
+$roleChildren = $this->roleChildren;
+
+// Kahn's topological sort — each node is emitted only after ALL its parents
+// have been processed, guaranteeing correct order with multiple inheritance.
+$inDegree = [];
+$depths   = [];
+foreach ($roleTree as $pk => $node) {
+    $inDegree[$pk] = count($node['parents']);
     if ($node['parents'] === []) {
-        $rootPks[] = $pk;
+        $depths[$pk] = 0;
     }
 }
 
-/**
- * Recursively render one <li> node of the role tree.
- *
- * @param int                                                    $pk
- * @param array<int, array{id:int, roleId:string, parents:int[]}> $tree
- * @param array<int, int[]>                                      $children  parentPk → childPks[]
- */
-$renderRoleNode = static function (int $pk) use (&$renderRoleNode, $roleTree, $roleChildren): void {
-    $node = $roleTree[$pk] ?? null;
-    if ($node === null) {
-        return;
+$queue = [];
+foreach ($inDegree as $pk => $deg) {
+    if ($deg === 0) {
+        $queue[] = $pk;
     }
-    $childPks = $roleChildren[$pk] ?? [];
-    $hasChildren = $childPks !== [];
-    echo '<li class="ims-acl-role-item' . ($hasChildren ? ' has-children' : '') . '"'
-        . ' data-role-id="' . htmlspecialchars($node['roleId'], ENT_QUOTES) . '"'
-        . ' data-role-pk="' . (int) $pk . '"'
-        . ' tabindex="0"'
-        . ' role="option" aria-selected="false">';
-    echo '<span class="ims-acl-role-label">';
-    echo '<i class="bi bi-person-circle me-1 text-secondary"></i>';
-    echo htmlspecialchars($node['roleId'], ENT_QUOTES);
-    echo '</span>';
-    if ($hasChildren) {
-        echo '<ul class="ims-acl-role-tree ps-3 mt-1">';
-        foreach ($childPks as $childPk) {
-            $renderRoleNode($childPk);
-        }
-        echo '</ul>';
-    }
-    echo '</li>';
-};
+}
 
-$roleTree     = $this->roleTree;
-$roleChildren = $this->roleChildren;
+$orderedRoles = [];
+while ($queue !== []) {
+    $pk   = array_shift($queue);
+    $node = $roleTree[$pk];
+
+    $parentLabels = [];
+    $depth        = 0;
+    foreach ($node['parents'] as $parentPk) {
+        if (isset($roleTree[$parentPk])) {
+            $parentLabels[] = $roleTree[$parentPk]['roleId'];
+        }
+        if (isset($depths[$parentPk]) && $depths[$parentPk] + 1 > $depth) {
+            $depth = $depths[$parentPk] + 1;
+        }
+    }
+    $depths[$pk] = $depth;
+
+    $orderedRoles[] = [
+        'pk'      => (int) $pk,
+        'roleId'  => $node['roleId'],
+        'parents' => $parentLabels,
+        'depth'   => $depth,
+    ];
+
+    foreach ($roleChildren[$pk] ?? [] as $childPk) {
+        $inDegree[$childPk]--;
+        if ($inDegree[$childPk] === 0) {
+            $queue[] = $childPk;
+        }
+    }
+}
 ?>
 <div class="modal fade" id="protectWizardModal" tabindex="-1"
      aria-labelledby="protectWizardModalLabel" aria-hidden="true"
@@ -121,8 +130,7 @@ $roleChildren = $this->roleChildren;
                 <input type="hidden" name="grant_mode"        id="wiz-input-grant-mode"      value="explicit">
                 <input type="hidden" name="rule_type"         id="wiz-input-rule-type"        value="allow">
                 <input type="hidden" name="role_id"           id="wiz-input-role-id">
-                <input type="hidden" name="custom_privilege"  id="wiz-input-custom-priv">
-                <input type="hidden" name="assertion_fqcn"    id="wiz-input-assertion-fqcn">
+                <input type="hidden" name="assertion_alias"   id="wiz-input-assertion-alias">
                 <input type="hidden" name="assertion_mode"    id="wiz-input-assertion-mode"   value="none">
 
                 <div class="modal-body py-3">
@@ -173,11 +181,24 @@ $roleChildren = $this->roleChildren;
                             <i class="bi bi-info-circle me-1"></i>
                             This rule will also apply to: <strong id="wiz-propagation-children"></strong>
                         </div>
-                        <div class="ims-acl-role-tree-wrap" style="max-height:260px; overflow-y:auto;">
-                            <ul class="ims-acl-role-tree list-unstyled mb-0" role="listbox"
+                        <div class="ims-acl-role-tree-wrap">
+                            <ul class="ims-acl-role-list list-unstyled mb-0" role="listbox"
                                 aria-label="Roles" id="wiz-role-tree">
-                                <?php foreach ($rootPks as $rootPk): ?>
-                                    <?php $renderRoleNode($rootPk); ?>
+                                <?php foreach ($orderedRoles as $item): ?>
+                                <li class="ims-acl-role-item"
+                                    data-role-id="<?= htmlspecialchars($item['roleId'], ENT_QUOTES) ?>"
+                                    data-role-pk="<?= $item['pk'] ?>"
+                                    data-ancestry="<?= htmlspecialchars(implode(' ', $item['parents']), ENT_QUOTES) ?>"
+                                    data-depth="<?= $item['depth'] ?>"
+                                    tabindex="0" role="option" aria-selected="false">
+                                    <div class="ims-acl-role-item-main">
+                                        <i class="bi bi-person-circle text-secondary"></i>
+                                        <span class="ims-acl-role-label"><?= htmlspecialchars($item['roleId'], ENT_QUOTES) ?></span>
+                                    </div>
+                                    <?php if ($item['parents'] !== []): ?>
+                                    <div class="ims-acl-role-ancestry">child of: <?= htmlspecialchars(implode(', ', $item['parents']), ENT_QUOTES) ?></div>
+                                    <?php endif; ?>
+                                </li>
                                 <?php endforeach; ?>
                             </ul>
                         </div>
@@ -185,20 +206,9 @@ $roleChildren = $this->roleChildren;
 
                     <!-- ── Step 3: Privilege ──────────────────────── -->
                     <div class="wiz-step-panel d-none" id="wiz-panel-3">
-                        <p class="text-secondary small mb-3">Select the privilege(s) covered by this rule. Derived from the route's HTTP methods.</p>
+                        <p class="text-secondary small mb-3">The following privilege(s) will be granted by this rule, derived from the route's HTTP methods.</p>
                         <div class="d-flex flex-wrap gap-2 mb-3" id="wiz-priv-cards">
-                            <!-- Populated by JS from data-privs on the trigger button -->
-                        </div>
-                        <div class="form-check form-switch mt-2">
-                            <input class="form-check-input" type="checkbox" role="switch"
-                                   id="ims-acl-add-custom-priv">
-                            <label class="form-check-label small" for="ims-acl-add-custom-priv">Custom privilege</label>
-                        </div>
-                        <div class="mt-2 d-none" id="wiz-custom-priv-wrap">
-                            <input type="text" class="form-control form-control-sm"
-                                   id="wiz-custom-priv-input" placeholder="e.g. export"
-                                   pattern="[a-z][a-z0-9_\-]*" maxlength="64">
-                            <div class="form-text">Lowercase letters, digits, hyphens and underscores.</div>
+                            <!-- Populated and auto-selected by JS from data-privs on the trigger button -->
                         </div>
                     </div>
 
@@ -206,29 +216,22 @@ $roleChildren = $this->roleChildren;
                     <div class="wiz-step-panel d-none" id="wiz-panel-4">
                         <p class="text-secondary small mb-3">Optionally attach an assertion class that enforces ownership or store scope at runtime.</p>
                         <div class="row g-2">
-                            <div class="col-12 col-md-4">
+                            <div class="col-12 col-md-4 d-flex">
                                 <div class="ims-acl-assertion-card" data-assertion="none" tabindex="0">
                                     <i class="bi bi-x-circle text-secondary fs-5 mb-1 d-block"></i>
                                     <div class="fw-semibold small">None</div>
                                     <div class="text-secondary" style="font-size:.76rem;">No assertion required.</div>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <div class="ims-acl-assertion-card" data-assertion="ownership" tabindex="0"
-                                     data-assertion-fqcn="Webware\Acl\Assertion\OwnershipAssertion">
-                                    <i class="bi bi-person-lock fs-5 text-info mb-1 d-block"></i>
-                                    <div class="fw-semibold small">Ownership</div>
-                                    <div class="text-secondary" style="font-size:.76rem;">User must own the resource.</div>
+                            <?php foreach ($this->assertions as $assertion): ?>
+                            <div class="col-12 col-md-4 d-flex">
+                                <div class="ims-acl-assertion-card" tabindex="0"
+                                     data-assertion-alias="<?= $this->escapeHtmlAttr($assertion['value']) ?>">
+                                    <i class="bi bi-key fs-5 text-info mb-1 d-block"></i>
+                                    <div class="fw-semibold small"><?= $this->escapeHtml($assertion['label']) ?></div>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <div class="ims-acl-assertion-card" data-assertion="store-owned" tabindex="0"
-                                     data-assertion-fqcn="Webware\Acl\Assertion\StoreOwnedResourceAssertion">
-                                    <i class="bi bi-shop-window fs-5 text-info mb-1 d-block"></i>
-                                    <div class="fw-semibold small">Store-owned</div>
-                                    <div class="text-secondary" style="font-size:.76rem;">Resource belongs to the active store.</div>
-                                </div>
-                            </div>
+                            <?php endforeach; ?>
                         </div>
                         <div class="d-flex gap-3 mt-3 d-none" id="wiz-assertion-mode-wrap">
                             <div class="form-check">

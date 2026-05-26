@@ -17,6 +17,7 @@ final class ConfigSaveEvent implements StoppableEventInterface
         public readonly string $targetFile,
         public readonly array $updatedConfig,
         public readonly string $targetCache = ConfigBustCacheEvent::DEFAULT_CACHE,
+        public readonly bool $replace = false,
     ) {}
 
     public function stopPropagation(): void

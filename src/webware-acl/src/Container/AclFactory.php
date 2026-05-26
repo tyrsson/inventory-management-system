@@ -30,6 +30,8 @@ use function is_a;
 
 final readonly class AclFactory
 {
+    private const string DEV_ROLE = 'Developer';
+
     public function __invoke(ContainerInterface $container): Acl
     {
         $config   = $container->get('config')[AclInterface::class] ?? [];
@@ -39,6 +41,10 @@ final readonly class AclFactory
         $this->addResources($laminas, $config['resources'] ?? []);
         $this->applyRules($laminas, 'allow', $config['allow'] ?? []);
         $this->applyRules($laminas, 'deny',  $config['deny']  ?? []);
+
+        if ($laminas->hasRole(self::DEV_ROLE)) {
+            $laminas->allow(self::DEV_ROLE);
+        }
 
         return new Acl(acl: $laminas);
     }
@@ -68,14 +74,17 @@ final readonly class AclFactory
     }
 
     /**
-     * Adds resources to the ACL. Resources are a flat list of route name strings.
+     * Adds resources to the ACL.
      *
-     * @param string[] $resources
+     * Config value is either true/null (no parent) or a string parent resource ID.
+     * Parents must appear before their children in the array.
+     *
+     * @param array<string, string|bool|null> $resources
      */
     private function addResources(LaminasAcl $acl, array $resources): void
     {
-        foreach ($resources as $resourceId) {
-            $acl->addResource((string) $resourceId);
+        foreach ($resources as $resourceId => $parent) {
+            $acl->addResource($resourceId, is_string($parent) ? $parent : null);
         }
     }
 

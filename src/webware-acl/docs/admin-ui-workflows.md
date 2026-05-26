@@ -1,10 +1,267 @@
 # Admin UI Workflows
 
-The webware-acl Admin UI provides full CRUD management for roles, resources,
-privileges, rules, rule assertions, and route mappings. The UI is built with
-Bootstrap 5 + HTMX and follows the middleware/handler separation pattern: each
-write operation is handled by a `Process*Middleware` class; the downstream
-`RequestHandler` is render-only.
+The webware-acl Admin UI manages ACL rules via the Protect Route Wizard. The UI
+is built with Bootstrap 5 + HTMX and follows the middleware/handler separation
+pattern: each write operation is handled by a `Process*Middleware` class; the
+downstream `RequestHandler` is render-only.
+
+---
+
+## Access Control for the Admin UI
+
+The `admin.acl` resource is granted exclusively to the **Developer** role.
+**Administrators cannot manage the ACL** — this is an immutable rule enforced
+by `RegisterAclRulesListener` and intentionally absent from config, preventing
+lockout or privilege escalation via the UI.
+
+---
+
+## Architecture: Config-Driven Writes
+
+ACL writes do **not** go through a database repository. The write path is
+event-driven and targets `config/autoload/acl.global.php` directly:
+
+```
+CommandHandler
+    → EventDispatcher::dispatch(ConfigSaveEvent)
+        → ConfigSaveListener: merges existing config + updatedConfig
+            → ConfigWriter: writes acl.global.php
+    → EventDispatcher::dispatch(ConfigBustCacheEvent)
+        → CacheBustListener: no-op in debug mode (intentional)
+```
+
+The target file is defined by `Configuration::LOCAL_CONFIG_FILE`:
+
+```php
+public const string LOCAL_CONFIG_FILE = __DIR__ . '/../../../../config/autoload/acl.global.php';
+```
+
+`acl.global.php` is tracked in git. The `.local.php` pattern is gitignored.
+
+---
+
+## Entity Inventory
+
+| Entity | Read Handler | Write Middleware | Command Handler | Status |
+|---|---|---|---|---|
+| ACL Overview | `AclOverviewHandler` | — | — | ✓ implemented |
+| Protect Route Wizard | `RuleManagerHandler` | `ProcessRuleMiddleware` | `SaveRuleHandler` | ✓ implemented |
+| Save Role | `RoleListHandler` | `ProcessRoleMiddleware` | `SaveRoleHandler` | @todo stub |
+| Delete Role | `RoleListHandler` | `ProcessRoleMiddleware` | `DeleteRoleHandler` | @todo stub |
+| Update Rule Type | `RuleManagerHandler` | `ProcessRuleMiddleware` | `UpdateRuleTypeHandler` | @todo stub |
+
+Resource management, assertion management, and route mapping management are not
+yet implemented.
+
+---
+
+## Generic CRUD Workflow
+
+Every write follows the same middleware/bus/handler pattern:
+
+```mermaid
+sequenceDiagram
+    participant Browser
+    participant HTMX
+    participant AuthMW as AuthorizationMiddleware
+    participant ProcMW as Process* Middleware
+    participant Bus as CommandBus
+    participant CmdHandler as CommandHandler
+    participant Events as EventDispatcher
+    participant Handler as RequestHandler
+
+    Browser->>HTMX: Submit form
+    HTMX->>AuthMW: POST /acl/...
+    AuthMW->>ProcMW: allowed → delegate
+    ProcMW->>Bus: handle(SaveXxxCommand)
+    Bus->>CmdHandler: resolve and call handler
+    CmdHandler->>Events: dispatch(ConfigSaveEvent)
+    Events->>Events: ConfigSaveListener writes acl.global.php
+    CmdHandler->>Events: dispatch(ConfigBustCacheEvent)
+    CmdHandler-->>Bus: CommandResult(Success)
+    Bus-->>ProcMW: CommandResult
+    ProcMW->>Handler: request.withAttribute(CommandResult::class, result)
+    Handler->>Handler: if Success → HX-Trigger: closeModal
+    Handler-->>Browser: HtmlResponse
+```
+
+---
+
+## Protect Route Wizard
+
+**Route**: `POST /{adminRouteSegment}/rule` → named `acl.manager.rule.create`  
+**Pipeline**: `ProcessRuleMiddleware` → `RuleManagerHandler`
+
+The wizard is a 5-step Bootstrap modal rendered as a partial inside
+`admin-acl.phtml`. It is the only currently working ACL write path.
+
+### Steps
+
+| Step | Label | Input captured |
+|---|---|---|
+| 1 | Grant | `grant_mode` (`explicit`/`inherited`), `rule_type` (`allow`/`deny`) |
+| 2 | Role | `role_id` (string roleId of the selected role) |
+| 3 | Privilege | `privileges[]` (one or more from derived HTTP-method map, plus optional custom) |
+| 4 | Assertion | `assertion_fqcn` (FQCN or empty), `assertion_mode` (`none`/`must`/`may`) |
+| 5 | Review | Read-only summary before submit |
+
+### POST Body Fields
+
+```
+route_name        string   Named Mezzio route (e.g. manifest.upload.store)
+grant_mode        string   explicit | inherited
+rule_type         string   allow | deny
+role_id           string   Role roleId string
+privileges[]      string[] One or more privilege names
+custom_privilege  string   Optional custom privilege name
+assertion_fqcn    string   FQCN of AssertionInterface implementation, or empty
+assertion_mode    string   none | must | may
+```
+
+### Write Path
+
+`ProcessRuleMiddleware` extracts the POST body and dispatches `SaveRuleCommand`.
+`SaveRuleHandler` builds the config fragment and fires the save event:
+
+```php
+// SaveRuleHandler::handle()
+assert($command instanceof SaveRuleCommand);
+
+$updatedConfig = [
+    'resources' => [$command->resourceId => true],
+    $command->type => [$command->roleId => [$command->resourceId => $command->assertions]],
+];
+
+$saveEvent = new ConfigSaveEvent(
+    target:        AclInterface::class,
+    targetFile:    Configuration::LOCAL_CONFIG_FILE,
+    updatedConfig: $updatedConfig,
+);
+
+$this->eventDispatcher->dispatch($saveEvent);
+
+if (! $saveEvent->isPropagationStopped()) {
+    $this->eventDispatcher->dispatch(new ConfigBustCacheEvent());
+}
+
+return new CommandResult($command, CommandStatus::Success, null);
+```
+
+`ConfigSaveListener` merges `$event->updatedConfig` into the existing config
+for `AclInterface::class` and writes the result back to `acl.global.php`.
+
+### Role Picker
+
+The wizard's Role step renders a flat list ordered by **Kahn's topological sort**
+(`protect-route-wizard.phtml`). This guarantees every parent role appears above
+all its children regardless of multiple inheritance.
+
+Depth is computed as `max(depth of any parent) + 1`. The `data-depth` attribute
+drives CSS indentation:
+
+```
+depth 0 → Guest
+depth 1 → Member
+depth 2 → Warehouse, Sales, Collections
+depth 3 → Warehouse Supervisor, Assistant Manager
+depth 4 → Manager
+depth 5 → Administrator
+depth 6 → Developer
+```
+
+The role data source is `config[AclInterface::class]['roles']` assembled in
+`BuildAccessControlMiddleware` from the merged config of all `ConfigProvider`
+implementations.
+
+---
+
+## Role Management
+
+**Route**: `GET|POST /acl/roles`
+
+`SaveRoleHandler` and `DeleteRoleHandler` are **stub implementations** — they
+return `CommandStatus::Success` without writing anything. Config-driven role
+save/delete via `ConfigSaveEvent` is planned but not yet implemented.
+
+---
+
+## Handler Pattern
+
+All admin handlers are render-only. They inspect the `CommandResult` attribute
+and either close the modal or render the page with fresh data:
+
+```php
+public function handle(ServerRequestInterface $request): ResponseInterface
+{
+    $result = $request->getAttribute(CommandResult::class);
+
+    if ($result instanceof CommandResult && $result->getStatus() === CommandStatus::Success) {
+        return new HtmlResponse(
+            $this->template->render('acl::role-list', $this->buildViewModel($request)),
+            200,
+            ['HX-Trigger' => 'closeModal'],
+        );
+    }
+
+    return new HtmlResponse(
+        $this->template->render('acl::role-list', $this->buildViewModel($request)),
+    );
+}
+```
+
+The `HX-Trigger: closeModal` header is read by HTMX on the client. A JavaScript
+event listener calls `bootstrap.Modal.getInstance(el).hide()` in response.
+
+---
+
+## Template Conventions
+
+- Each entity has a list template (`acl/role-list.phtml`) and a modal partial
+  (`acl/partials/role-modal.phtml`)
+- No inline styles (`style="..."`) — use `.ims-*` CSS classes in `public/assets/css/custom.css`
+- No hardcoded URLs — always use `$this->url('route.name')`
+- Edit and Delete buttons carry `hx-get` / `hx-delete` attributes
+- Modal forms POST to the same URL as the list page; `AuthorizationMiddleware`
+  checks both the GET and POST route stacks separately
+
+---
+
+## Known Limitations
+
+### Role Picker CSS Depth Cap
+
+The role picker indentation uses fixed CSS attribute-selector rules in
+`public/assets/css/custom.css`. The current rules cover depths 0–6:
+
+```css
+.ims-acl-role-item[data-depth="1"] .ims-acl-role-item-main { padding-left: 1rem; }
+/* ... through depth 6 */
+```
+
+If a role hierarchy ever exceeds depth 6, roles at depth 7+ will render with
+no indentation (snapping back to root-level alignment). The fix is to append
+two additional lines to the block per new depth level:
+
+```css
+.ims-acl-role-item[data-depth="7"] .ims-acl-role-item-main { padding-left: 7rem; }
+.ims-acl-role-item[data-depth="7"] .ims-acl-role-ancestry { padding-left: 8.4rem; }
+```
+
+The formula is: `padding-left: {N}rem` for the main row and `padding-left: {N + 1.4}rem`
+for the ancestry subtitle.
+
+### Redundant Administrator Parent
+
+`webware-admin/src/ConfigProvider.php` adds `'Administrator' => ['Member']` to
+the ACL roles config. After `array_merge_recursive`, Administrator has two
+parents: `Manager` (from `ims-store`) and `Member` (from `webware-admin`).
+
+The `Member` parent is redundant — Administrator already reaches `Member`
+through the full chain `Manager → Assistant Manager → Sales/Warehouse/Collections → Member`.
+The redundant edge does not affect runtime ACL evaluation (Laminas ACL handles
+it correctly) but it does cause Administrator to display "child of: Member, Manager"
+in the Protect Route Wizard role picker instead of just "child of: Manager".
+
 
 ---
 

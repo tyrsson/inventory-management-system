@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Webware\Acl;
 
 use Webware\Acl\Acl;
-use Webware\Acl\AclBuilder;
 use Webware\Acl\AclInterface;
-use Webware\Acl\Container\AclBuilderFactory;
 use Webware\Acl\Container\AclFactory;
 use Webware\Acl\Container\CommandHandlerMiddlewareFactory;
 use Webware\Acl\Container\IdentityMiddlewareFactory;
 use Webware\Acl\Container\RouteProviderFactory;
+use Webware\Acl\Http\Container\RouteResourceFactoryFactory;
+use Webware\Acl\Http\RouteResourceFactory;
+use Webware\Acl\Http\RouteResourceFactoryInterface;
 use Webware\Acl\Middleware\AuthorizationMiddleware;
 use Webware\Acl\Middleware\Container\AuthorizationMiddlewareFactory;
 use Webware\Acl\Middleware\IdentityMiddleware;
@@ -42,10 +43,8 @@ use Webware\Acl\Admin\RequestHandler\AclOverviewHandler;
 use Webware\Acl\Admin\RequestHandler\Container\AclOverviewHandlerFactory;
 use Webware\Acl\Admin\RequestHandler\Container\ResourceListHandlerFactory;
 use Webware\Acl\Admin\RequestHandler\Container\RoleListHandlerFactory;
-use Webware\Acl\Admin\RequestHandler\Container\RuleManagerHandlerFactory;
 use Webware\Acl\Admin\RequestHandler\ResourceListHandler;
 use Webware\Acl\Admin\RequestHandler\RoleListHandler;
-use Webware\Acl\Admin\RequestHandler\RuleManagerHandler;
 use Webware\Admin\Container\Configuration as AdminConfiguration;
 use Webware\Admin\Event\RegisterWidgetEvent;
 use Webware\CommandBus\CommandBusInterface;
@@ -63,11 +62,12 @@ final class ConfigProvider
     public function __invoke(): array
     {
         return [
-            'dependencies'           => $this->getDependencies(),
-            'listeners'              => $this->getListeners(),
-            'router'                 => $this->getRouteProviders(),
-            'templates'              => $this->getTemplates(),
-            AclInterface::class      => $this->getDefaultConfig(),
+            'dependencies'             => $this->getDependencies(),
+            'listeners'                => $this->getListeners(),
+            'router'                   => $this->getRouteProviders(),
+            'templates'                => $this->getTemplates(),
+            AclInterface::class        => $this->getDefaultConfig(),
+            AssertionManager::class    => $this->getAssertionManagerConfig(),
             CommandBusInterface::class => $this->getBusConfig(),
         ];
     }
@@ -76,30 +76,31 @@ final class ConfigProvider
     {
         return [
             'aliases'   => [
-                AclInterface::class              => Acl::class,
-                ForbiddenHandlerInterface::class => ForbiddenHandler::class,
+                AclInterface::class                  => Acl::class,
+                ForbiddenHandlerInterface::class     => ForbiddenHandler::class,
+                RouteResourceFactoryInterface::class => RouteResourceFactory::class,
             ],
             'invokables' => [],
             'factories' => [
-                Acl::class                           => AclFactory::class,
-                AclBuilder::class                    => AclBuilderFactory::class,
-                BuildAccessControlMiddleware::class  => BuildAccessControlMiddlewareFactory::class,
-                ForbiddenHandler::class              => ForbiddenHandlerFactory::class,
-                AclOverviewHandler::class            => AclOverviewHandlerFactory::class,
-                AuthorizationMiddleware::class       => AuthorizationMiddlewareFactory::class,
-                IdentityMiddleware::class            => IdentityMiddlewareFactory::class,
-                RegisterWidgetListener::class        => RegisterWidgetListenerFactory::class,
-                ResourceListHandler::class           => ResourceListHandlerFactory::class,
-                RoleListHandler::class               => RoleListHandlerFactory::class,
-                RouteProvider::class                 => RouteProviderFactory::class,
-                RuleManagerHandler::class            => RuleManagerHandlerFactory::class,
-                ProcessRuleMiddleware::class         => ProcessRuleMiddlewareFactory::class,
-                ProcessRoleMiddleware::class         => ProcessRoleMiddlewareFactory::class,
-                DeleteRoleHandler::class             => DeleteRoleHandlerFactory::class,
-                SaveRoleHandler::class               => SaveRoleHandlerFactory::class,
-                SaveRuleHandler::class               => SaveRuleHandlerFactory::class,
-                UpdateRuleTypeHandler::class         => UpdateRuleTypeHandlerFactory::class,
-                CommandHandlerMiddleware::class      => CommandHandlerMiddlewareFactory::class,
+                Acl::class                          => AclFactory::class,
+                AssertionManager::class             => Container\AssertionManagerFactory::class,
+                RouteResourceFactory::class         => RouteResourceFactoryFactory::class,
+                BuildAccessControlMiddleware::class => BuildAccessControlMiddlewareFactory::class,
+                ForbiddenHandler::class             => ForbiddenHandlerFactory::class,
+                AclOverviewHandler::class           => AclOverviewHandlerFactory::class,
+                AuthorizationMiddleware::class      => AuthorizationMiddlewareFactory::class,
+                IdentityMiddleware::class           => IdentityMiddlewareFactory::class,
+                RegisterWidgetListener::class       => RegisterWidgetListenerFactory::class,
+                ResourceListHandler::class          => ResourceListHandlerFactory::class,
+                RoleListHandler::class              => RoleListHandlerFactory::class,
+                RouteProvider::class                => RouteProviderFactory::class,
+                ProcessRuleMiddleware::class        => ProcessRuleMiddlewareFactory::class,
+                ProcessRoleMiddleware::class        => ProcessRoleMiddlewareFactory::class,
+                DeleteRoleHandler::class            => DeleteRoleHandlerFactory::class,
+                SaveRoleHandler::class              => SaveRoleHandlerFactory::class,
+                SaveRuleHandler::class              => SaveRuleHandlerFactory::class,
+                UpdateRuleTypeHandler::class        => UpdateRuleTypeHandlerFactory::class,
+                CommandHandlerMiddleware::class     => CommandHandlerMiddlewareFactory::class,
             ],
         ];
     }
@@ -143,12 +144,29 @@ final class ConfigProvider
                 'Developer' => ['Administrator'],
             ],
             'resources' => [
-                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.') => null,
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'rule.create' => AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'rule.update' => AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'role.create' => AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'role.delete' => AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
             ],
             'allow'     => [
                 'Developer' => [
-                    AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
+                    AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.') => [],
                 ],
+            ],
+        ];
+    }
+
+    public function getAssertionManagerConfig(): array
+    {
+        return [
+            'aliases'   => [
+                'Ownership' => Assertion\OwnershipAssertion::class,
+            ],
+            'factories'  => [
+                // Since AbstractPluginManager::$autoAddInvokableClass = true and $instanceOf = AssertionInterface::class, we can directly reference the class as factory
+                Assertion\OwnershipAssertion::class => Assertion\OwnershipAssertion::class,
             ],
         ];
     }

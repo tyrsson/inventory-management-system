@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+
 namespace Ims\Store\Acl;
 
 use Laminas\Permissions\Acl\Acl;
 use Laminas\Permissions\Acl\Assertion\AssertionInterface;
-use Laminas\Permissions\Acl\ProprietaryInterface;
 use Laminas\Permissions\Acl\Resource\ResourceInterface;
 use Laminas\Permissions\Acl\Role\RoleInterface;
 use Override;
@@ -20,14 +20,14 @@ final class StoreOwnedResourceAssertion implements AssertionInterface
         ?ResourceInterface $resource = null,
         $privilege = null,
     ): bool {
-        if (! $resource instanceof ProprietaryInterface) {
+        if (! $resource instanceof StoreProprietaryInterface) {
             return false;
         }
 
-        if (! method_exists($role, 'getDetail')) {
+        if (! $role instanceof StoreProprietaryInterface) {
             return false;
         }
 
-        return (int) $role->getDetail('store_id') === (int) $resource->getOwnerId();
+        return $resource->getStoreId() === $role->getStoreId();
     }
 }
