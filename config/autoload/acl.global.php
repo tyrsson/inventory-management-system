@@ -100,10 +100,10 @@ declare(strict_types=1);
             ],
             'Warehouse' => [
                 'ims.manifest.upload' => [
-                    'Ims\\Store\\Acl\\StoreOwnedResourceAssertion',
+                    'Store Owned Resource',
                 ],
                 'ims.manifest.upload.store' => [
-                    'Ims\\Store\\Acl\\StoreOwnedResourceAssertion',
+                    'Store Owned Resource',
                 ],
             ],
             'Warehouse Supervisor' => [
