@@ -606,18 +606,22 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
                 return;
             }
 
-            // Rules panel toggle
-            var toggle = e.target.closest('.ims-acl-rules-toggle');
-            if (toggle) {
-                var row = toggle.closest('.ims-acl-route-row');
-                if (row) {
-                    var panel = row.nextElementSibling;
-                    if (panel && panel.classList.contains('ims-acl-rules-panel')) {
-                        var isOpen = !panel.classList.contains('d-none');
-                        panel.classList.toggle('d-none', isOpen);
-                        toggle.setAttribute('aria-expanded', String(!isOpen));
-                    }
+            // Rules offcanvas trigger
+            var offcanvasTrigger = e.target.closest('.ims-acl-rules-offcanvas-trigger');
+            if (offcanvasTrigger) {
+                var panelId   = offcanvasTrigger.dataset.rulesPanel;
+                var routeName = offcanvasTrigger.dataset.routeName;
+                var source    = panelId ? document.getElementById(panelId) : null;
+                var body      = document.getElementById('ims-acl-offcanvas-body');
+                var titleEl   = document.getElementById('ims-acl-offcanvas-route-name');
+                if (titleEl) titleEl.textContent = routeName || '';
+                if (body) {
+                    body.innerHTML = source ? source.innerHTML : '<p class="text-secondary small">No rules found.</p>';
+                    htmx.process(body);
                 }
+                bootstrap.Offcanvas.getOrCreateInstance(
+                    document.getElementById('ims-acl-rule-offcanvas')
+                ).show();
                 return;
             }
 
@@ -706,6 +710,21 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
         });
     }
 
+    // Hide the rules offcanvas before any HTMX swap so Bootstrap can remove
+    // its backdrop cleanly (the offcanvas node lives inside <main> and would
+    // otherwise be ripped out of the DOM while still "shown").
+    document.addEventListener('htmx:beforeRequest', function () {
+        var oc = document.getElementById('ims-acl-rule-offcanvas');
+        if (!oc) return;
+        var instance = bootstrap.Offcanvas.getInstance(oc);
+        if (instance) instance.hide();
+    });
+
     initAclPage();
-    document.addEventListener('htmx:afterSettle', initAclPage);
+    document.addEventListener('htmx:afterSettle', function () {
+        initAclPage();
+        // Re-wire the rules offcanvas instance after every HTMX body swap
+        var oc = document.getElementById('ims-acl-rule-offcanvas');
+        if (oc) bootstrap.Offcanvas.getOrCreateInstance(oc);
+    });
 })();

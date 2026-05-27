@@ -10,7 +10,11 @@ use Laminas\ConfigAggregator\ConfigAggregator;
 use Webimpress\SafeWriter\Exception\ExceptionInterface as FileWriterException;
 use Webimpress\SafeWriter\FileWriter;
 
+use function array_is_list;
+use function array_unique;
+use function array_values;
 use function date;
+use function is_array;
 use function sprintf;
 
 final class ConfigWriter extends ConfigAggregator implements ConfigWriterInterface
@@ -32,6 +36,7 @@ EOT;
         iterable $providers = [],
         array $postProcessors = [],
         array $preProcessors = [],
+        private readonly bool $deduplicateLists = true,
     ) {
         parent::__construct(
             providers: $providers,
@@ -43,7 +48,8 @@ EOT;
     public function writeConfig(string $targetFile): void
     {
         try {
-            $config   = $this->getMergedConfig();
+            $merged   = $this->getMergedConfig();
+            $config   = $this->deduplicateLists ? $this->deduplicateConfigLists($merged) : $merged;
             $contents = sprintf(
                 self::CONFIG_TEMPLATE,
                 static::class,
@@ -69,5 +75,30 @@ EOT;
             // ignore errors writing file
             throw $e;
         }
+    }
+
+    /**
+     * Recursively deduplicates PHP list arrays (integer-indexed) within a config array.
+     * Prevents additive duplicates produced by array_merge_recursive when two config
+     * providers both contribute the same list values.
+     *
+     * Associative arrays (maps) are recursed into but never deduplicated as entries.
+     *
+     * @param  array<mixed> $config
+     * @return array<mixed>
+     */
+    private function deduplicateConfigLists(array $config): array
+    {
+        foreach ($config as $key => $value) {
+            if (! is_array($value)) {
+                continue;
+            }
+            if (array_is_list($value)) {
+                $config[$key] = array_values(array_unique($value));
+            } else {
+                $config[$key] = $this->deduplicateConfigLists($value);
+            }
+        }
+        return $config;
     }
 }

@@ -17,7 +17,6 @@ namespace Ims\Manifest;
 use Ims\Manifest\Container\Configuration;
 use Ims\Manifest\View\Helper\ManifestUrl;
 use Ims\Manifest\View\Helper\ManifestUrlFactory;
-use Ims\Store\Acl\StoreOwnedResourceAssertion;
 use Webware\Acl\AclInterface;
 use Webware\Admin\Event\RegisterWidgetEvent;
 use Webware\CommandBus\CommandBusInterface;
@@ -109,20 +108,10 @@ final readonly class ConfigProvider
                 // manifest module is refactored to follow the manager route pattern.
                 'admin.manifest' => true,
             ],
-            'allow'     => [
-                'Member' => [
-                    Configuration::ROUTE_NAME_PREFIX_VALUE . 'list'   => [],
-                    Configuration::ROUTE_NAME_PREFIX_VALUE . 'detail' => [],
-                ],
-                'Warehouse' => [
-                    Configuration::ROUTE_NAME_PREFIX_VALUE . 'upload'       => [StoreOwnedResourceAssertion::class],
-                    Configuration::ROUTE_NAME_PREFIX_VALUE . 'upload.store' => [StoreOwnedResourceAssertion::class],
-                ],
-                // TODO: placeholder rule — move to a proper admin route allow entry during manifest refactor.
-                'Warehouse Supervisor' => [
-                    'admin.manifest' => [],
-                ],
-            ],
+            'allow'     => [],
+            // Allow rules are managed via the admin UI (acl.global.php).
+            // Do not add allow rules here — they will be merged additively by the
+            // config aggregator and appear duplicated in the ACL overview.
         ];
     }
 

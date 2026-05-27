@@ -95,7 +95,7 @@ final class UpdateRuleTypeHandler implements CommandHandlerInterface
             $this->eventDispatcher->dispatch(new ConfigBustCacheEvent());
         }
 
-        return new CommandResult($command, CommandStatus::Success, null);
+        return new CommandResult($command, CommandStatus::Success, $aclConfig);
     }
 }
 

@@ -44,4 +44,16 @@ final class ConfigSaveEventTest extends TestCase
         $event->stopPropagation();
         self::assertTrue($event->isPropagationStopped());
     }
+
+    public function testDeduplicateListsDefaultsToTrue(): void
+    {
+        $event = new ConfigSaveEvent('P', 'f.php', []);
+        self::assertTrue($event->deduplicateLists);
+    }
+
+    public function testDeduplicateListsCanBeSetToFalse(): void
+    {
+        $event = new ConfigSaveEvent('P', 'f.php', [], deduplicateLists: false);
+        self::assertFalse($event->deduplicateLists);
+    }
 }

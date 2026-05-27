@@ -655,8 +655,12 @@
 
 /* Rules panel expanded under a protected route row */
 .ims-acl-rules-panel { background: var(--bs-tertiary-bg); border-top: 1px solid var(--bs-border-color-translucent); padding: 10px 12px; font-size: 0.8rem; }
-.ims-acl-rule-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--bs-border-color-translucent); }
-.ims-acl-rule-row:last-child { border-bottom: none; }
+.ims-acl-rule-inherited { opacity: 0.72; }
+.ims-acl-rules-table thead th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; padding-bottom: 4px; }
+.ims-acl-rules-table td { vertical-align: middle; }
+.ims-acl-rules-table .badge { white-space: normal; word-break: break-word; }
+.ims-acl-rules-inherited-header td { border-top: 1px solid var(--bs-border-color-translucent); background: var(--bs-tertiary-bg); font-size: 0.75rem; }
+#ims-acl-rule-offcanvas { --bs-offcanvas-width: min(600px, 95vw); }
 
 /* ── ACL Protect Route Wizard ────────────────────────────── */
 

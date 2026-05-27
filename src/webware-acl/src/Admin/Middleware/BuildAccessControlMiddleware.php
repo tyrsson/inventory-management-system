@@ -10,6 +10,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Webware\Acl\AclInterface;
 use Webware\Acl\AssertionManager;
 use Webware\Acl\Entity\Role;
 use Webware\Acl\PrivilegeInterface;
@@ -51,10 +52,11 @@ final readonly class BuildAccessControlMiddleware implements MiddlewareInterface
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $configRoles     = $this->config['roles'] ?? [];     // [roleName => parentsArray[]]
-        $configResources = $this->config['resources'] ?? []; // ['routeName' => true, ...]
-        $configAllow     = $this->config['allow'] ?? [];     // [roleName => [routeName, ...]]
-        $configDeny      = $this->config['deny'] ?? [];      // [roleName => [routeName, ...]]
+        $config          = $request->getAttribute(AclInterface::class) ?? $this->config;
+        $configRoles     = $config['roles'] ?? [];     // [roleName => parentsArray[]]
+        $configResources = $config['resources'] ?? []; // ['routeName' => true, ...]
+        $configAllow     = $config['allow'] ?? [];     // [roleName => [routeName, ...]]
+        $configDeny      = $config['deny'] ?? [];      // [roleName => [routeName, ...]]
         $assertionOptions = $this->assertionManager->getAssertionOptions(); // [['label' => string, 'value' => alias], ...]
 
         // Stable synthetic PK assignment: array index → roleName
@@ -96,17 +98,24 @@ final readonly class BuildAccessControlMiddleware implements MiddlewareInterface
             $syntheticId     = 0;
             $hasAssertions   = false;
 
+            // Detect Laminas ACL resource parent (string value = parent resource ID)
+            $parentResource = isset($configResources[$name]) && is_string($configResources[$name])
+                ? $configResources[$name]
+                : null;
+
             foreach ($configAllow as $roleId => $allowedRoutes) {
                 $normalized = $this->normalizeRouteList($allowedRoutes);
                 if (isset($normalized[$name])) {
-                    $assertions               = $normalized[$name];
+                    $assertions               = array_values(array_unique($normalized[$name]));
                     $rules[]                  = [
-                        'id'           => ++$syntheticId,
-                        'role_id'      => $roleId,
-                        'resource_id'  => $name,
-                        'privilege_id' => '',
-                        'type'         => 'allow',
-                        'assertions'   => $assertions,
+                        'id'            => ++$syntheticId,
+                        'role_id'       => $roleId,
+                        'resource_id'   => $name,
+                        'privilege_id'  => '',
+                        'type'          => 'allow',
+                        'assertions'    => $assertions,
+                        'inherited'     => false,
+                        'inherited_from' => null,
                     ];
                     $rolesOnResource[$roleId] = true;
                     if ($assertions !== []) {
@@ -119,14 +128,56 @@ final readonly class BuildAccessControlMiddleware implements MiddlewareInterface
                 $normalized = $this->normalizeRouteList($deniedRoutes);
                 if (isset($normalized[$name])) {
                     $rules[]                  = [
-                        'id'           => ++$syntheticId,
-                        'role_id'      => $roleId,
-                        'resource_id'  => $name,
-                        'privilege_id' => '',
-                        'type'         => 'deny',
-                        'assertions'   => [],
+                        'id'            => ++$syntheticId,
+                        'role_id'       => $roleId,
+                        'resource_id'   => $name,
+                        'privilege_id'  => '',
+                        'type'          => 'deny',
+                        'assertions'    => [],
+                        'inherited'     => false,
+                        'inherited_from' => null,
                     ];
                     $rolesOnResource[$roleId] = true;
+                }
+            }
+
+            // Pull in rules inherited from the parent resource (read-only in the UI)
+            if ($parentResource !== null) {
+                foreach ($configAllow as $roleId => $allowedRoutes) {
+                    $normalized = $this->normalizeRouteList($allowedRoutes);
+                    if (isset($normalized[$parentResource])) {
+                        $assertions               = $normalized[$parentResource];
+                        $rules[]                  = [
+                            'id'             => ++$syntheticId,
+                            'role_id'        => $roleId,
+                            'resource_id'    => $name,
+                            'privilege_id'   => '',
+                            'type'           => 'allow',
+                            'assertions'     => $assertions,
+                            'inherited'      => true,
+                            'inherited_from' => $parentResource,
+                        ];
+                        $rolesOnResource[$roleId] = true;
+                        if ($assertions !== []) {
+                            $hasAssertions = true;
+                        }
+                    }
+                }
+                foreach ($configDeny as $roleId => $deniedRoutes) {
+                    $normalized = $this->normalizeRouteList($deniedRoutes);
+                    if (isset($normalized[$parentResource])) {
+                        $rules[]                  = [
+                            'id'             => ++$syntheticId,
+                            'role_id'        => $roleId,
+                            'resource_id'    => $name,
+                            'privilege_id'   => '',
+                            'type'           => 'deny',
+                            'assertions'     => [],
+                            'inherited'      => true,
+                            'inherited_from' => $parentResource,
+                        ];
+                        $rolesOnResource[$roleId] = true;
+                    }
                 }
             }
 
@@ -142,6 +193,7 @@ final readonly class BuildAccessControlMiddleware implements MiddlewareInterface
                 'roles'             => array_keys($rolesOnResource),
                 'hasAssertions'     => $hasAssertions,
                 'rules'             => $rules,
+                'parentResource'    => $parentResource,
                 'resourcePk'        => 0,
             ];
         }

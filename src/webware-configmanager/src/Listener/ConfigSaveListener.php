@@ -24,7 +24,7 @@ final class ConfigSaveListener
                     new ArrayProvider([$event->target => $this->config[$event->target] ?? []]),
                     new ArrayProvider([$event->target => $event->updatedConfig]),
                 ];
-            $configWriter = new ConfigWriter($providers);
+            $configWriter = new ConfigWriter($providers, deduplicateLists: $event->deduplicateLists);
             $configWriter->writeConfig($event->targetFile);
         } catch (FileWriterException $e) {
             $event->stopPropagation();

@@ -21,6 +21,7 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Webware\Acl\Admin\Command\SaveRuleCommand;
 use Webware\Acl\Admin\Command\UpdateRuleTypeCommand;
+use Webware\Acl\AclInterface;
 use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandStatus;
 use Webware\CommandBus\CommandBusInterface;
@@ -61,6 +62,9 @@ final class ProcessRuleMiddleware implements MiddlewareInterface
             $result = $this->commandBus->handle(new UpdateRuleTypeCommand($roleId, $resourceId, $type));
             if ($result->getStatus() === CommandStatus::Success) {
                 $messenger?->success('Rule updated.');
+                $request = $request->withAttribute(AclInterface::class, $result->getResult());
+            } else {
+                $messenger?->warning('Rule update failed. Please try again.');
             }
         }
 
