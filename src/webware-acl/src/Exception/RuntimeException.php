@@ -14,8 +14,26 @@ declare(strict_types=1);
 
 namespace Webware\Acl\Exception;
 
-use RuntimeException as PhpRuntimeException;
+use RuntimeException as SplRuntimeException;
 
-final class RuntimeException extends PhpRuntimeException implements ExceptionInterface
+
+use function sprintf;
+
+final class RuntimeException extends SplRuntimeException implements ExceptionInterface
 {
+    public static function forAclBuildEvent(
+        string $message,
+        string $eventClass,
+        ?ExceptionInterface $previous = null
+    ): self {
+        return new self(
+            sprintf(
+                'An error occurred while dispatching event %s: %s',
+                $eventClass,
+                $message
+            ),
+            0,
+            $previous
+        );
+    }
 }

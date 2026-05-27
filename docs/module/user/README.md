@@ -12,7 +12,7 @@ implemented in `src/User/`.
 | [registration.md](registration.md) | Self-registration form → inactive account → verification email |
 | [email-verification.md](email-verification.md) | Token validation, account activation, TTL expiry |
 | [resend-verification.md](resend-verification.md) | Requesting a fresh token without revealing account existence |
-| [login.md](login.md) | Login / logout via `mezzio-authentication-session` |
+| [login.md](login.md) | Login / logout via `LoginMiddleware` + `IdentityMiddleware` |
 | [toast-notifications.md](toast-notifications.md) | `ImsMessenger` flash toast system |
 
 ---
@@ -46,13 +46,13 @@ implemented in `src/User/`.
                                                 │
                                        302 → /login (toast)
                                                 │
- ┌──────────────┐   POST /login        ┌────────▼────────────┐
- │   Browser    │ ──────────────────>  │ AuthenticationMiddlw │
- └──────────────┘                      └────────┬────────────┘
-                                                │ UserRepository
-                                                │ ::authenticate()
-                                                │
-                                       302 → / (logged in)
+ ┌──────────────┐   POST /user.manager/login  ┌─────────────────────┐
+ │   Browser    │ ──────────────────────────> │   LoginMiddleware    │
+ └──────────────┘                             └────────┬────────────┘
+                                                       │ UserRepository
+                                                       │ ::authenticate()
+                                                       │
+                                              302 → / (logged in)
 ```
 
 ---
@@ -65,15 +65,13 @@ implemented in `src/User/`.
 | `user.from_email` | `user.global.php` | Sender address for verification emails |
 | `user.from_name` | `user.global.php` | Sender display name |
 | `user.verification_token_ttl` | `user.global.php` | Token lifetime in seconds (default `86400`) |
-| `authentication.redirect` | `User\ConfigProvider` | Unauthenticated redirect target (`/login`) |
-| `authentication.username` | `User\ConfigProvider` | POST field for login identifier (`email`) |
-| `authentication.password` | `User\ConfigProvider` | POST field for credential (`password`) |
+| `authentication.redirect` | `Webware\UserManager\ConfigProvider` | Unauthenticated redirect target (`/user.manager/login`) |
+| `authentication.username` | `Webware\UserManager\ConfigProvider` | POST field for login identifier (`email`) |
+| `authentication.password` | `Webware\UserManager\ConfigProvider` | POST field for credential (`password`) |
+| `authentication.post_login_redirect` | `Webware\UserManager\ConfigProvider` | Redirect after successful login (default `'/'`) |
 
 ---
 
 ## Known Limitations (v0.1.x)
 
-- Login failure produces no toast — `PhpSession::unauthorizedResponse()` issues
-  a plain redirect with no flash.
-- No role-based authorization ACL is configured yet.
 - `headTitle` in `layout/default.phtml` still reads `'Farmers IMS'`.

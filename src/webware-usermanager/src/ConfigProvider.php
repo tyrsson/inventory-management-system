@@ -14,11 +14,15 @@ declare(strict_types=1);
 
 namespace Webware\UserManager;
 
-use Mezzio\Authentication\AuthenticationInterface;
-use Mezzio\Authentication\Session\PhpSession;
-use Mezzio\Authentication\UserRepositoryInterface;
-use Webware\UserManager\Repository\UserRepositoryInterface as UserRepositoryContract;
+use Webware\Acl\AclInterface;
+use Webware\Admin\Container\Configuration as AdminConfiguration;
 use Webware\CommandBus\CommandBusInterface;
+use Webware\UserManager\Repository\UserRepositoryInterface as UserRepositoryContract;
+use Webware\UserManager\UserInterface;
+use Webware\UserManager\View\Helper\UserAdminUrl;
+use Webware\UserManager\View\Helper\UserAdminUrlFactory;
+use Webware\UserManager\View\Helper\UserUrl;
+use Webware\UserManager\View\Helper\UserUrlFactory;
 
 final class ConfigProvider
 {
@@ -28,10 +32,13 @@ final class ConfigProvider
             'dependencies'             => $this->getDependencies(),
             'router'                   => $this->getRouteProviders(),
             'templates'                => $this->getTemplates(),
+            'view_helpers'             => $this->getViewHelpers(),
             'authentication'           => $this->getAuthenticationConfig(),
             CommandBusInterface::class => [
                 'command_map' => $this->getCommandMap(),
             ],
+            UserInterface::class       => $this->getDefaultConfig(),
+            AclInterface::class        => $this->getAclConfig(),
         ];
     }
 
@@ -39,25 +46,28 @@ final class ConfigProvider
     {
         return [
             'aliases'   => [
-                // Bind mezzio-authentication interfaces to our implementations
-                UserRepositoryInterface::class => UserRepositoryContract::class,
-                UserRepositoryContract::class  => Repository\UserRepository::class,
-                AuthenticationInterface::class => PhpSession::class,
+                UserRepositoryContract::class => Repository\UserRepository::class,
             ],
             'factories' => [
+                // Registers the user factory under our own interface key.
+                // Host app aliases Mezzio\Authentication\UserInterface::class → UserInterface::class.
+                UserInterface::class                                => Container\UserFactory::class,
                 Admin\RequestHandler\CreateUserHandler::class       => Admin\RequestHandler\Container\CreateUserHandlerFactory::class,
                 Admin\RequestHandler\UpdateUserHandler::class       => Admin\RequestHandler\Container\UpdateUserHandlerFactory::class,
                 Admin\RequestHandler\ToggleUserActiveHandler::class => Admin\RequestHandler\Container\ToggleUserActiveHandlerFactory::class,
                 CommandHandler\SaveUserHandler::class               => CommandHandler\Container\SaveUserHandlerFactory::class,
                 Middleware\RegistrationMiddleware::class            => Middleware\Container\RegistrationMiddlewareFactory::class,
+                Middleware\LoginMiddleware::class                   => Middleware\Container\LoginMiddlewareFactory::class,
                 Repository\UserRepository::class                    => Repository\UserRepositoryFactory::class,
                 RouteProvider::class                                => Container\RouteProviderFactory::class,
                 RequestHandler\LoginHandler::class                  => RequestHandler\Container\LoginHandlerFactory::class,
                 RequestHandler\LogoutHandler::class                 => RequestHandler\Container\LogoutHandlerFactory::class,
                 RequestHandler\RegistrationHandler::class           => RequestHandler\Container\RegistrationHandlerFactory::class,
                 RequestHandler\ResendVerificationHandler::class     => RequestHandler\Container\ResendVerificationHandlerFactory::class,
-                RequestHandler\UserListHandler::class               => RequestHandler\Container\UserListHandlerFactory::class,                RequestHandler\VerifyEmailHandler::class             => RequestHandler\Container\VerifyEmailHandlerFactory::class,
-                Listener\SendVerificationEmailListener::class        => Listener\Container\SendVerificationEmailListenerFactory::class,            ],
+                RequestHandler\UserListHandler::class               => RequestHandler\Container\UserListHandlerFactory::class,
+                RequestHandler\VerifyEmailHandler::class            => RequestHandler\Container\VerifyEmailHandlerFactory::class,
+                Listener\SendVerificationEmailListener::class       => Listener\Container\SendVerificationEmailListenerFactory::class,
+            ],
         ];
     }
 
@@ -87,12 +97,94 @@ final class ConfigProvider
         ];
     }
 
+    public function getDefaultConfig(): array
+    {
+        return [
+            Container\Configuration::ROUTE_SEGMENT_KEY         => Container\Configuration::ROUTE_SEGMENT_VALUE,
+            Container\Configuration::ROUTE_NAME_PREFIX_KEY     => Container\Configuration::ROUTE_NAME_PREFIX_VALUE,
+            Container\Configuration::ADMIN_ROUTE_SEGMENT_KEY   => Container\Configuration::ADMIN_ROUTE_SEGMENT_VALUE,
+            Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_KEY => Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE,
+        ];
+    }
+
+    public function getViewHelpers(): array
+    {
+        return [
+            'aliases'   => [
+                'userUrl'      => UserUrl::class,
+                'userAdminUrl' => UserAdminUrl::class,
+            ],
+            'factories' => [
+                UserUrl::class      => UserUrlFactory::class,
+                UserAdminUrl::class => UserAdminUrlFactory::class,
+            ],
+        ];
+    }
+
     public function getAuthenticationConfig(): array
     {
         return [
-            'redirect' => '/login',
-            'username' => 'email',
-            'password' => 'password',
+            'redirect'                                        => '/' . Container\Configuration::ROUTE_SEGMENT_VALUE . '/login',
+            'username'                                        => 'email',
+            'password'                                        => 'password',
+            Container\Configuration::POST_LOGIN_REDIRECT_KEY => Container\Configuration::POST_LOGIN_REDIRECT_VALUE,
+        ];
+    }
+
+    public function getAclConfig(): array
+    {
+        return [
+            'login_path' => '/' . Container\Configuration::ROUTE_SEGMENT_VALUE . '/login',
+            'roles'      => [
+                'Guest'  => [],
+                'Member' => ['Guest'],
+            ],
+            'resources'  => [
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.read'                 => true,
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.create'               => true,
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'register.read'                => true,
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'register.create'              => true,
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'verify.email.read'            => true,
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'resend.verification.read'     => true,
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'resend.verification.create'   => true,
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'logout.read'                  => true,
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'account.read'                 => true,
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.') => true,
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'create'        => true,
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'update'        => true,
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'toggle.update' => true,
+            ],
+            'allow'      => [
+                'Guest'         => [
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.read'               => [],
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.create'             => [],
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'register.read'              => [],
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'register.create'            => [],
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'verify.email.read'          => [],
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'resend.verification.read'   => [],
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'resend.verification.create' => [],
+                ],
+                'Member'        => [
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'logout.read' => [],
+                ],
+                'Administrator' => [
+                    AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.') => [],
+                    AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'create'        => [],
+                    AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'update'        => [],
+                    AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'toggle.update' => [],
+                ],
+            ],
+            'deny'       => [
+                'Member' => [
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.read'               => [],
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.create'             => [],
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'register.read'              => [],
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'register.create'            => [],
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'verify.email.read'          => [],
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'resend.verification.read'   => [],
+                    Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'resend.verification.create' => [],
+                ],
+            ],
         ];
     }
 }

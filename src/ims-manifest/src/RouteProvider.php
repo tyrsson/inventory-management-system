@@ -14,26 +14,33 @@ declare(strict_types=1);
 
 namespace Ims\Manifest;
 
+use Ims\Manifest\Middleware\ProcessManifestUploadMiddleware;
 use Ims\Manifest\RequestHandler\ManifestDetailHandler;
 use Ims\Manifest\RequestHandler\ManifestListHandler;
+use Ims\Manifest\RequestHandler\ManifestUploadHandler;
 use Mezzio\MiddlewareFactoryInterface;
 use Mezzio\Router\RouteCollectorInterface;
 use Mezzio\Router\RouteProviderInterface;
-use Webware\Acl\Middleware\AuthorizationMiddleware;
+use Override;
 
-final class RouteProvider implements RouteProviderInterface
+final readonly class RouteProvider implements RouteProviderInterface
 {
+    public function __construct(
+        private string $routeSegment,
+        private string $routeNamePrefix,
+    ) {}
+
+    #[Override]
     public function registerRoutes(
         RouteCollectorInterface $routeCollector,
         MiddlewareFactoryInterface $middlewareFactory,
     ): void {
         $routeCollector->get(
-            '/manifests',
+            '/' . $this->routeSegment,
             $middlewareFactory->prepare([
-                AuthorizationMiddleware::class,
                 ManifestListHandler::class,
             ]),
-            'manifest.list'
+            $this->routeNamePrefix . 'list'
         )->setOptions([
             'navigation' => 'main',
             'label'      => 'Manifests',
@@ -43,12 +50,28 @@ final class RouteProvider implements RouteProviderInterface
         ]);
 
         $routeCollector->get(
-            '/manifests/{id:\d+}',
+            '/' . $this->routeSegment . '/upload',
             $middlewareFactory->prepare([
-                AuthorizationMiddleware::class,
+                ManifestUploadHandler::class,
+            ]),
+            $this->routeNamePrefix . 'upload'
+        );
+
+        $routeCollector->post(
+            '/' . $this->routeSegment . '/upload',
+            $middlewareFactory->prepare([
+                ProcessManifestUploadMiddleware::class,
+                ManifestUploadHandler::class,
+            ]),
+            $this->routeNamePrefix . 'upload.store'
+        );
+
+        $routeCollector->get(
+            '/' . $this->routeSegment . '/{id:\d+}',
+            $middlewareFactory->prepare([
                 ManifestDetailHandler::class,
             ]),
-            'manifest.detail'
+            $this->routeNamePrefix . 'detail'
         );
     }
 }

@@ -2,81 +2,46 @@
 
 declare(strict_types=1);
 
-/**
- * This file is part of the Webware\Acl package.
- *
- * Copyright (c) 2026 Joey Smith <jsmith@webinertia.net>
- * and contributors.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
 namespace Webware\Acl\Middleware;
 
-use Axleus\Log\Event\LogEvent;
-use Axleus\Log\LogChannel;
-use Axleus\Message\SystemMessengerInterface;
-use Laminas\Diactoros\Response\RedirectResponse;
-use Mezzio\Authentication\UserInterface;
-use Monolog\Level;
-use Override;
-use Psr\EventDispatcher\EventDispatcherInterface;
+use Mezzio\Router\RouteResult;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Webware\Acl\AclInterface;
+use Webware\Acl\Http\RouteResourceFactoryInterface;
+use Webware\Acl\RequestHandler\ForbiddenHandlerInterface;
+use Webware\UserManager\UserInterface;
 
-/**
- * Checks whether the current user is allowed to access the matched route.
- *
- * Decision table:
- *  - No RouteResult attribute, or routing failure  → pass through (not our concern)
- *  - Any role grants isAllowed()                   → delegate to next handler
- *  - Unauthenticated (only base role)              → redirect to login (no toast)
- *  - Authenticated but denied                      → toast warning + redirect to home
- *  - Route name has no acl_route_privilege row     → same denial logic as above
- */
 final class AuthorizationMiddleware implements MiddlewareInterface
 {
     public function __construct(
         private readonly AclInterface $acl,
-        private readonly EventDispatcherInterface $dispatcher,
-        private readonly string $loginPath,
-        private readonly string $homePath,
-        private readonly string $baseRole,
+        private readonly ForbiddenHandlerInterface $forbiddenHandler,
+        private readonly RouteResourceFactoryInterface $routeResourceFactory,
     ) {}
 
-    #[Override]
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $roles = [...$request->getAttribute(UserInterface::class)->getRoles()];
+        $routeResult = $request->getAttribute(RouteResult::class);
 
-        if ($this->acl->isAllowedRoute($request, $roles)) {
+        // Pass unmatched requests straight through to NotFoundHandler.
+        // A failed RouteResult has no matched route name, so RouteResource cannot
+        // be constructed and there is no ACL resource to protect. This is not a
+        // security hole — unregistered paths are never ACL resources, and the
+        // NotFoundHandler returns a 404 without serving any application content.
+        if ($routeResult === null || $routeResult->isFailure()) {
             return $handler->handle($request);
         }
 
-        // Guest (unauthenticated) — send to login silently
-        if ($roles === [$this->baseRole]) {
-            return new RedirectResponse($this->loginPath);
+        $user          = $request->getAttribute(UserInterface::class);
+        $routeResource = ($this->routeResourceFactory)($routeResult, $request);
+
+        if (! $this->acl->isAllowedRoute($user, $routeResource)) {
+            return $this->forbiddenHandler->handle($request);
         }
 
-        // Authenticated but insufficient privileges — toast + redirect home
-        $user      = $request->getAttribute(UserInterface::class);
-        $messenger = $request->getAttribute(SystemMessengerInterface::class);
-        $messenger?->warning('Insufficient privileges to perform the requested action.', hops: 1, now: false);
-
-        $event = (new LogEvent(LogChannel::Security, Level::Warning))
-            ->setMessage('Access denied: {identity} attempted {method} {path}')
-            ->setContext([
-                'identity' => $user->getIdentity(),
-                'method'   => $request->getMethod(),
-                'path'     => (string) $request->getUri()->getPath(),
-                'roles'    => $roles,
-            ]);
-        $this->dispatcher->dispatch($event);
-
-        return new RedirectResponse($this->homePath);
+        return $handler->handle($request);
     }
 }

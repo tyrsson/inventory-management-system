@@ -42,6 +42,8 @@ final class ResendVerificationHandler implements RequestHandlerInterface
         private readonly string $fromEmail,
         private readonly string $fromName,
         private readonly string $baseUrl,
+        private readonly string $verificationSubject,
+        private readonly string $loginUrl,
     ) {}
 
     #[Override]
@@ -66,7 +68,7 @@ final class ResendVerificationHandler implements RequestHandlerInterface
 
         // Already-active users have no business here — send them to login.
         if ($user !== null && $user->active === true) {
-            return new RedirectResponse('/login');
+            return new RedirectResponse($this->loginUrl);
         }
 
         // Silently skip unknown emails — do not reveal whether the address is registered
@@ -87,7 +89,7 @@ final class ResendVerificationHandler implements RequestHandlerInterface
                 $adapter
                     ->from($this->fromEmail, $this->fromName)
                     ->to($email, $user->firstName . ' ' . $user->lastName)
-                    ->subject('Verify your Farmers IMS account')
+                    ->subject($this->verificationSubject)
                     ->isHtml(true)
                     ->body(
                         '<p>Hello ' . htmlspecialchars($user->firstName, ENT_QUOTES, 'UTF-8') . ',</p>'

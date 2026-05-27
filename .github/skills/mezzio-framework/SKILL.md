@@ -4,6 +4,9 @@ description: "Load when working with Mezzio framework internals: ConfigProvider,
 argument-hint: "<what you are working on — e.g. 'new module ConfigProvider', 'route middleware', 'authentication flow'>"
 ---
 
+> ⚠ **SKILL INTEGRITY — NEVER REMOVE OR SHORTEN**
+> Content in this file may only be **added to or updated**. Removing or shortening existing sections is not permitted without explicit user approval. If you are adding new knowledge, append it as a new section.
+
 ## ConfigProvider Pattern
 
 Every module has a `ConfigProvider` class. The project owner is an expert Mezzio user — follow these patterns exactly.
@@ -153,3 +156,85 @@ Config key: `mezzio-authorization-acl` with `roles`, `resources` (= route names)
 ```
 
 Third-party packages key their container lookups to the interface (`$container->has(SomeInterface::class)`). If only the concrete class is registered, those lookups fail silently and features (panels, delegators, etc.) are skipped. This rule applies to every service in every module — factories, invokables, and delegator targets alike.
+
+## webware-admin Dynamic Route Segment
+
+`webware-admin` provides the base `/admin` route segment for all admin modules. The segment is **dynamic** — configurable per-application so it never clashes with existing routes.
+
+### Configuration class
+
+`Webware\Admin\Container\Configuration` is the canonical helper for reading admin config:
+
+```php
+use Webware\Admin\Container\Configuration;
+
+// Constants
+Configuration::ROUTE_KEY             // 'admin_route_key' — key inside the config array
+Configuration::ROUTE_NAME_PREFIX     // 'admin.' — prefix for all route names
+Configuration::DEFAULT_ROUTE_SEGMENT // 'webware.admin' — default path segment
+
+// Helper methods
+Configuration::getConfig($container, self::class);         // returns full AdminInterface::class config array
+Configuration::getRouteSegment($container, self::class);   // returns just the route segment string
+```
+
+### Config key
+
+The config array is stored under `AdminInterface::class` (the interface itself as key):
+
+```php
+// config/autoload/admin.local.php (to override default)
+return [
+    \Webware\Admin\AdminInterface::class => [
+        'admin_route_key' => 'admin',   // changes /webware.admin/... to /admin/...
+    ],
+];
+```
+
+`webware-admin`'s own `ConfigProvider::getDefaultConfig()` registers the default:
+```php
+public function getDefaultConfig(): array
+{
+    return [
+        Container\Configuration::ROUTE_KEY => Container\Configuration::DEFAULT_ROUTE_SEGMENT,
+    ];
+}
+```
+
+### How modules consume it
+
+Any module whose `RouteProvider` must sit under the admin segment injects the full admin config array and reads `Configuration::ROUTE_KEY`:
+
+```php
+// Module's RouteProviderFactory
+final readonly class RouteProviderFactory
+{
+    public function __invoke(ContainerInterface $container): RouteProvider
+    {
+        return new RouteProvider(
+            Configuration::getConfig($container, self::class)
+        );
+    }
+}
+
+// Module's RouteProvider
+final readonly class RouteProvider implements RouteProviderInterface
+{
+    public function __construct(private array $config) {}
+
+    public function registerRoutes(
+        RouteCollectorInterface $routeCollector,
+        MiddlewareFactoryInterface $middlewareFactory
+    ): void {
+        $routeCollector->get(
+            '/' . $this->config[Configuration::ROUTE_KEY] . '/acl.manager',
+            $middlewareFactory->prepare([...]),
+            $this->config[Configuration::ROUTE_NAME_PREFIX] . 'acl.read'
+        );
+    }
+}
+```
+
+- Route paths become `/{admin_route_key}/{module-segment}` — e.g. `/admin/acl.manager`
+- Route names become `admin.{module}.{action}` — e.g. `admin.acl.read`
+- Changing the `admin_route_key` in config updates all admin routes automatically with no code changes

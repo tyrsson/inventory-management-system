@@ -11,8 +11,9 @@ use Mezzio\Template\TemplateRendererInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Webware\Acl\Repository\AclRepositoryInterface;
-use Webware\Acl\Admin\WriteResult;
+use Webware\Acl\AclInterface;
+use Webware\CommandBus\Command\CommandResult;
+use Webware\CommandBus\Command\CommandStatus;
 
 use function json_encode;
 
@@ -25,21 +26,32 @@ use function json_encode;
 final class RoleListHandler implements RequestHandlerInterface
 {
     public function __construct(
-        private readonly AclRepositoryInterface $aclRepository,
+        private readonly array $config,
         private readonly TemplateRendererInterface $template,
     ) {}
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $roles       = $this->aclRepository->fetchRoles();
-        $roleParents = $this->aclRepository->fetchRoleParents();
+        $roles       = [];
+        $roleParents = [];
+
+        // Build a set of role PKs that appear as a parent_pk in the inheritance
+        // map. Used by the template to disable the delete button for parent roles.
+        $rolesWithChildren = [];
+        foreach ($roleParents as $parentPks) {
+            foreach ($parentPks as $parentPk) {
+                $rolesWithChildren[$parentPk] = true;
+            }
+        }
 
         $response = new HtmlResponse($this->template->render('acl::admin-roles', [
-            'roles'       => $roles,
-            'roleParents' => $roleParents,
+            'roles'             => $roles,
+            'roleParents'       => $roleParents,
+            'rolesWithChildren' => $rolesWithChildren,
         ]));
 
-        if ($request->getAttribute(WriteResult::Success->value) === true) {
+        $commandResult = $request->getAttribute(CommandResult::class);
+        if ($commandResult instanceof CommandResult && $commandResult->getStatus() === CommandStatus::Success) {
             $response = $response->withHeader(Header::Trigger->value, json_encode(['closeModal' => null]));
         }
 

@@ -1,0 +1,36 @@
+<?php
+/**
+ * Manifest Management admin dashboard widget.
+ *
+ * Variables:
+ *   $this->manifestCount  int
+ */
+?>
+<div class="col">
+    <div class="card h-100">
+        <div class="card-header d-flex align-items-center gap-2 py-2">
+            <i class="bi bi-clipboard2-data text-primary"></i>
+            <span class="fw-semibold small">Manifest Management</span>
+            <a href="<?= $this->manifestUrl('list') ?>"
+               class="ms-auto btn btn-sm btn-outline-secondary py-0 px-2 ims-widget-manage-link"
+               hx-boost="true">
+                View <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="row row-cols-1 g-2 mb-3">
+                <div class="col text-center">
+                    <div class="fs-3 fw-bold text-primary"><?= (int) $this->manifestCount ?></div>
+                    <div class="text-secondary ims-widget-stat-label">Manifests</div>
+                </div>
+            </div>
+            <div class="d-flex flex-column gap-1">
+                <a href="<?= $this->manifestUrl('list') ?>"
+                   class="btn btn-sm btn-outline-secondary text-start"
+                   hx-boost="true">
+                    <i class="bi bi-list-ul me-1"></i> View All Manifests
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

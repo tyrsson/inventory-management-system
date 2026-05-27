@@ -2,20 +2,38 @@
 
 ## Overview
 
-Authentication uses `mezzio/mezzio-authentication-session` (`PhpSession`
-adapter). Credentials are checked against the database. Only **active** accounts
-may log in. Sessions are stored in PHP's native session mechanism. Logout
-destroys the session.
+Authentication is handled by `LoginMiddleware` (a route-stack middleware on
+`POST /user.manager/login`). Credentials are verified against the database.
+Only **active** accounts may log in. Sessions are stored via
+`mezzio/mezzio-session`. Identity is restored on every subsequent request by
+`IdentityMiddleware` in the global pipeline.
+
+`mezzio/mezzio-authentication-session` (`PhpSession`) is **not used** in the
+active authentication flow.
 
 ---
 
 ## Routes
 
-| Method | Path      | Route name          | Middleware stack                                                                      |
-|--------|-----------|---------------------|--------------------------------------------------------------------------------------|
-| GET    | `/login`  | `user.login`        | `DisableBodyMiddleware` → `LoginHandler`                                             |
-| POST   | `/login`  | `user.login.post`   | `DisableBodyMiddleware` → `AuthenticationMiddleware` → `LoginHandler`                |
-| GET    | `/logout` | `user.logout`       | `AuthenticationMiddleware` → `LogoutHandler`                                         |
+| Method | Path                    | Route name                       | Middleware stack                                                   |
+|--------|-------------------------|----------------------------------|--------------------------------------------------------------------|
+| GET    | `/user.manager/login`   | `user.manager.session.read`      | `DisableBodyMiddleware` → `LoginHandler`                          |
+| POST   | `/user.manager/login`   | `user.manager.session.create`    | `DisableBodyMiddleware` → `LoginMiddleware` → `LoginHandler`      |
+| GET    | `/user.manager/logout`  | `user.manager.logout.read`       | `LogoutHandler`                                                   |
+
+---
+
+## Global Pipeline (identity-related)
+
+```
+SessionMiddleware       — starts / restores PHP session
+IdentityMiddleware      — reads session, attaches User or GuestUser to request
+ImsMessengerMiddleware  — attaches SystemMessengerInterface to request
+...
+RouteMiddleware
+AuthorizationMiddleware — ACL route access check
+DispatchMiddleware
+```
 
 ---
 
@@ -24,44 +42,75 @@ destroys the session.
 ```
 Browser                         Server
   |                                |
-  |--- GET /login ---------------->|
+  |--- GET /user.manager/login --->|
   |                                |
-  |               [LoginHandler]
-  |               - Check UserInterface attribute on request
+  |               [IdentityMiddleware — global]
+  |               - No session data → GuestUser on request
   |               |
-  |               [already logged in]
-  |<-- 302 / -----------------------|
+  |               [AuthorizationMiddleware — global]
+  |               - Guest allowed for session.read → pass through
+  |               |
+  |               [LoginHandler]
+  |               - $user->isGuest() === true → render form
+  |<-- 200 login form --------------|
   |                                |
-  |               [not logged in]
-  |<-- 200 login form + any toasts-|
-  |                                |
-  |--- POST /login --------------->|
+  |--- POST /user.manager/login -->|
   |     {email, password}          |
   |                                |
-  |               [AuthenticationMiddleware]
-  |               - Calls PhpSession::authenticate()
+  |               [IdentityMiddleware — global]
+  |               - No session data → GuestUser on request
   |               |
-  |               [PhpSession::authenticate()]
-  |               - Reads email + password from POST body
+  |               [AuthorizationMiddleware — global]
+  |               - Guest allowed for session.create → pass through
+  |               |
+  |               [DisableBodyMiddleware]
+  |               - Disables HTMX body template layer (not parsed body)
+  |               |
+  |               [LoginMiddleware]
+  |               - Reads email + password from parsed body
   |               - Calls UserRepository::authenticate()
   |               |
   |               [UserRepository::authenticate()]
   |               - SELECT user by email
-  |               - Check active === true (bool cast from DB)
+  |               - Verify active === true
   |               - password_verify(password, hash)
   |               |
-  |               [auth fails — inactive or wrong password]
-  |               - Returns null to PhpSession
-  |               - PhpSession calls unauthorizedResponse()
-  |<-- 302 /login -----------------| (redirect — no flash, no toast yet)
+  |               [auth fails]
+  |               - Logs failed attempt
+  |               - SystemMessengerInterface::error() toast
+  |               - Passes through to LoginHandler
+  |               |
+  |               [LoginHandler — POST failure]
+  |               - $user->isGuest() === true → re-render form with toasts
+  |<-- 200 login form + error toast |
   |                                |
   |               [auth succeeds]
-  |               - Stores UserInterface in session
-  |               - Puts UserInterface on request attribute
+  |               - RetrieveSession::fromRequest()
+  |               - session->set(UserInterface::class, [...])
+  |               - session->regenerate()
+  |<-- 302 / (post_login_redirect) |
+```
+
+---
+
+## Session Restore Diagram (subsequent requests)
+
+```
+Browser                         Server
+  |                                |
+  |--- GET /any/protected/route -->|
+  |                                |
+  |               [SessionMiddleware]
+  |               - Restores PHP session
   |               |
-  |               [LoginHandler]
-  |               - Detects UserInterface on request attribute
-  |<-- 302 / ----------------------|
+  |               [IdentityMiddleware]
+  |               - session->get(UserInterface::class) → array with username/roles/details
+  |               - Calls UserFactory closure → new User(...)
+  |               - withAttribute(UserInterface::class, $user)
+  |               |
+  |               [AuthorizationMiddleware]
+  |               - $user->isGuest() === false
+  |               - ACL check → allowed → dispatch
 ```
 
 ---
@@ -71,14 +120,11 @@ Browser                         Server
 ```
 Browser                         Server
   |                                |
-  |--- GET /logout --------------->|
+  |--- GET /user.manager/logout -->|
   |                                |
-  |               [AuthenticationMiddleware]
-  |               - Validates session; redirects if not authenticated
-  |               |
   |               [LogoutHandler]
-  |               - Clears UserInterface from session
-  |<-- 302 /login -----------------|
+  |               - session->clear()
+  |<-- 302 /user.manager/login ----|
 ```
 
 ---
@@ -87,51 +133,65 @@ Browser                         Server
 
 | Class | Namespace | Responsibility |
 |-------|-----------|----------------|
-| `LoginHandler` | `User\RequestHandler` | Render login form (GET) or redirect on success (POST) |
-| `LogoutHandler` | `User\RequestHandler` | Clear session, redirect to login |
-| `PhpSession` | `Mezzio\Authentication\Session` | Adapter: reads POST body, delegates to `UserRepository::authenticate()` |
-| `UserRepository` | `User\Repository` | `authenticate(string $credential, string $password): ?UserInterface` |
+| `LoginMiddleware` | `Webware\UserManager\Middleware` | POST handler: authenticate credentials, write session, redirect |
+| `LoginHandler` | `Webware\UserManager\RequestHandler` | Render login form (GET + POST failure) |
+| `LogoutHandler` | `Webware\UserManager\RequestHandler` | Clear session, redirect to login |
+| `IdentityMiddleware` | `Webware\Acl\Middleware` | Global: restore `User` or `GuestUser` from session |
+| `UserRepository` | `Webware\UserManager\Repository` | `authenticate(string $email, string $password): (User&UserInterface)|null` |
+| `UserFactory` | `Webware\UserManager\Container` | Callable: constructs `User` from session details or `GuestUser` |
 
 ---
 
 ## Authentication Configuration
 
-Registered in `User\ConfigProvider::getAuthenticationConfig()`:
+Registered in `Webware\UserManager\ConfigProvider::getAuthenticationConfig()`,
+stored in the container under `authentication`:
 
 ```php
 'authentication' => [
-    'redirect' => '/login',         // Unauthenticated → redirect here
-    'username' => 'email',          // POST field name for the identifier
-    'password' => 'password',       // POST field name for the credential
+    'redirect'           => '/user.manager/login',
+    'username'           => 'email',
+    'password'           => 'password',
+    'post_login_redirect' => '/',          // LoginMiddleware redirect on success
 ],
 ```
 
-The `AuthenticationInterface` alias resolves to `PhpSession::class`.
+`LoginMiddlewareFactory` reads `authentication[post_login_redirect]` with
+fallback to `Configuration::POST_LOGIN_REDIRECT_VALUE` (`'/'`).
 
 ---
 
-## Authentication Logic (`UserRepository::authenticate`)
+## Session Data Written by LoginMiddleware
 
-1. Find user row by `email` column.
-2. Verify `$user->active === true` — inactive accounts return `null`.
-3. Verify `password_verify($password, $user->passwordHash)`.
-4. On success return a `Mezzio\Authentication\DefaultUser` (or equivalent).
-5. On any failure return `null`.
+Stored under the key `Webware\UserManager\UserInterface::class`:
+
+```php
+[
+    'username' => $user->getIdentity(),     // email address
+    'roles'    => $user->getRoles(),        // ['Member'] etc.
+    'details'  => [
+        'id', 'store_id', 'role_id', 'first_name', 'last_name',
+        'active', 'created_at', 'verification_token', 'token_created_at',
+        'password_hash',
+    ],
+]
+```
+
+`IdentityMiddleware` reads this key on every subsequent request and passes
+the data to the `UserFactory` closure, which discriminates on the presence of
+`details['id']`, `details['role_id']`, and `details['first_name']` to decide
+whether to construct a `User` or a `GuestUser`.
 
 ---
 
-## Session Storage
+## ACL Resources
 
-Sessions are handled by `mezzio/mezzio-session` with the default PHP session
-handler (`laminas/laminas-session`). The authenticated `UserInterface` is
-stored under the key configured by `PhpSession`.
+| Resource | Allowed roles |
+|---|---|
+| `user.manager.session.read` | Guest |
+| `user.manager.session.create` | Guest |
+| `user.manager.logout.read` | Member |
 
----
+`Member` is denied `session.read` and `session.create` (logged-in users
+cannot see the login form).
 
-## Known Limitations (as of v0.1.x)
-
-- **Login failure gives no toast**: `PhpSession::unauthorizedResponse()` issues
-  a bare 302 redirect to `/login`. There is no flash message on failed login.
-  This is a planned improvement — see the discussion in session notes.
-- **No authorization ACL**: any authenticated user can access any authenticated
-  route. Role-based access control is not yet configured.

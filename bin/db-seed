@@ -6,12 +6,13 @@ declare(strict_types=1);
 /**
  * Database seeding script.
  *
- * Executes all schema and seed SQL files in ascending filename order.
+ * Executes only the reference data seed file (999_seed.sql).
+ * Schema creation is handled by bin/migrate (PHP migration classes).
  * Uses the PhpDb adapter pulled from the service container so that
  * the same connection configuration used by the application is applied.
  *
  * Usage (from project root):
- *   php bin/db-seed.php
+ *   php bin/db-seed
  */
 
 use PhpDb\Adapter\AdapterInterface;
@@ -25,14 +26,7 @@ $container = require 'config/container.php';
 /** @var AdapterInterface $adapter */
 $adapter = $container->get(AdapterInterface::class);
 
-$files = glob(__DIR__ . '/../data/schema/*.sql');
-
-if ($files === false || $files === []) {
-    echo 'No SQL files found in data/schema/' . PHP_EOL;
-    exit(1);
-}
-
-sort($files);
+$files = [__DIR__ . '/../data/schema/999_seed.sql'];
 
 $ok     = 0;
 $errors = 0;

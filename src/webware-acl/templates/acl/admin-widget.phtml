@@ -4,7 +4,6 @@
  * @var int $resourceCount
  * @var int $ruleCount
  * @var int $assertionCount
- * @var int $mappingCount
  * @var int $aclVersion
  */
 $this->headTitle('Admin Dashboard');
@@ -14,7 +13,8 @@ $this->headTitle('Admin Dashboard');
         <div class="card-header d-flex align-items-center gap-2 py-2">
             <i class="bi bi-shield-lock text-primary"></i>
             <span class="fw-semibold small">ACL Management</span>
-            <a href="<?= $this->url('admin.acl.read') ?>" class="ms-auto btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:.75rem;">
+            <?php /* TODO: was 'acl.read' — renamed to 'acl.manager' (overview route). */ ?>
+            <a href="<?= $this->adminUrl('acl.manager') ?>" class="ms-auto btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:.75rem;">
                 Manage <i class="bi bi-arrow-right"></i>
             </a>
         </div>
@@ -37,24 +37,20 @@ $this->headTitle('Admin Dashboard');
                     <div class="fs-3 fw-bold text-primary"><?= $this->assertionCount ?></div>
                     <div class="text-secondary" style="font-size:.75rem;">Assertions</div>
                 </div>
-                <div class="col text-center">
-                    <div class="fs-3 fw-bold text-primary"><?= $this->mappingCount ?></div>
-                    <div class="text-secondary" style="font-size:.75rem;">Route Maps</div>
-                </div>
             </div>
             <!-- Quick links -->
             <div class="d-flex flex-column gap-1">
-                <a href="<?= $this->url('admin.acl.roles.read') ?>" class="btn btn-sm btn-outline-secondary text-start">
+                <?php /* TODO: 'acl.roles.read' route not yet registered — pointing to overview until sub-page route is added. */ ?>
+                <a href="<?= $this->adminUrl('acl.manager') ?>" class="btn btn-sm btn-outline-secondary text-start">
                     <i class="bi bi-people me-1"></i> Manage Roles
                 </a>
-                <a href="<?= $this->url('admin.acl.resources.read') ?>" class="btn btn-sm btn-outline-secondary text-start">
+                <?php /* TODO: 'acl.resources.read' route not yet registered — pointing to overview until sub-page route is added. */ ?>
+                <a href="<?= $this->adminUrl('acl.manager') ?>" class="btn btn-sm btn-outline-secondary text-start">
                     <i class="bi bi-file-earmark-lock me-1"></i> Manage Resources
                 </a>
-                <a href="<?= $this->url('admin.acl.rules.read') ?>" class="btn btn-sm btn-outline-secondary text-start">
+                <?php /* TODO: 'acl.rules.read' route not yet registered — pointing to overview until sub-page route is added. */ ?>
+                <a href="<?= $this->adminUrl('acl.manager') ?>" class="btn btn-sm btn-outline-secondary text-start">
                     <i class="bi bi-toggles me-1"></i> Manage Rules
-                </a>
-                <a href="<?= $this->url('admin.acl.routes.read') ?>" class="btn btn-sm btn-outline-secondary text-start">
-                    <i class="bi bi-signpost-split me-1"></i> Manage Route Map
                 </a>
             </div>
         </div>

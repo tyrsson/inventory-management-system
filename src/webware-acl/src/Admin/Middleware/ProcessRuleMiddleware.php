@@ -19,15 +19,21 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Webware\Acl\Admin\WriteResult;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Acl\Admin\Command\SaveRuleCommand;
+use Webware\Acl\Admin\Command\UpdateRuleTypeCommand;
+use Webware\Acl\AclInterface;
+use Webware\CommandBus\Command\CommandResult;
+use Webware\CommandBus\Command\CommandStatus;
+use Webware\CommandBus\CommandBusInterface;
 use Webware\Core\HttpMethodProcessorTrait;
+
+use function in_array;
 
 final class ProcessRuleMiddleware implements MiddlewareInterface
 {
     use HttpMethodProcessorTrait;
 
-    public function __construct(private readonly AclRepositoryInterface $aclRepository)
+    public function __construct(private readonly CommandBusInterface $commandBus)
     {
     }
 
@@ -42,68 +48,55 @@ final class ProcessRuleMiddleware implements MiddlewareInterface
         ServerRequestInterface $request,
         RequestHandlerInterface $handler
     ): ResponseInterface {
-        $id   = (int)    $request->getAttribute('id');
-        $body = (array)  $request->getParsedBody();
-        $type = (string) ($body['type'] ?? 'allow');
+        $body       = (array)  $request->getParsedBody();
+        $roleId     = (string) ($body['role_id']     ?? '');
+        $resourceId = (string) ($body['route_name']  ?? '');
+        $type       = (string) ($body['type']        ?? 'allow');
 
         /** @var SystemMessengerInterface|null $messenger */
         $messenger = $request->getAttribute(SystemMessengerInterface::class);
 
-        $success = false;
+        $result = new CommandResult(new UpdateRuleTypeCommand('', '', 'allow'), CommandStatus::Failure, null);
 
-        if ($id > 0 && in_array($type, ['allow', 'deny'], true)) {
-            $this->aclRepository->updateRuleType($id, $type);
-            $this->aclRepository->incrementVersion();
-            $messenger?->success('Rule updated.');
-            $success = true;
+        if ($roleId !== '' && $resourceId !== '' && in_array($type, ['allow', 'deny'], true)) {
+            $result = $this->commandBus->handle(new UpdateRuleTypeCommand($roleId, $resourceId, $type));
+            if ($result->getStatus() === CommandStatus::Success) {
+                $messenger?->success('Rule updated.');
+                $request = $request->withAttribute(AclInterface::class, $result->getResult());
+            } else {
+                $messenger?->warning('Rule update failed. Please try again.');
+            }
         }
 
-        return $handler->handle($request->withAttribute(WriteResult::Success->value, $success));
-    }
-
-    public function processDelete(
-        ServerRequestInterface $request,
-        RequestHandlerInterface $handler
-    ): ResponseInterface {
-        $id = (int) $request->getAttribute('id');
-
-        /** @var SystemMessengerInterface|null $messenger */
-        $messenger = $request->getAttribute(SystemMessengerInterface::class);
-
-        $success = false;
-
-        if ($id > 0) {
-            $this->aclRepository->deleteRule($id);
-            $this->aclRepository->incrementVersion();
-            $messenger?->success('Rule deleted.');
-            $success = true;
-        }
-
-        return $handler->handle($request->withAttribute(WriteResult::Success->value, $success));
+        return $handler->handle($request->withAttribute(CommandResult::class, $result));
     }
 
     private function persistRule(
         ServerRequestInterface $request,
         RequestHandlerInterface $handler
     ): ResponseInterface {
-        $body        = (array) $request->getParsedBody();
-        $rolePk      = (int)    ($body['role_pk']      ?? 0);
-        $resourcePk  = (int)    ($body['resource_pk']  ?? 0);
-        $privilegePk = (int)    ($body['privilege_pk'] ?? 0);
-        $type        = (string) ($body['type']          ?? 'allow');
+        $body       = (array) $request->getParsedBody();
+        $roleId     = $body['role_id']       ?? '';
+        $resourceId = $body['route_name']    ?? '';
+        $type       = $body['rule_type']     ?? 'allow';
+        $assertions = [];
+
+        if (isset($body['assertion_alias']) && $body['assertion_alias'] !== '') {
+            $assertions = [$body['assertion_alias']];
+        }
 
         /** @var SystemMessengerInterface|null $messenger */
         $messenger = $request->getAttribute(SystemMessengerInterface::class);
 
-        $success = false;
+        $result = new CommandResult(new SaveRuleCommand('', '', 'allow'), CommandStatus::Failure, null);
 
-        if ($rolePk > 0 && $resourcePk > 0 && $privilegePk > 0) {
-            $this->aclRepository->saveRule($rolePk, $resourcePk, $privilegePk, $type);
-            $this->aclRepository->incrementVersion();
-            $messenger?->success('Rule saved.');
-            $success = true;
+        if ($roleId !== '' && $resourceId !== '' && in_array($type, ['allow', 'deny'], true)) {
+            $result = $this->commandBus->handle(new SaveRuleCommand($roleId, $resourceId, $type, $assertions));
+            if ($result->getStatus() === CommandStatus::Success) {
+                $messenger?->success('Rule saved.');
+            }
         }
 
-        return $handler->handle($request->withAttribute(WriteResult::Success->value, $success));
+        return $handler->handle($request->withAttribute(CommandResult::class, $result));
     }
 }

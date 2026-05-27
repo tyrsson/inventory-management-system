@@ -45,7 +45,7 @@ $this->headTitle('Create Account');
                         </div>
                         <?php endif; ?>
 
-                        <form action="<?= $this->url('user.register.post') ?>" method="post" novalidate>
+                        <form action="<?= $this->userUrl('register.create') ?>" method="post" novalidate>
 
                             <div class="row g-3 mb-3">
                                 <div class="col-6">
@@ -141,7 +141,7 @@ $this->headTitle('Create Account');
 
                             <div class="text-center small">
                                 Already have an account?
-                                <a href="<?= $this->url('user.login') ?>" class="text-primary">Sign in</a>
+                                <a href="<?= $this->userUrl('session.read') ?>" class="text-primary">Sign in</a>
                             </div>
 
                         </form>

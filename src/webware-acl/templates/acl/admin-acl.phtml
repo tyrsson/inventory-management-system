@@ -1,202 +1,326 @@
 <?php
 /**
- * @var array<int, \Webware\Acl\Entity\Role>      $roles
- * @var array<int, int[]>                          $roleParents
- * @var array<int, \Webware\Acl\Entity\Resource>  $resources
- * @var array<int, array{role_id: string, resource_id: string, privilege_id: string, type: string}> $rules
- * @var array<string, array{resource_id: string, privilege_id: string}> $mappings
+ * Access Control — route-centric overview page.
+ *
+ * Variables injected by BuildAccessControlMiddleware via AclOverviewHandler:
+ *
+ * @var array<string, string[]>                                  $unprotectedRoutes  routeName → allowedMethods
+ * @var array<string, array{methods:string[], derivedPrivileges:string[], ruleCount:int, roles:string[], hasAssertions:bool, rules:array<int,array<string,mixed>>, resourcePk:int}> $protectedRoutes
+ * @var array<int, array{id:int, roleId:string, parents:int[]}>  $roleTree
+ * @var array<int, int[]>                                        $roleChildren       parentPk → childPks[]
+ * @var array{all:int, unprotected:int, protected:int}           $routeFilters
+ * @var array<int, \Webware\Acl\Entity\Role>                     $roles
+ * @var array<int, int[]>                                        $roleParents        childPk → parentPks[]
  */
-$this->headTitle('ACL Manager');
+
+$this->headTitle('Access Control');
+
+// HTTP method → derived privilege name
+$methodPrivMap = [
+    'GET'    => 'read',
+    'POST'   => 'create',
+    'PUT'    => 'update',
+    'PATCH'  => 'update',
+    'DELETE' => 'delete',
+];
+
+$filters = $this->routeFilters ?? ['all' => 0, 'unprotected' => 0, 'protected' => 0];
 ?>
 
 <!-- Breadcrumb -->
 <nav aria-label="breadcrumb" class="mb-2">
     <ol class="breadcrumb small mb-0">
-        <li class="breadcrumb-item"><a href="<?= $this->url('admin.dashboard.read') ?>">Admin</a></li>
-        <li class="breadcrumb-item active" aria-current="page">ACL Manager</li>
+        <li class="breadcrumb-item"><a href="<?= $this->adminUrl('dashboard.read') ?>">Admin</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Access Control</li>
     </ol>
 </nav>
 
 <!-- Page header -->
-<div class="d-flex align-items-start justify-content-between mb-4">
+<div class="d-flex align-items-start justify-content-between mb-3">
     <div>
         <div class="d-flex align-items-center gap-2 mb-1">
             <i class="bi bi-shield-lock text-primary fs-5"></i>
-            <h1 class="h4 fw-bold mb-0">ACL Manager</h1>
+            <h1 class="h4 fw-bold mb-0">Access Control</h1>
         </div>
-        <p class="text-secondary small mb-0">Manage roles, resources, privileges, rules, assertions, and route mappings.</p>
-    </div>
-    <span class="badge bg-body-tertiary border text-secondary" style="font-size:.72rem;">
-        Cache v<?= $this->escapeHtml((string) ($this->aclVersion ?? '—')) ?>
-    </span>
-</div>
-
-<!-- Stat cards -->
-<div class="row row-cols-2 row-cols-lg-5 g-3 mb-4">
-    <div class="col">
-        <a href="<?= $this->url('admin.acl.roles.read') ?>" class="card h-100 text-decoration-none" style="border-color:rgba(var(--bs-primary-rgb),.25);">
-            <div class="card-body text-center py-3">
-                <i class="bi bi-people fs-3 text-primary mb-2 d-block"></i>
-                <div class="fs-2 fw-bold"><?= count($this->roles) ?></div>
-                <div class="text-secondary small">Roles</div>
-            </div>
-        </a>
-    </div>
-    <div class="col">
-        <a href="<?= $this->url('admin.acl.resources.read') ?>" class="card h-100 text-decoration-none">
-            <div class="card-body text-center py-3">
-                <i class="bi bi-collection fs-3 text-primary mb-2 d-block"></i>
-                <div class="fs-2 fw-bold"><?= count($this->resources) ?></div>
-                <div class="text-secondary small">Resources</div>
-            </div>
-        </a>
-    </div>
-    <div class="col">
-        <a href="<?= $this->url('admin.acl.rules.read') ?>" class="card h-100 text-decoration-none">
-            <div class="card-body text-center py-3">
-                <i class="bi bi-toggles fs-3 text-primary mb-2 d-block"></i>
-                <div class="fs-2 fw-bold"><?= count($this->rules) ?></div>
-                <div class="text-secondary small">Rules</div>
-            </div>
-        </a>
-    </div>
-    <div class="col">
-        <div class="card h-100">
-            <div class="card-body text-center py-3">
-                <i class="bi bi-shield-check fs-3 text-warning mb-2 d-block"></i>
-                <div class="fs-2 fw-bold"><?= (int) $this->assertionCount ?></div>
-                <div class="text-secondary small">Assertions</div>
-            </div>
-        </div>
-    </div>
-    <div class="col">
-        <a href="<?= $this->url('admin.acl.routes.read') ?>" class="card h-100 text-decoration-none">
-            <div class="card-body text-center py-3">
-                <i class="bi bi-signpost-split fs-3 text-primary mb-2 d-block"></i>
-                <div class="fs-2 fw-bold"><?= count($this->mappings) ?></div>
-                <div class="text-secondary small">Route Maps</div>
-            </div>
-        </a>
+        <p class="text-secondary small mb-0">Manage which roles can access each route. Routes are the protected resources.</p>
     </div>
 </div>
 
-<!-- Role hierarchy -->
-<div class="card mb-4">
-    <div class="card-header d-flex align-items-center gap-2 py-2">
-        <i class="bi bi-diagram-3 text-primary"></i>
-        <span class="fw-semibold small">Role Hierarchy</span>
-        <a href="<?= $this->url('admin.acl.roles.read') ?>" class="ms-auto btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:.75rem;">
-            Manage <i class="bi bi-arrow-right"></i>
-        </a>
+<!-- Search + filter bar -->
+<div class="d-flex gap-2 mb-3 flex-wrap">
+    <div class="input-group input-group-sm ims-acl-search-box">
+        <span class="input-group-text bg-body-tertiary border-secondary-subtle">
+            <i class="bi bi-search text-secondary"></i>
+        </span>
+        <input type="search" class="form-control bg-body-tertiary border-secondary-subtle"
+               id="ims-acl-route-search" placeholder="Search routes…" autocomplete="off">
     </div>
-    <div class="card-body py-3">
-        <?php
-        /**
-         * Build a tree from $roles + $roleParents for display.
-         * $roleParents is keyed by child PK → array of parent PKs.
-         * We find root roles (no parents) and recurse.
-         */
-        $childrenOf = [];
-        foreach ($this->roleParents as $childPk => $parentPks) {
-            foreach ($parentPks as $parentPk) {
-                $childrenOf[$parentPk][] = $childPk;
-            }
-        }
-        $rootPks = [];
-        foreach ($this->roles as $pk => $role) {
-            if (($this->roleParents[$pk] ?? []) === []) {
-                $rootPks[] = $pk;
-            }
-        }
-        $renderTree = static function (int $pk, int $depth) use (&$renderTree, $childrenOf, $roles): void {
-            $indent = str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $depth);
-            $prefix = $depth > 0 ? '└── ' : '';
-            $role   = $roles[$pk];
-            echo '<div style="font-size:.875rem; font-family:monospace;">';
-            echo $indent . $prefix . '<span class="text-body">' . htmlspecialchars($role->roleId, ENT_QUOTES) . '</span>';
-            if ($depth === 0) {
-                echo ' <span class="badge bg-body-tertiary border text-secondary ms-1" style="font-size:.65rem;">root</span>';
-            }
-            echo '</div>';
-            foreach ($childrenOf[$pk] ?? [] as $childPk) {
-                $renderTree($childPk, $depth + 1);
-            }
-        };
-        $roles = $this->roles;
-        foreach ($rootPks as $rootPk) {
-            $renderTree($rootPk, 0);
-        }
-        ?>
+    <div class="d-flex gap-1">
+        <button class="btn btn-sm btn-outline-secondary active" id="ims-acl-filter-all"
+                data-acl-filter="all">All
+            <span class="badge bg-secondary ms-1"><?= (int) $filters['all'] ?></span>
+        </button>
+        <button class="btn btn-sm btn-outline-warning" id="ims-acl-filter-unprotected"
+                data-acl-filter="unprotected">
+            <i class="bi bi-shield-exclamation me-1"></i>Unprotected
+            <span class="badge bg-warning text-dark ms-1"><?= (int) $filters['unprotected'] ?></span>
+        </button>
+        <button class="btn btn-sm btn-outline-success" id="ims-acl-filter-protected"
+                data-acl-filter="protected">
+            <i class="bi bi-shield-check me-1"></i>Protected
+            <span class="badge bg-success ms-1"><?= (int) $filters['protected'] ?></span>
+        </button>
     </div>
 </div>
 
-<!-- Quick access row -->
-<div class="row g-3">
-    <div class="col-12 col-md-6">
-        <div class="card h-100">
-            <div class="card-header d-flex align-items-center gap-2 py-2">
-                <i class="bi bi-signpost-split text-primary"></i>
-                <span class="fw-semibold small">Route Mappings</span>
-                <span class="badge bg-body-tertiary border text-secondary ms-1"><?= count($this->mappings) ?></span>
-                <a href="<?= $this->url('admin.acl.routes.read') ?>" class="ms-auto btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:.75rem;">
-                    Manage <i class="bi bi-arrow-right"></i>
-                </a>
-            </div>
-            <div class="card-body p-0">
-                <?php
-                $previewMappings = array_slice($this->mappings, 0, 5, true);
-                $remaining       = count($this->mappings) - count($previewMappings);
-                ?>
-                <ul class="list-group list-group-flush">
-                    <?php foreach ($previewMappings as $routeName => $mapping): ?>
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
-                            <code style="font-size:.8125rem;"><?= $this->escapeHtml($routeName) ?></code>
-                            <span class="text-secondary" style="font-size:.72rem;">
-                                <?= $this->escapeHtml($mapping['resource_id']) ?> / <?= $this->escapeHtml($mapping['privilege_id']) ?>
-                            </span>
-                        </li>
-                    <?php endforeach; ?>
-                    <?php if ($remaining > 0): ?>
-                        <li class="list-group-item py-2 px-3 text-secondary small fst-italic">
-                            and <?= $remaining ?> more…
-                        </li>
-                    <?php endif; ?>
-                    <?php if ($this->mappings === []): ?>
-                        <li class="list-group-item py-2 px-3 text-secondary small">No route mappings yet.</li>
-                    <?php endif; ?>
-                </ul>
-            </div>
-        </div>
+<!-- ── UNPROTECTED ROUTES ───────────────────────────────── -->
+<?php if (! empty($this->unprotectedRoutes)): ?>
+<div class="card border-warning mb-3 overflow-hidden" id="ims-acl-section-unprotected">
+    <div class="card-header d-flex align-items-center gap-2 py-2 bg-transparent border-warning">
+        <i class="bi bi-shield-exclamation text-warning"></i>
+        <span class="fw-semibold small text-warning">Unprotected Routes</span>
+        <span class="badge bg-warning text-dark ms-auto"><?= (int) $filters['unprotected'] ?></span>
     </div>
-    <div class="col-12 col-md-6">
-        <div class="card h-100">
-            <div class="card-header d-flex align-items-center gap-2 py-2">
-                <i class="bi bi-toggles text-primary"></i>
-                <span class="fw-semibold small">Rules</span>
-                <span class="badge bg-body-tertiary border text-secondary ms-1"><?= count($this->rules) ?></span>
-                <a href="<?= $this->url('admin.acl.rules.read') ?>" class="ms-auto btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:.75rem;">
-                    Manage <i class="bi bi-arrow-right"></i>
-                </a>
+    <div class="card-body p-0">
+        <?php foreach ($this->unprotectedRoutes as $routeName => $methods): ?>
+            <?php
+            $privs = array_values(array_unique(array_map(
+                static fn(string $m): string => $methodPrivMap[$m] ?? 'read',
+                $methods,
+            )));
+            ?>
+            <div class="ims-acl-route-row ims-acl-route-entry"
+                 data-status="unprotected"
+                 data-route-name="<?= $this->escapeHtmlAttr($routeName) ?>">
+                <span class="ims-acl-route-name"><?= $this->escapeHtml($routeName) ?></span>
+                <?php foreach ($methods as $method): ?>
+                    <span class="ims-acl-method-pill ims-acl-method-<?= $this->escapeHtmlAttr($method) ?>"><?= $this->escapeHtml($method) ?></span>
+                <?php endforeach; ?>
+                <?php foreach ($privs as $priv): ?>
+                    <span class="badge bg-transparent border ims-acl-priv-<?= $this->escapeHtmlAttr($priv) ?> ims-badge-xs"><?= $this->escapeHtml($priv) ?></span>
+                <?php endforeach; ?>
+                <span class="ms-auto">
+                    <button class="btn btn-sm btn-outline-warning py-0 px-2"
+                            data-wizard-action="protect"
+                            data-route-name="<?= $this->escapeHtmlAttr($routeName) ?>"
+                            data-methods="<?= $this->escapeHtmlAttr((string) json_encode($methods)) ?>"
+                            data-privs="<?= $this->escapeHtmlAttr((string) json_encode($privs)) ?>">
+                        <i class="bi bi-shield-plus me-1"></i>Protect
+                    </button>
+                </span>
             </div>
-            <div class="card-body p-0">
-                <?php $previewRules = array_slice($this->rules, 0, 5); ?>
-                <ul class="list-group list-group-flush">
-                    <?php foreach ($previewRules as $rule): ?>
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
-                            <div style="font-size:.8125rem;">
-                                <?php if ($rule['type'] === 'allow'): ?>
-                                    <span class="badge bg-success-subtle border border-success-subtle text-success me-1">allow</span>
-                                <?php else: ?>
-                                    <span class="badge bg-danger-subtle border border-danger-subtle text-danger me-1">deny</span>
-                                <?php endif; ?>
-                                <?= $this->escapeHtml($rule['role_id']) ?> → <?= $this->escapeHtml($rule['resource_id']) ?> / <?= $this->escapeHtml($rule['privilege_id']) ?>
-                            </div>
-                        </li>
-                    <?php endforeach; ?>
-                    <?php if ($this->rules === []): ?>
-                        <li class="list-group-item py-2 px-3 text-secondary small">No rules defined yet.</li>
-                    <?php endif; ?>
-                </ul>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php else: ?>
+<div class="alert alert-success d-flex align-items-center gap-2 mb-3" id="ims-acl-section-unprotected">
+    <i class="bi bi-shield-check-fill text-success"></i>
+    <span class="small">All routes are protected.</span>
+</div>
+<?php endif; ?>
+
+<!-- ── PROTECTED ROUTES ─────────────────────────────────── -->
+<?php if (! empty($this->protectedRoutes)): ?>
+<div class="card border-secondary overflow-hidden" id="ims-acl-section-protected">
+    <div class="card-header d-flex align-items-center gap-2 py-2 bg-transparent">
+        <i class="bi bi-shield-check text-success"></i>
+        <span class="fw-semibold small">Protected Routes</span>
+        <span class="badge bg-success ms-auto"><?= (int) $filters['protected'] ?></span>
+    </div>
+    <div class="card-body p-0">
+        <?php foreach ($this->protectedRoutes as $routeName => $routeData): ?>
+            <?php
+            $methods    = $routeData['methods'];
+            $privs      = $routeData['derivedPrivileges'];
+            $ruleCount  = $routeData['ruleCount'];
+            $roleIds    = $routeData['roles'];
+            $hasAssert  = $routeData['hasAssertions'];
+            ?>
+            <div class="ims-acl-route-row ims-acl-route-entry"
+                 data-status="protected"
+                 data-route-name="<?= $this->escapeHtmlAttr($routeName) ?>">
+                <span class="ims-acl-route-name"><?= $this->escapeHtml($routeName) ?></span>
+                <?php foreach ($methods as $method): ?>
+                    <span class="ims-acl-method-pill ims-acl-method-<?= $this->escapeHtmlAttr($method) ?>"><?= $this->escapeHtml($method) ?></span>
+                <?php endforeach; ?>
+                <?php foreach ($privs as $priv): ?>
+                    <span class="badge bg-transparent border ims-acl-priv-<?= $this->escapeHtmlAttr($priv) ?> ims-badge-xs"><?= $this->escapeHtml($priv) ?></span>
+                <?php endforeach; ?>
+                <?php foreach ($roleIds as $roleId): ?>
+                    <span class="badge bg-primary-subtle border border-primary-subtle text-primary-emphasis ims-badge-xs">
+                        <i class="bi bi-people-fill me-1"></i><?= $this->escapeHtml($roleId) ?>
+                    </span>
+                <?php endforeach; ?>
+                <?php if ($hasAssert): ?>
+                    <span class="badge bg-info-subtle border border-info-subtle text-info-emphasis ims-badge-xs">
+                        <i class="bi bi-key me-1"></i>assertion
+                    </span>
+                <?php endif; ?>
+                <span class="ms-auto d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2 ims-acl-rules-offcanvas-trigger"
+                            data-rules-panel="ims-rules-panel-<?= $this->escapeHtmlAttr(str_replace('.', '-', $routeName)) ?>"
+                            data-route-name="<?= $this->escapeHtmlAttr($routeName) ?>"
+                            data-methods="<?= $this->escapeHtmlAttr((string) json_encode($methods)) ?>"
+                            data-privs="<?= $this->escapeHtmlAttr((string) json_encode($privs)) ?>">
+                        <i class="bi bi-list-ul me-1"></i>Rules
+                        <span class="badge bg-secondary"><?= $ruleCount ?></span>
+                    </button>
+                </span>
+            </div>
+            <div class="ims-acl-rules-panel d-none"
+                 id="ims-rules-panel-<?= $this->escapeHtmlAttr(str_replace('.', '-', $routeName)) ?>"
+                 aria-hidden="true">
+                <div class="d-flex align-items-center justify-content-end mb-2">
+                    <button class="btn btn-sm btn-outline-primary py-0 px-2"
+                            data-wizard-action="add-rule"
+                            data-route-name="<?= $this->escapeHtmlAttr($routeName) ?>"
+                            data-methods="<?= $this->escapeHtmlAttr((string) json_encode($methods)) ?>"
+                            data-privs="<?= $this->escapeHtmlAttr((string) json_encode($privs)) ?>">
+                        <i class="bi bi-plus-lg me-1"></i>Add rule
+                    </button>
+                </div>
+                <?php if (! empty($routeData['rules'])): ?>
+                <?php $inheritedHeaderShown = false; ?>
+                <table class="table table-sm table-borderless mb-0 ims-acl-rules-table">
+                    <thead class="text-secondary small">
+                        <tr>
+                            <th>Type</th>
+                            <th>Role</th>
+                            <th>Resource</th>
+                            <th>Assertions</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($routeData['rules'] as $rule): ?>
+                            <?php $isInherited = ! empty($rule['inherited']); ?>
+                            <?php if ($isInherited && ! $inheritedHeaderShown): ?>
+                                <?php $inheritedHeaderShown = true; ?>
+                                <tr class="ims-acl-rules-inherited-header">
+                                    <td colspan="5" class="py-1 small text-secondary">
+                                        <i class="bi bi-diagram-2 me-1"></i>Inherited from
+                                        <code class="ims-badge-xs"><?= $this->escapeHtml($rule['inherited_from']) ?></code>
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
+                            <tr class="<?= $isInherited ? 'ims-acl-rule-inherited' : '' ?>">
+                                <td class="align-middle">
+                                    <?php if ($isInherited): ?>
+                                        <?php if ($rule['type'] === 'allow'): ?>
+                                            <span class="badge bg-success-subtle border border-success-subtle text-success-emphasis ims-badge-xs">allow</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-danger-subtle border border-danger-subtle text-danger-emphasis ims-badge-xs">deny</span>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <?php
+                                            $newRuleType  = $rule['type'] === 'allow' ? 'deny' : 'allow';
+                                            $toggleVals   = (string) json_encode(['role_id' => $rule['role_id'], 'route_name' => $rule['resource_id'], 'type' => $newRuleType]);
+                                            $toggleClass  = $rule['type'] === 'allow'
+                                                ? 'bg-success-subtle border-success-subtle text-success-emphasis'
+                                                : 'bg-danger-subtle border-danger-subtle text-danger-emphasis';
+                                        ?>
+                                        <button type="button"
+                                                class="btn py-0 px-1 badge border ims-badge-xs ims-acl-rule-type-toggle <?= $toggleClass ?>"
+                                                hx-patch="<?= $this->adminUrl('acl.manager.rule.update') ?>"
+                                                hx-vals="<?= $this->escapeHtmlAttr($toggleVals) ?>"
+                                                hx-target="main"
+                                                title="Toggle to <?= $this->escapeHtmlAttr($newRuleType) ?>">
+                                            <?= $this->escapeHtml($rule['type']) ?> <i class="bi bi-arrow-left-right"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="align-middle small<?= $isInherited ? ' text-secondary' : '' ?>">
+                                    <?= $this->escapeHtml($rule['role_id']) ?>
+                                </td>
+                                <td class="align-middle">
+                                    <code class="ims-badge-xs"><?= $this->escapeHtml($rule['resource_id']) ?></code>
+                                </td>
+                                <td class="align-middle">
+                                    <?php foreach ($rule['assertions'] as $assertion): ?>
+                                        <span class="badge bg-info-subtle border border-info-subtle text-info-emphasis ims-badge-xs d-inline-block mb-1">
+                                            <i class="bi bi-key me-1"></i><?= $this->escapeHtml($assertion) ?>
+                                        </span>
+                                    <?php endforeach; ?>
+                                </td>
+                                <td class="align-middle text-end">
+                                    <?php if (! $isInherited): ?>
+                                        <button class="btn btn-sm btn-outline-danger py-0 px-1"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#deleteRuleModal"
+                                                data-rule-id="<?= (int) ($rule['id'] ?? 0) ?>"
+                                                data-role-id="<?= $this->escapeHtmlAttr($rule['role_id']) ?>"
+                                                data-resource-id="<?= $this->escapeHtmlAttr($rule['resource_id']) ?>"
+                                                data-privilege-id="<?= $this->escapeHtmlAttr($rule['privilege_id']) ?>"
+                                                data-rule-type="<?= $this->escapeHtmlAttr($rule['type']) ?>">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <?php else: ?>
+                    <p class="text-secondary small mb-0">No rules defined for this route yet.</p>
+                <?php endif; ?>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php else: ?>
+<div class="alert alert-secondary d-flex align-items-center gap-2" id="ims-acl-section-protected">
+    <i class="bi bi-info-circle"></i>
+    <span class="small">No routes are protected yet. Use the <strong>Protect</strong> button above to add ACL rules.</span>
+</div>
+<?php endif; ?>
+
+<!-- ── Rules offcanvas ─────────────────────────────────── -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="ims-acl-rule-offcanvas"
+     aria-labelledby="ims-acl-rule-offcanvas-label">
+    <div class="offcanvas-header border-bottom py-2">
+        <h6 class="offcanvas-title fw-semibold mb-0" id="ims-acl-rule-offcanvas-label">
+            <i class="bi bi-shield-check text-success me-1"></i>
+            <span id="ims-acl-offcanvas-route-name" class="font-monospace"></span>
+        </h6>
+        <button type="button" class="btn-close ms-2" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-3" id="ims-acl-offcanvas-body">
+    </div>
+</div>
+
+<!-- ── Wizard modal (partial) ───────────────────────────── -->
+<?= $this->partial('acl::partials/protect-route-wizard', [
+    'roles'        => $this->roles,
+    'roleChildren' => $this->roleChildren,
+    'roleTree'     => $this->roleTree,
+    'assertions'   => $this->assertions,
+    // TODO: was 'acl.resources.protect' (ProtectRouteCommand, now deleted).
+    // Protecting a resource = creating a rule, so this now points to rule.create.
+    'protectUrl'   => $this->adminUrl('acl.manager.rule.create'),
+]) ?>
+
+<!-- ── Delete rule confirmation modal ───────────────────── -->
+<div class="modal fade" id="deleteRuleModal" tabindex="-1"
+     aria-labelledby="deleteRuleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header py-2 border-danger">
+                <h5 class="modal-title small fw-bold text-danger" id="deleteRuleModalLabel">
+                    <i class="bi bi-trash3 me-1"></i> Delete Rule
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body small">
+                Remove <span id="deleteRuleDesc"></span>?
+                <div class="text-secondary mt-1">This cannot be undone. Add a new rule if you need to restore it.</div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button id="deleteRuleConfirmBtn" type="button"
+                        class="btn btn-sm btn-danger"
+                        hx-delete=""
+                        hx-target="main"
+                        hx-swap="innerHTML">Delete</button>
             </div>
         </div>
     </div>

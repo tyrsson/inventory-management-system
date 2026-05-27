@@ -1,4 +1,7 @@
 <?php
+
+use Webware\Acl\PrivilegeInterface as Privilege;
+
 /**
  * @var array<int, \Webware\Acl\Entity\Resource>  $resources   — keyed by resource_pk
  * @var array<int, \Webware\Acl\Entity\Privilege> $privileges  — keyed by privilege_pk
@@ -15,7 +18,7 @@ foreach ($this->privileges as $priv) {
 <!-- Breadcrumb -->
 <nav aria-label="breadcrumb" class="mb-2">
     <ol class="breadcrumb small mb-0">
-        <li class="breadcrumb-item"><a href="<?= $this->url('admin.dashboard.read') ?>">Admin</a></li>
+        <li class="breadcrumb-item"><a href="<?= $this->adminUrl('dashboard.read') ?>">Admin</a></li>
         <li class="breadcrumb-item active" aria-current="page">Resources &amp; Privileges</li>
     </ol>
 </nav>
@@ -34,90 +37,97 @@ foreach ($this->privileges as $priv) {
     </button>
 </div>
 
-<!-- Resources accordion -->
-<div class="accordion" id="resourcesAccordion">
-    <?php foreach ($this->resources as $resource):
-        $resourcePrivs = $privsByResource[$resource->resourcePk] ?? [];
-        $privCount     = count($resourcePrivs);
-        $accordionId   = 'res-' . preg_replace('/[^a-z0-9]+/', '-', strtolower($resource->resourceId));
-    ?>
-        <div class="accordion-item">
-            <h2 class="accordion-header d-flex align-items-center">
-                <button
-                    class="accordion-button collapsed py-2 flex-grow-1"
-                    type="button"
-                    data-ims-resource-toggle="<?= $this->escapeHtmlAttr($accordionId) ?>"
-                    aria-expanded="false"
-                    aria-controls="<?= $this->escapeHtmlAttr($accordionId) ?>"
-                >
-                    <div class="d-flex align-items-center gap-2 flex-grow-1 me-3">
-                        <code class="text-primary"><?= $this->escapeHtml($resource->resourceId) ?></code>
-                        <span class="text-secondary small"><?= $this->escapeHtml($resource->label) ?></span>
-                        <span class="badge bg-body-tertiary border text-secondary ms-auto ims-badge-xs">
-                            <?= $privCount ?> <?= $privCount === 1 ? 'privilege' : 'privileges' ?>
-                        </span>
-                    </div>
-                </button>
-                <div class="d-flex align-items-center align-self-stretch border-start bg-body px-2 flex-shrink-0">
-                    <button
-                        type="button"
-                        class="btn btn-sm btn-outline-danger py-0 px-2"
-                        data-bs-toggle="modal"
-                        data-bs-target="#deleteResourceModal"
-                        data-resource-pk="<?= $resource->resourcePk ?>"
-                        data-resource-id="<?= $this->escapeHtmlAttr($resource->resourceId) ?>"
-                        title="Delete resource"
-                    >
-                        <i class="bi bi-trash3"></i>
-                    </button>
-                </div>
-            </h2>
-            <div
-                id="<?= $this->escapeHtmlAttr($accordionId) ?>"
-                class="accordion-collapse collapse"
-            >
-                <div class="accordion-body py-2 px-3">
-                    <?php if ($resourcePrivs !== []): ?>
-                        <table class="table table-sm mb-2">
-                            <thead>
-                                <tr>
-                                    <th>Privilege</th>
-                                    <th>Label</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($resourcePrivs as $priv): ?>
-                                    <tr>
-                                        <td><code><?= $this->escapeHtml($priv->privilegeId) ?></code></td>
-                                        <td class="text-secondary small"><?= $this->escapeHtml($priv->label) ?></td>
-                                        <td class="text-end">
-                                            <button
-                                                class="btn btn-sm btn-outline-secondary py-0 px-2"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#editPrivilegeModal"
-                                                data-privilege-pk="<?= $priv->privilegePk ?>"
-                                                data-privilege-id="<?= $this->escapeHtmlAttr($priv->privilegeId) ?>"
-                                                data-privilege-label="<?= $this->escapeHtmlAttr($priv->label) ?>"
-                                            >
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php endif; ?>
-
-                </div>
-            </div>
-        </div>
-    <?php endforeach; ?>
-</div>
-
 <?php if ($this->resources === []): ?>
     <div class="text-secondary small mt-3">No resources defined yet.</div>
 <?php endif; ?>
+
+<!-- Unprotected Routes -->
+<?php if (isset($this->unprotected) && $this->unprotected !== []): ?>
+<?php
+    $privilegeColor = [
+        Privilege::READ   => 'primary',
+        Privilege::CREATE => 'success',
+        Privilege::UPDATE => 'warning',
+        Privilege::DELETE => 'danger',
+    ];
+    $unprotectedCount = count($this->unprotected);
+?>
+<div class="card border-warning mt-4 mb-4">
+    <div class="card-header d-flex align-items-center gap-2 py-2">
+        <i class="bi bi-shield-exclamation text-warning"></i>
+        <span class="fw-semibold small">Unprotected Routes</span>
+        <span class="badge bg-warning text-dark ms-auto"><?= $unprotectedCount ?></span>
+    </div>
+    <div class="accordion accordion-flush" id="unprotectedAccordion">
+        <?php foreach ($this->unprotected as $routeName => $methods):
+            $accId = 'uprec-' . preg_replace('/[^a-z0-9]+/', '-', strtolower($routeName));
+            $privileges = array_unique(array_filter(array_map(
+                static fn(string $m): string => Privilege::METHOD_PRIVILEGE_MAP[$m] ?? '',
+                $methods,
+            )));
+        ?>
+        <div class="accordion-item" id="<?= $this->escapeHtmlAttr($accId) ?>">
+            <h2 class="accordion-header">
+                <button
+                    class="accordion-button collapsed py-2"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#<?= $this->escapeHtmlAttr($accId) ?>-body"
+                    aria-expanded="false"
+                    aria-controls="<?= $this->escapeHtmlAttr($accId) ?>-body"
+                >
+                    <div class="d-flex align-items-center gap-2 flex-grow-1 me-2">
+                        <code class="small"><?= $this->escapeHtml($routeName) ?></code>
+                        <div class="d-flex gap-1 ms-auto">
+                            <?php foreach ($privileges as $priv): ?>
+                                <span class="badge bg-transparent border border-<?= $privilegeColor[$priv] ?> text-<?= $privilegeColor[$priv] ?> ims-badge-xs">
+                                    <?= ucfirst($priv) ?>
+                                </span>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </button>
+            </h2>
+            <div id="<?= $this->escapeHtmlAttr($accId) ?>-body" class="accordion-collapse collapse">
+                <div class="accordion-body py-2 px-3">
+                    <form
+                        <?php /* TODO: was 'acl.resources.protect' (ProtectRouteCommand, deleted). Protecting = creating a rule. */ ?>
+                        hx-post="<?= $this->adminUrl('acl.manager.rule.create') ?>"
+                        hx-target="main"
+                        hx-swap="innerHTML"
+                    >
+                        <input type="hidden" name="routeName" value="<?= $this->escapeHtmlAttr($routeName) ?>">
+                        <p class="small text-secondary mb-2">Select role(s) to grant access:</p>
+                        <div class="d-flex flex-wrap gap-3 mb-3">
+                            <?php foreach ($this->roles as $role):
+                                $cbId = $accId . '-r-' . preg_replace('/[^a-z0-9]+/', '-', strtolower($role->roleId));
+                            ?>
+                            <div class="form-check">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    name="role[]"
+                                    value="<?= $this->escapeHtmlAttr($role->roleId) ?>"
+                                    id="<?= $this->escapeHtmlAttr($cbId) ?>"
+                                >
+                                <label class="form-check-label small" for="<?= $this->escapeHtmlAttr($cbId) ?>">
+                                    <?= $this->escapeHtml($role->roleId) ?>
+                                </label>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-warning py-1 px-3">
+                            <i class="bi bi-shield-plus me-1"></i> Protect
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
+
 
 <!-- ADD RESOURCE MODAL -->
 <div class="modal fade" id="addResourceModal" tabindex="-1" aria-labelledby="addResourceModalLabel" aria-hidden="true">
@@ -130,11 +140,18 @@ foreach ($this->privileges as $priv) {
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <?php
+                /*
+                 * TODO: 'acl.resources.create' route deleted — resources are route-derived (from RouteCollector),
+                 * not manually created. This entire "Add Resource" modal and form needs to be redesigned
+                 * or removed. Leaving in place until the admin-resources sub-page is reworked.
+                 */
+                ?>
                 <form
                     id="addResourceForm"
                     method="POST"
-                    action="<?= $this->url('admin.acl.resources.create') ?>"
-                    hx-post="<?= $this->url('admin.acl.resources.create') ?>"
+                    action=""
+                    hx-post=""
                     hx-target="main"
                     hx-swap="innerHTML"
                 >

@@ -1,0 +1,1266 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACL Workflow — UI Mockup | webware-acl</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="../../../resources/ui-mockup/v2/custom.css" />
+    <style>
+        /* ── Wizard stepper ─────────────────────────────── */
+        .wiz-stepper {
+            display: flex;
+            align-items: flex-start;
+            gap: 0;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+        .wiz-step {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            min-width: 0;
+        }
+        .wiz-step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 13px;
+            left: calc(50% + 14px);
+            right: calc(-50% + 14px);
+            height: 2px;
+            background: var(--bs-border-color);
+            z-index: 0;
+        }
+        .wiz-step:not(:last-child).done::after { background: var(--bs-primary); }
+        .wiz-circle {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border: 2px solid var(--bs-border-color);
+            background: var(--bs-body-bg);
+            color: var(--bs-secondary-color);
+            position: relative;
+            z-index: 1;
+            flex-shrink: 0;
+            transition: border-color 0.2s, color 0.2s, background 0.2s;
+        }
+        .wiz-step.active .wiz-circle {
+            border-color: var(--bs-primary);
+            color: var(--bs-primary);
+        }
+        .wiz-step.done .wiz-circle {
+            border-color: var(--bs-primary);
+            background: var(--bs-primary);
+            color: #fff;
+        }
+        .wiz-label {
+            font-size: 0.65rem;
+            text-align: center;
+            margin-top: 4px;
+            color: var(--bs-secondary-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 80px;
+        }
+        .wiz-step.active .wiz-label { color: var(--bs-primary); font-weight: 600; }
+        .wiz-step.done  .wiz-label { color: var(--bs-body-color); }
+
+        /* ── Role hierarchy tree ─────────────────────────── */
+        .role-tree ul { list-style: none; padding-left: 1.25rem; margin: 0; }
+        .role-tree > ul { padding-left: 0; }
+        .role-tree li { position: relative; padding: 2px 0; }
+        .role-tree li::before {
+            content: '';
+            position: absolute;
+            left: -14px;
+            top: 12px;
+            width: 10px;
+            height: 1px;
+            background: var(--bs-border-color);
+        }
+        .role-tree li::after {
+            content: '';
+            position: absolute;
+            left: -14px;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: var(--bs-border-color);
+        }
+        .role-tree li:last-child::after { bottom: 50%; }
+        .role-tree .role-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.1s;
+            user-select: none;
+        }
+        .role-tree .role-item:hover { background: var(--bs-tertiary-bg); }
+        .role-tree .role-item.selected {
+            background: rgba(var(--bs-primary-rgb), 0.15);
+            outline: 1px solid rgba(var(--bs-primary-rgb), 0.35);
+        }
+
+        /* ── Route list ──────────────────────────────────── */
+        .route-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--bs-border-color-translucent);
+            font-size: 0.8125rem;
+        }
+        .route-row:last-child { border-bottom: none; }
+        .route-row:hover { background: var(--bs-tertiary-bg); }
+        .route-name { font-family: var(--bs-font-monospace); color: var(--bs-primary); font-size: 0.8125rem; }
+        .method-pill {
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            padding: 1px 5px;
+            border-radius: 3px;
+            text-transform: uppercase;
+        }
+        .method-GET    { background: rgba( 25,135, 84,.18); color:#2eca8b; border:1px solid rgba(25,135,84,.35); }
+        .method-POST   { background: rgba( 13,110,253,.15); color:#6ea8fe; border:1px solid rgba(13,110,253,.30); }
+        .method-PUT    { background: rgba(255,193,  7,.12); color:#f0c040; border:1px solid rgba(255,193,7,.30); }
+        .method-PATCH  { background: rgba(255,193,  7,.12); color:#f0c040; border:1px solid rgba(255,193,7,.30); }
+        .method-DELETE { background: rgba(220, 53, 69,.15); color:#f1707d; border:1px solid rgba(220,53,69,.35); }
+
+        /* ── Privilege badge ─────────────────────────────── */
+        .priv-read   { border-color: var(--bs-primary)  !important; color: var(--bs-primary)  !important; }
+        .priv-create { border-color: var(--bs-success)  !important; color: var(--bs-success)  !important; }
+        .priv-update { border-color: var(--bs-warning)  !important; color: var(--bs-warning)  !important; }
+        .priv-delete { border-color: var(--bs-danger)   !important; color: var(--bs-danger)   !important; }
+        .priv-custom { border-color: var(--bs-info)     !important; color: var(--bs-info)     !important; }
+
+        /* ── Rules inside expanded row ───────────────────── */
+        .rules-panel {
+            background: var(--bs-tertiary-bg);
+            border-top: 1px solid var(--bs-border-color-translucent);
+            padding: 10px 12px;
+            font-size: 0.8rem;
+        }
+        .rule-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+            border-bottom: 1px solid var(--bs-border-color-translucent);
+        }
+        .rule-row:last-child { border-bottom: none; }
+
+        /* ── Assertion option card ───────────────────────── */
+        .assertion-card {
+            border: 1px solid var(--bs-border-color);
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .assertion-card:hover { border-color: var(--bs-primary); background: rgba(var(--bs-primary-rgb), 0.05); }
+        .assertion-card.selected { border-color: var(--bs-primary); background: rgba(var(--bs-primary-rgb), 0.1); }
+
+        /* ── Grant type cards ────────────────────────────── */
+        .grant-card {
+            border: 2px solid var(--bs-border-color);
+            border-radius: 8px;
+            padding: 14px 16px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            height: 100%;
+        }
+        .grant-card:hover { border-color: var(--bs-secondary-color); }
+        .grant-card.selected { border-color: var(--bs-primary); background: rgba(var(--bs-primary-rgb), 0.07); }
+        .grant-card .grant-icon { font-size: 1.4rem; margin-bottom: 6px; }
+
+        /* ── Privilege select cards ──────────────────────── */
+        .priv-card {
+            border: 2px solid var(--bs-border-color);
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .priv-card:hover { border-color: var(--bs-secondary-color); }
+        .priv-card.selected-read   { border-color: var(--bs-primary); background: rgba(var(--bs-primary-rgb),.1); }
+        .priv-card.selected-create { border-color: var(--bs-success); background: rgba(var(--bs-success-rgb),.08); }
+        .priv-card.selected-update { border-color: var(--bs-warning); background: rgba(255,193,7,.08); }
+        .priv-card.selected-delete { border-color: var(--bs-danger);  background: rgba(var(--bs-danger-rgb),.08); }
+        .priv-card.selected-custom { border-color: var(--bs-info);    background: rgba(var(--bs-info-rgb),.08); }
+
+        /* ── Summary list ────────────────────────────────── */
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid var(--bs-border-color-translucent);
+            font-size: 0.8125rem;
+        }
+        .summary-item:last-child { border-bottom: none; }
+        .summary-label { color: var(--bs-secondary-color); font-size: 0.75rem; }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     TOP NAVBAR
+════════════════════════════════════════════════════════ -->
+<nav class="navbar fixed-top ims-topbar bg-body-tertiary border-bottom border-secondary-subtle px-3">
+    <div class="d-flex align-items-center gap-2 flex-grow-1">
+        <button class="btn btn-sm btn-link text-body p-1 d-lg-none" type="button"
+                data-bs-toggle="offcanvas" data-bs-target="#imsSidebar" aria-controls="imsSidebar">
+            <i class="bi bi-list fs-4"></i>
+        </button>
+        <div>
+            <div class="fw-bold lh-1 small">Access Control</div>
+            <div class="text-secondary" style="font-size:0.7rem;">Administration › ACL Manager</div>
+        </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-warning text-dark" style="font-size:.6rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">UI Mockup</span>
+        <div class="ims-avatar">JS</div>
+    </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════
+     SIDEBAR
+════════════════════════════════════════════════════════ -->
+<div class="offcanvas-lg offcanvas-start ims-sidebar bg-body-tertiary border-end border-secondary-subtle d-flex flex-column"
+     tabindex="-1" id="imsSidebar" aria-labelledby="imsSidebarLabel">
+    <div class="offcanvas-header border-bottom border-secondary-subtle">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-boxes fs-4 text-primary"></i>
+            <div>
+                <div class="fw-bold lh-1" id="imsSidebarLabel">Farmers IMS</div>
+                <div class="text-secondary" style="font-size:0.7rem;">Inventory Management</div>
+            </div>
+        </div>
+        <button type="button" class="btn-close d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#imsSidebar" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-2 d-flex flex-column flex-grow-1 overflow-y-auto">
+        <div class="sidebar-section-label">Main</div>
+        <nav class="nav flex-column gap-1">
+            <a href="#" class="nav-link"><i class="bi bi-grid-fill"></i> Dashboard</a>
+            <a href="#" class="nav-link"><i class="bi bi-clipboard2-data"></i> Manifests</a>
+            <a href="#" class="nav-link"><i class="bi bi-receipt"></i> Tickets</a>
+            <a href="#" class="nav-link"><i class="bi bi-arrow-left-right"></i> Transfers</a>
+        </nav>
+        <div class="sidebar-section-label mt-2">Administration</div>
+        <nav class="nav flex-column gap-1">
+            <a href="#" class="nav-link"><i class="bi bi-speedometer2"></i> Admin Dashboard</a>
+            <button class="nav-link d-flex align-items-center gap-2 w-100 text-start border-0 bg-transparent"
+                    type="button" data-bs-toggle="collapse" data-bs-target="#aclSubNav" aria-expanded="true">
+                <i class="bi bi-shield-lock text-primary"></i>
+                <span class="flex-grow-1" style="color:var(--bs-primary);">ACL Manager</span>
+                <i class="bi bi-chevron-down" style="font-size:.75rem;"></i>
+            </button>
+            <div class="collapse show" id="aclSubNav">
+                <div class="d-flex flex-column gap-1 ps-3">
+                    <a href="#" class="nav-link py-1 active" aria-current="page" style="font-size:.8125rem;"><i class="bi bi-collection"></i> Access Control</a>
+                    <a href="#" class="nav-link py-1" style="font-size:.8125rem;"><i class="bi bi-people"></i> Roles</a>
+                </div>
+            </div>
+        </nav>
+        <div class="mt-auto pt-2 border-top border-secondary-subtle">
+            <nav class="nav flex-column gap-1">
+                <a href="#" class="nav-link"><i class="bi bi-gear"></i> Settings</a>
+                <a href="#" class="nav-link"><i class="bi bi-box-arrow-left"></i> Sign Out</a>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MAIN CONTENT
+════════════════════════════════════════════════════════ -->
+<div class="ims-layout">
+<main class="ims-main p-3 p-lg-4">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-2">
+        <ol class="breadcrumb small mb-0">
+            <li class="breadcrumb-item"><a href="#">Admin</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Access Control</li>
+        </ol>
+    </nav>
+
+    <!-- Page header -->
+    <div class="d-flex align-items-start justify-content-between mb-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <i class="bi bi-shield-lock text-primary fs-5"></i>
+                <h1 class="h4 fw-bold mb-0">Access Control</h1>
+            </div>
+            <p class="text-secondary small mb-0">Manage which roles can access each route. Routes are the protected resources.</p>
+        </div>
+    </div>
+
+    <!-- Search + Filter bar -->
+    <div class="d-flex gap-2 mb-3 flex-wrap">
+        <div class="input-group input-group-sm" style="max-width:320px;">
+            <span class="input-group-text bg-body-tertiary border-secondary-subtle">
+                <i class="bi bi-search text-secondary"></i>
+            </span>
+            <input type="search" class="form-control bg-body-tertiary border-secondary-subtle"
+                   id="routeSearch" placeholder="Search routes…" autocomplete="off">
+        </div>
+        <div class="d-flex gap-1">
+            <button class="btn btn-sm btn-outline-secondary active" id="filterAll" onclick="setFilter('all')">All</button>
+            <button class="btn btn-sm btn-outline-warning" id="filterUnprotected" onclick="setFilter('unprotected')">
+                <i class="bi bi-shield-exclamation me-1"></i>Unprotected
+                <span class="badge bg-warning text-dark ms-1">5</span>
+            </button>
+            <button class="btn btn-sm btn-outline-success" id="filterProtected" onclick="setFilter('protected')">
+                <i class="bi bi-shield-check me-1"></i>Protected
+                <span class="badge bg-success ms-1">8</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ── UNPROTECTED ROUTES ──────────────────────────── -->
+    <div class="card border-warning mb-3" id="sectionUnprotected">
+        <div class="card-header d-flex align-items-center gap-2 py-2 bg-transparent border-warning">
+            <i class="bi bi-shield-exclamation text-warning"></i>
+            <span class="fw-semibold small text-warning">Unprotected Routes</span>
+            <span class="badge bg-warning text-dark ms-auto">5</span>
+        </div>
+        <div class="card-body p-0">
+
+            <!-- user.login — GET only → read -->
+            <div class="route-row route-entry" data-status="unprotected" data-name="user.login">
+                <span class="route-name">user.login</span>
+                <span class="method-pill method-GET">GET</span>
+                <span class="badge bg-transparent border priv-read ms-1" style="font-size:.65rem;">read</span>
+                <span class="ms-auto">
+                    <button class="btn btn-sm btn-outline-warning py-0 px-2" style="font-size:.75rem;"
+                            onclick="openWizard('user.login', ['GET'], ['read'])">
+                        <i class="bi bi-shield-plus me-1"></i>Protect
+                    </button>
+                </span>
+            </div>
+
+            <!-- user.login.post — POST → create -->
+            <div class="route-row route-entry" data-status="unprotected" data-name="user.login.post">
+                <span class="route-name">user.login.post</span>
+                <span class="method-pill method-POST">POST</span>
+                <span class="badge bg-transparent border priv-create ms-1" style="font-size:.65rem;">create</span>
+                <span class="ms-auto">
+                    <button class="btn btn-sm btn-outline-warning py-0 px-2" style="font-size:.75rem;"
+                            onclick="openWizard('user.login.post', ['POST'], ['create'])">
+                        <i class="bi bi-shield-plus me-1"></i>Protect
+                    </button>
+                </span>
+            </div>
+
+            <!-- user.register — GET → read -->
+            <div class="route-row route-entry" data-status="unprotected" data-name="user.register">
+                <span class="route-name">user.register</span>
+                <span class="method-pill method-GET">GET</span>
+                <span class="badge bg-transparent border priv-read ms-1" style="font-size:.65rem;">read</span>
+                <span class="ms-auto">
+                    <button class="btn btn-sm btn-outline-warning py-0 px-2" style="font-size:.75rem;"
+                            onclick="openWizard('user.register', ['GET'], ['read'])">
+                        <i class="bi bi-shield-plus me-1"></i>Protect
+                    </button>
+                </span>
+            </div>
+
+            <!-- user.register.post — POST → create -->
+            <div class="route-row route-entry" data-status="unprotected" data-name="user.register.post">
+                <span class="route-name">user.register.post</span>
+                <span class="method-pill method-POST">POST</span>
+                <span class="badge bg-transparent border priv-create ms-1" style="font-size:.65rem;">create</span>
+                <span class="ms-auto">
+                    <button class="btn btn-sm btn-outline-warning py-0 px-2" style="font-size:.75rem;"
+                            onclick="openWizard('user.register.post', ['POST'], ['create'])">
+                        <i class="bi bi-shield-plus me-1"></i>Protect
+                    </button>
+                </span>
+            </div>
+
+            <!-- admin.manifest.create — GET + POST → read + create -->
+            <div class="route-row route-entry" data-status="unprotected" data-name="admin.manifest.create">
+                <span class="route-name">admin.manifest.create</span>
+                <span class="method-pill method-GET">GET</span>
+                <span class="method-pill method-POST">POST</span>
+                <span class="badge bg-transparent border priv-read ms-1" style="font-size:.65rem;">read</span>
+                <span class="badge bg-transparent border priv-create" style="font-size:.65rem;">create</span>
+                <span class="ms-auto">
+                    <button class="btn btn-sm btn-outline-warning py-0 px-2" style="font-size:.75rem;"
+                            onclick="openWizard('admin.manifest.create', ['GET','POST'], ['read','create'])">
+                        <i class="bi bi-shield-plus me-1"></i>Protect
+                    </button>
+                </span>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ── PROTECTED ROUTES ───────────────────────────── -->
+    <div class="card border-secondary" id="sectionProtected">
+        <div class="card-header d-flex align-items-center gap-2 py-2 bg-transparent">
+            <i class="bi bi-shield-check text-success"></i>
+            <span class="fw-semibold small">Protected Routes</span>
+            <span class="badge bg-success ms-auto">8</span>
+        </div>
+        <div class="card-body p-0">
+
+            <!-- public / read (not expandable — no rules to configure, it's the open gate) -->
+            <div class="route-row route-entry" data-status="protected" data-name="user.verify-email">
+                <span class="route-name">user.verify-email</span>
+                <span class="method-pill method-GET">GET</span>
+                <span class="badge bg-transparent border priv-read ms-1" style="font-size:.65rem;">read</span>
+                <span class="badge bg-success-subtle border border-success-subtle text-success-emphasis ms-1" style="font-size:.65rem;">
+                    <i class="bi bi-people-fill me-1"></i>guest
+                </span>
+                <span class="ms-auto d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:.75rem;"
+                            onclick="toggleRules(this)">
+                        <i class="bi bi-list-ul me-1"></i>Rules <span class="badge bg-secondary">1</span>
+                    </button>
+                </span>
+            </div>
+            <div class="rules-panel d-none">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small">Rules for <code>user.verify-email</code></span>
+                    <button class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size:.7rem;"
+                            onclick="openWizard('user.verify-email', ['GET'], ['read'])">
+                        <i class="bi bi-plus-lg me-1"></i>Add rule
+                    </button>
+                </div>
+                <div class="rule-row">
+                    <span class="badge bg-success-subtle border border-success-subtle text-success-emphasis" style="font-size:.65rem;">allow</span>
+                    <span class="small">guest</span>
+                    <i class="bi bi-arrow-right text-secondary" style="font-size:.7rem;"></i>
+                    <code style="font-size:.75rem;">user.verify-email / read</code>
+                    <span class="ms-auto">
+                        <button class="btn btn-xs btn-outline-danger py-0 px-1" style="font-size:.65rem;"><i class="bi bi-trash"></i></button>
+                    </span>
+                </div>
+            </div>
+
+            <!-- dashboard -->
+            <div class="route-row route-entry" data-status="protected" data-name="dashboard">
+                <span class="route-name">dashboard</span>
+                <span class="method-pill method-GET">GET</span>
+                <span class="badge bg-transparent border priv-read ms-1" style="font-size:.65rem;">read</span>
+                <span class="badge bg-primary-subtle border border-primary-subtle text-primary-emphasis ms-1" style="font-size:.65rem;">
+                    <i class="bi bi-people-fill me-1"></i>member+
+                </span>
+                <span class="ms-auto d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:.75rem;"
+                            onclick="toggleRules(this)">
+                        <i class="bi bi-list-ul me-1"></i>Rules <span class="badge bg-secondary">1</span>
+                    </button>
+                </span>
+            </div>
+            <div class="rules-panel d-none">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small">Rules for <code>dashboard</code></span>
+                    <button class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size:.7rem;"
+                            onclick="openWizard('dashboard', ['GET'], ['read'])">
+                        <i class="bi bi-plus-lg me-1"></i>Add rule
+                    </button>
+                </div>
+                <div class="rule-row">
+                    <span class="badge bg-success-subtle border border-success-subtle text-success-emphasis" style="font-size:.65rem;">allow</span>
+                    <span class="small">member</span>
+                    <span class="badge bg-secondary-subtle border text-secondary-emphasis ms-1" style="font-size:.6rem;">inherited</span>
+                    <i class="bi bi-arrow-right text-secondary" style="font-size:.7rem;"></i>
+                    <code style="font-size:.75rem;">dashboard / read</code>
+                    <span class="ms-auto">
+                        <button class="btn btn-xs btn-outline-danger py-0 px-1" style="font-size:.65rem;"><i class="bi bi-trash"></i></button>
+                    </span>
+                </div>
+            </div>
+
+            <!-- admin.user.list.read — has assertion -->
+            <div class="route-row route-entry" data-status="protected" data-name="admin.user.list.read">
+                <span class="route-name">admin.user.list.read</span>
+                <span class="method-pill method-GET">GET</span>
+                <span class="badge bg-transparent border priv-read ms-1" style="font-size:.65rem;">read</span>
+                <span class="badge bg-primary-subtle border border-primary-subtle text-primary-emphasis ms-1" style="font-size:.65rem;">
+                    <i class="bi bi-people-fill me-1"></i>Manager+
+                </span>
+                <span class="ms-auto d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:.75rem;"
+                            onclick="toggleRules(this)">
+                        <i class="bi bi-list-ul me-1"></i>Rules <span class="badge bg-secondary">1</span>
+                    </button>
+                </span>
+            </div>
+            <div class="rules-panel d-none">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small">Rules for <code>admin.user.list.read</code></span>
+                    <button class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size:.7rem;"
+                            onclick="openWizard('admin.user.list.read', ['GET'], ['read'])">
+                        <i class="bi bi-plus-lg me-1"></i>Add rule
+                    </button>
+                </div>
+                <div class="rule-row">
+                    <span class="badge bg-success-subtle border border-success-subtle text-success-emphasis" style="font-size:.65rem;">allow</span>
+                    <span class="small">Manager</span>
+                    <span class="badge bg-secondary-subtle border text-secondary-emphasis ms-1" style="font-size:.6rem;">inherited</span>
+                    <i class="bi bi-arrow-right text-secondary" style="font-size:.7rem;"></i>
+                    <code style="font-size:.75rem;">admin.user.list.read / read</code>
+                    <span class="ms-auto">
+                        <button class="btn btn-xs btn-outline-danger py-0 px-1" style="font-size:.65rem;"><i class="bi bi-trash"></i></button>
+                    </span>
+                </div>
+            </div>
+
+            <!-- admin.user.update — update, with OwnershipAssertion shown -->
+            <div class="route-row route-entry" data-status="protected" data-name="admin.user.update">
+                <span class="route-name">admin.user.update</span>
+                <span class="method-pill method-POST">POST</span>
+                <span class="badge bg-transparent border priv-update ms-1" style="font-size:.65rem;">update</span>
+                <span class="badge bg-primary-subtle border border-primary-subtle text-primary-emphasis ms-1" style="font-size:.65rem;">
+                    <i class="bi bi-people-fill me-1"></i>Manager+
+                </span>
+                <span class="badge bg-info-subtle border border-info-subtle text-info-emphasis ms-1" style="font-size:.65rem;">
+                    <i class="bi bi-key me-1"></i>assertion
+                </span>
+                <span class="ms-auto d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:.75rem;"
+                            onclick="toggleRules(this)">
+                        <i class="bi bi-list-ul me-1"></i>Rules <span class="badge bg-secondary">1</span>
+                    </button>
+                </span>
+            </div>
+            <div class="rules-panel d-none">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small">Rules for <code>admin.user.update</code></span>
+                    <button class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size:.7rem;"
+                            onclick="openWizard('admin.user.update', ['POST'], ['update'])">
+                        <i class="bi bi-plus-lg me-1"></i>Add rule
+                    </button>
+                </div>
+                <div class="rule-row">
+                    <span class="badge bg-success-subtle border border-success-subtle text-success-emphasis" style="font-size:.65rem;">allow</span>
+                    <span class="small">Manager</span>
+                    <span class="badge bg-secondary-subtle border text-secondary-emphasis ms-1" style="font-size:.6rem;">inherited</span>
+                    <i class="bi bi-arrow-right text-secondary" style="font-size:.7rem;"></i>
+                    <code style="font-size:.75rem;">admin.user.update / update</code>
+                    <span class="badge bg-info-subtle border border-info-subtle text-info-emphasis ms-1" style="font-size:.6rem;">
+                        <i class="bi bi-key me-1"></i>OwnershipAssertion
+                    </span>
+                    <span class="ms-auto">
+                        <button class="btn btn-xs btn-outline-danger py-0 px-1" style="font-size:.65rem;"><i class="bi bi-trash"></i></button>
+                    </span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</main>
+</div><!-- /.ims-layout -->
+
+
+<!-- ═══════════════════════════════════════════════════════
+     PROTECT ROUTE WIZARD — MODAL
+════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="protectWizardModal" tabindex="-1" aria-labelledby="wizardTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+
+            <!-- Modal header — route context always visible above the stepper -->
+            <div class="modal-header border-bottom pb-2">
+                <div class="flex-grow-1 me-3">
+                    <h5 class="modal-title mb-1" id="wizardTitle">
+                        <i class="bi bi-shield-plus text-primary me-2"></i>Protect Route
+                    </h5>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <code id="wiz-route-display" class="text-primary" style="font-size:.8rem;">user.login</code>
+                        <span class="text-secondary" style="font-size:.7rem;">&middot;</span>
+                        <div id="wiz-header-methods" class="d-flex gap-1"></div>
+                        <span class="text-secondary" style="font-size:.7rem;">&middot;</span>
+                        <div id="wiz-header-privs" class="d-flex gap-1"></div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Stepper -->
+            <div class="modal-body pb-0">
+                <div class="wiz-stepper" id="wizStepper">
+                    <div class="wiz-step active" data-step="1">
+                        <div class="wiz-circle">1</div>
+                        <div class="wiz-label">Grant type</div>
+                    </div>
+                    <div class="wiz-step" data-step="2">
+                        <div class="wiz-circle">2</div>
+                        <div class="wiz-label">Role</div>
+                    </div>
+                    <div class="wiz-step" data-step="3">
+                        <div class="wiz-circle">3</div>
+                        <div class="wiz-label">Privilege</div>
+                    </div>
+                    <div class="wiz-step" data-step="4">
+                        <div class="wiz-circle">4</div>
+                        <div class="wiz-label">Assertion</div>
+                    </div>
+                    <div class="wiz-step" data-step="5">
+                        <div class="wiz-circle">5</div>
+                        <div class="wiz-label">Review</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── STEP 1: Grant type ──────────────────────── -->
+            <div class="modal-body pt-1" id="wiz-step-1">
+                <h6 class="fw-semibold mb-1">How should access be granted?</h6>
+                <p class="text-secondary small mb-3">
+                    An <strong>inherited</strong> grant is set on an ancestor role and flows down to
+                    all descendant roles. An <strong>explicit</strong> grant targets exactly one role
+                    and does not propagate.
+                </p>
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <div class="grant-card selected" id="grant-inherited" onclick="selectGrant('inherited')">
+                            <div class="grant-icon text-primary"><i class="bi bi-diagram-3-fill"></i></div>
+                            <div class="fw-semibold small">Inherited</div>
+                            <div class="text-secondary" style="font-size:.75rem;">Set on a parent role. All child roles gain access automatically.</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="grant-card" id="grant-explicit" onclick="selectGrant('explicit')">
+                            <div class="grant-icon text-secondary"><i class="bi bi-person-lock"></i></div>
+                            <div class="fw-semibold small">Explicit</div>
+                            <div class="text-secondary" style="font-size:.75rem;">Targets exactly one role. Does not propagate to child roles.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex gap-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="grantType" id="grantAllow" value="allow" checked>
+                        <label class="form-check-label small" for="grantAllow">
+                            <span class="badge bg-success-subtle border border-success-subtle text-success-emphasis">allow</span>
+                            Access is permitted
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="grantType" id="grantDeny" value="deny">
+                        <label class="form-check-label small" for="grantDeny">
+                            <span class="badge bg-danger-subtle border border-danger-subtle text-danger-emphasis">deny</span>
+                            Access is explicitly blocked
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── STEP 2: Role selection ─────────────────── -->
+            <div class="modal-body pt-1 d-none" id="wiz-step-2">
+                <h6 class="fw-semibold mb-1">Select role</h6>
+                <p class="text-secondary small mb-2" id="wiz-s3-hint">
+                    Choose the <strong>parent</strong> role that will receive the grant. All roles
+                    below it in the hierarchy will inherit access.
+                </p>
+
+                <!-- Role search -->
+                <div class="input-group input-group-sm mb-2">
+                    <span class="input-group-text bg-body-tertiary"><i class="bi bi-search text-secondary"></i></span>
+                    <input type="search" class="form-control bg-body-tertiary border-secondary-subtle"
+                           id="roleSearch" placeholder="Filter roles…" oninput="filterRoles(this.value)">
+                </div>
+
+                <!-- Role hierarchy tree -->
+                <!-- NOTE: role items use <div> not <label> — avoids click-bubbling through
+                     nested children accidentally re-selecting an ancestor role. -->
+                <div class="role-tree border border-secondary-subtle rounded p-2 mb-2" style="font-size:.8125rem; max-height:260px; overflow-y:auto;">
+                    <ul>
+                        <li>
+                            <div class="role-item" onclick="selectRole(this, 'guest')">
+                                <i class="bi bi-person text-secondary"></i>
+                                <span>guest</span>
+                                <span class="badge bg-secondary-subtle border text-secondary-emphasis ms-auto" style="font-size:.6rem;">root</span>
+                            </div>
+                            <ul>
+                                <li>
+                                    <div class="role-item" onclick="selectRole(this, 'member')">
+                                        <i class="bi bi-person-check text-secondary"></i>
+                                        <span>member</span>
+                                        <span class="badge bg-secondary-subtle border text-secondary-emphasis ms-auto" style="font-size:.6rem;">all auth</span>
+                                    </div>
+                                    <ul>
+                                        <li>
+                                            <div class="role-item" onclick="selectRole(this, 'Sales')">
+                                                <i class="bi bi-tag text-secondary"></i>
+                                                <span>Sales</span>
+                                            </div>
+                                        </li>
+                                        <li>
+                                            <div class="role-item" onclick="selectRole(this, 'Warehouse')">
+                                                <i class="bi bi-building text-secondary"></i>
+                                                <span>Warehouse</span>
+                                            </div>
+                                            <ul>
+                                                <li>
+                                                    <div class="role-item" onclick="selectRole(this, 'Warehouse Supervisor')">
+                                                        <i class="bi bi-building text-secondary"></i>
+                                                        <span>Warehouse Supervisor</span>
+                                                    </div>
+                                                    <ul>
+                                                        <li>
+                                                            <div class="role-item" onclick="selectRole(this, 'DC Warehouse')">
+                                                                <i class="bi bi-building text-secondary"></i>
+                                                                <span>DC Warehouse</span>
+                                                            </div>
+                                                            <ul>
+                                                                <li>
+                                                                    <div class="role-item" onclick="selectRole(this, 'Manager')">
+                                                                        <i class="bi bi-person-badge text-primary"></i>
+                                                                        <span>Manager</span>
+                                                                    </div>
+                                                                    <ul>
+                                                                        <li>
+                                                                            <div class="role-item" onclick="selectRole(this, 'Administrator')">
+                                                                                <i class="bi bi-shield text-warning"></i>
+                                                                                <span>Administrator</span>
+                                                                            </div>
+                                                                            <ul>
+                                                                                <li>
+                                                                                    <div class="role-item" onclick="selectRole(this, 'Developer')">
+                                                                                        <i class="bi bi-code-slash text-info"></i>
+                                                                                        <span>Developer</span>
+                                                                                    </div>
+                                                                                </li>
+                                                                            </ul>
+                                                                        </li>
+                                                                    </ul>
+                                                                </li>
+                                                            </ul>
+                                                        </li>
+                                                    </ul>
+                                                </li>
+                                                <li>
+                                                    <div class="role-item" onclick="selectRole(this, 'Credit Manager')">
+                                                        <i class="bi bi-credit-card text-secondary"></i>
+                                                        <span>Credit Manager</span>
+                                                    </div>
+                                                </li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Propagation preview -->
+                <div id="propagationPreview" class="d-none">
+                    <div class="alert alert-primary border-primary-subtle py-2 d-flex gap-2" style="font-size:.8rem;">
+                        <i class="bi bi-diagram-3 text-primary mt-1 flex-shrink-0"></i>
+                        <div>
+                            Grant on <strong id="selectedRoleName">—</strong> will propagate to:
+                            <span id="propagatedRoles" class="d-flex flex-wrap gap-1 mt-1"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── STEP 3: Privilege ──────────────────────── -->
+            <div class="modal-body pt-1 d-none" id="wiz-step-3">
+                <h6 class="fw-semibold mb-1">Privilege</h6>
+                <p class="text-secondary small mb-3">
+                    The privileges below are derived from the route's HTTP methods. Select which
+                    apply to this rule. You may also add a custom named privilege.
+                </p>
+
+                <div class="d-flex flex-wrap gap-2 mb-3" id="wiz-priv-cards">
+                    <!-- populated by JS from methods -->
+                </div>
+
+                <!-- Custom privilege toggle -->
+                <div class="border border-secondary-subtle rounded p-2 mt-2">
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" id="addCustomPriv" onchange="toggleCustomPriv(this.checked)">
+                        <label class="form-check-label small fw-semibold" for="addCustomPriv">
+                            Add a custom privilege
+                        </label>
+                    </div>
+                    <div id="customPrivForm" class="mt-2 d-none">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-body-tertiary">
+                                <i class="bi bi-tag text-info"></i>
+                            </span>
+                            <input type="text" class="form-control bg-body-tertiary border-secondary-subtle"
+                                   id="customPrivName" placeholder="e.g. export, approve, logout…"
+                                   oninput="updateCustomPrivPreview(this.value)">
+                        </div>
+                        <div class="mt-2 d-none" id="customPrivPreview">
+                            <span class="text-secondary small">Will create privilege: </span>
+                            <span class="badge bg-transparent border priv-custom" style="font-size:.7rem;" id="customPrivBadge"></span>
+                            <span class="text-secondary small ms-2">on resource <code id="customPrivResource"></code></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── STEP 4: Assertion ─────────────────────── -->
+            <div class="modal-body pt-1 d-none" id="wiz-step-4">
+                <h6 class="fw-semibold mb-1">Assertion <span class="badge bg-secondary-subtle border text-secondary-emphasis ms-1" style="font-size:.65rem;">optional</span></h6>
+                <p class="text-secondary small mb-3">
+                    An assertion adds a runtime condition. The ACL check passes only when the
+                    role/resource/privilege match <strong>and</strong> the assertion returns true.
+                    Select <strong>None</strong> to skip.
+                </p>
+
+                <div class="d-flex flex-column gap-2" id="assertionPicker">
+
+                    <div class="assertion-card selected" id="assertion-none" onclick="selectAssertion(this, null)">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="bi bi-slash-circle text-secondary mt-1"></i>
+                            <div>
+                                <div class="fw-semibold small">None</div>
+                                <div class="text-secondary" style="font-size:.75rem;">
+                                    No assertion. The rule grants or denies access based solely on role, resource, and privilege.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="assertion-card" id="assertion-ownership" onclick="selectAssertion(this, 'OwnershipAssertion')">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="bi bi-key text-info mt-1"></i>
+                            <div>
+                                <div class="fw-semibold small">OwnershipAssertion</div>
+                                <div class="text-secondary" style="font-size:.75rem;">
+                                    Passes only when the authenticated user's ID matches the resource owner's user ID.
+                                    Use for "edit own record" scenarios.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="assertion-card" id="assertion-store" onclick="selectAssertion(this, 'StoreOwnedResourceAssertion')">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="bi bi-shop text-warning mt-1"></i>
+                            <div>
+                                <div class="fw-semibold small">StoreOwnedResourceAssertion</div>
+                                <div class="text-secondary" style="font-size:.75rem;">
+                                    Passes only when the resource belongs to the same store as the user's active store.
+                                    Use for store-scoped data.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="mt-3" id="assertionModeRow" style="display:none;">
+                    <label class="form-label small text-secondary">Assertion mode (when combining multiple assertions)</label>
+                    <div class="d-flex gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="assertionMode" id="modeAll" value="all" checked>
+                            <label class="form-check-label small" for="modeAll">
+                                <strong>all</strong> — every assertion must pass
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="assertionMode" id="modeAny" value="any">
+                            <label class="form-check-label small" for="modeAny">
+                                <strong>any</strong> — at least one must pass
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── STEP 5: Review & confirm ─────────────── -->
+            <div class="modal-body pt-1 d-none" id="wiz-step-5">
+                <h6 class="fw-semibold mb-3">Review &amp; confirm</h6>
+                <div class="card bg-body-tertiary border-secondary-subtle mb-3">
+                    <div class="card-body py-2 px-3">
+                        <div class="summary-item">
+                            <span class="summary-label">Route</span>
+                            <code id="rev-route">user.login</code>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Grant type</span>
+                            <span id="rev-grant-type">inherited</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Allow / Deny</span>
+                            <span id="rev-allow-deny">
+                                <span class="badge bg-success-subtle border border-success-subtle text-success-emphasis">allow</span>
+                            </span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Role</span>
+                            <span id="rev-role"><span class="badge bg-secondary-subtle border text-secondary-emphasis">—</span></span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Privilege(s)</span>
+                            <span id="rev-privs" class="d-flex gap-1 flex-wrap"></span>
+                        </div>
+                        <div class="summary-item" id="rev-assertion-row">
+                            <span class="summary-label">Assertion</span>
+                            <span id="rev-assertion"><span class="text-secondary small">none</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="rev-propagation" class="d-none">
+                    <div class="alert alert-primary border-primary-subtle py-2 d-flex gap-2 mb-0" style="font-size:.8rem;">
+                        <i class="bi bi-diagram-3 text-primary mt-1 flex-shrink-0"></i>
+                        <div>This rule will be inherited by: <span id="rev-propagated" class="d-flex flex-wrap gap-1 mt-1"></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal footer -->
+            <div class="modal-footer border-top d-flex justify-content-between">
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary" id="wizBack" onclick="wizNav(-1)" disabled>
+                        <i class="bi bi-arrow-left me-1"></i>Back
+                    </button>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-sm btn-primary" id="wizNext" onclick="wizNav(1)">
+                        Next <i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+                    <button class="btn btn-sm btn-success d-none" id="wizSave" onclick="saveRule()">
+                        <i class="bi bi-shield-check me-1"></i>Save rule
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div><!-- /#protectWizardModal -->
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+'use strict';
+
+// ── Role propagation map ─────────────────────────────────────────────────────
+// In production, this comes from the server. For the mockup, defined inline.
+const ROLE_CHILDREN = {
+    'guest':               ['member', 'Sales', 'Warehouse', 'Warehouse Supervisor', 'Credit Manager', 'DC Warehouse', 'Manager', 'Administrator', 'Developer'],
+    'member':              ['Sales', 'Warehouse', 'Warehouse Supervisor', 'Credit Manager', 'DC Warehouse', 'Manager', 'Administrator', 'Developer'],
+    'Sales':               [],
+    'Warehouse':           ['Warehouse Supervisor', 'Credit Manager', 'DC Warehouse', 'Manager', 'Administrator', 'Developer'],
+    'Warehouse Supervisor':['Credit Manager', 'DC Warehouse', 'Manager', 'Administrator', 'Developer'],
+    'Credit Manager':      [],
+    'DC Warehouse':        ['Manager', 'Administrator', 'Developer'],
+    'Manager':             ['Administrator', 'Developer'],
+    'Administrator':       ['Developer'],
+    'Developer':           [],
+};
+
+// Privilege → Bootstrap colour class
+const PRIV_COLOR = { read:'read', create:'create', update:'update', delete:'delete' };
+
+// ── Wizard state ─────────────────────────────────────────────────────────────
+let wizState = {
+    step:       1,
+    totalSteps: 6,
+    routeName:  '',
+    methods:    [],
+    privs:      [],
+    grantType:  'inherited',
+    allowDeny:  'allow',
+    role:       null,
+    selectedPrivs: [],
+    customPriv: null,
+    assertion:  null,
+};
+
+function openWizard(routeName, methods, privs) {
+    wizState = {
+        step: 1, totalSteps: 5,
+        routeName, methods, privs,
+        grantType: 'inherited', allowDeny: 'allow',
+        role: null, selectedPrivs: [...privs],
+        customPriv: null, assertion: null,
+    };
+
+    // Reset assertion picker to None selected
+    document.querySelectorAll('.assertion-card').forEach(c => c.classList.remove('selected'));
+    const noneCard = document.getElementById('assertion-none');
+    if (noneCard) noneCard.classList.add('selected');
+
+    // Reset role tree selection
+    document.querySelectorAll('.role-item').forEach(el => el.classList.remove('selected'));
+
+    // Populate header route context
+    document.getElementById('wiz-route-display').textContent = routeName;
+    document.getElementById('wiz-header-methods').innerHTML = methods
+        .map(m => `<span class="method-pill method-${m}">${m}</span>`).join('');
+    document.getElementById('wiz-header-privs').innerHTML = privs
+        .map(p => `<span class="badge bg-transparent border priv-${p}" style="font-size:.65rem;">${p}</span>`).join('');
+
+    // Populate privilege cards in step 3
+    renderPrivCards(privs, routeName);
+
+    wizGoto(1);
+    new bootstrap.Modal(document.getElementById('protectWizardModal')).show();
+}
+
+function renderPrivCards(privs, routeName) {
+    const wrap = document.getElementById('wiz-priv-cards');
+    wrap.innerHTML = privs.map(p => `
+        <div class="priv-card selected-${p}" data-priv="${p}" onclick="togglePrivCard(this, '${p}')">
+            <input type="checkbox" class="form-check-input" checked>
+            <span class="badge bg-transparent border priv-${p}" style="font-size:.7rem;">${p}</span>
+            <span class="small text-secondary">${privDescription(p)}</span>
+        </div>
+    `).join('');
+    document.getElementById('customPrivResource').textContent = routeName;
+}
+
+function privDescription(p) {
+    return { read: 'GET requests', create: 'POST requests', update: 'PUT / PATCH requests', delete: 'DELETE requests' }[p] || '';
+}
+
+function togglePrivCard(el, priv) {
+    const cb = el.querySelector('input');
+    cb.checked = !cb.checked;
+    if (cb.checked) {
+        el.classList.add('selected-' + priv);
+        if (!wizState.selectedPrivs.includes(priv)) wizState.selectedPrivs.push(priv);
+    } else {
+        el.classList.remove('selected-' + priv);
+        wizState.selectedPrivs = wizState.selectedPrivs.filter(p => p !== priv);
+    }
+}
+
+// ── Grant type ───────────────────────────────────────────────────────────────
+function selectGrant(type) {
+    wizState.grantType = type;
+    document.getElementById('grant-inherited').classList.toggle('selected', type === 'inherited');
+    document.getElementById('grant-explicit').classList.toggle('selected', type === 'explicit');
+    // Update step 3 hint text
+    const hint = document.getElementById('wiz-s3-hint');
+    if (type === 'inherited') {
+        hint.innerHTML = 'Choose the <strong>parent</strong> role that will receive the grant. All roles below it in the hierarchy will inherit access.';
+    } else {
+        hint.innerHTML = 'Choose <strong>exactly one role</strong>. The grant applies only to this role — child roles are not affected.';
+    }
+}
+
+// ── Role selection ───────────────────────────────────────────────────────────
+function selectRole(el, roleName) {
+    document.querySelectorAll('.role-item').forEach(item => item.classList.remove('selected'));
+    el.classList.add('selected');
+    wizState.role = roleName;
+
+    // Propagation preview
+    const children = ROLE_CHILDREN[roleName] || [];
+    const preview  = document.getElementById('propagationPreview');
+    if (wizState.grantType === 'inherited' && children.length > 0) {
+        preview.classList.remove('d-none');
+        document.getElementById('selectedRoleName').textContent = roleName;
+        document.getElementById('propagatedRoles').innerHTML = children
+            .map(r => `<span class="badge bg-secondary-subtle border text-secondary-emphasis" style="font-size:.65rem;">${r}</span>`)
+            .join('');
+    } else {
+        preview.classList.add('d-none');
+    }
+}
+
+function filterRoles(query) {
+    const q = query.toLowerCase();
+    document.querySelectorAll('.role-item').forEach(item => {
+        const name = item.querySelector('span').textContent.toLowerCase();
+        item.closest('li').style.display = (!q || name.includes(q)) ? '' : 'none';
+    });
+}
+
+// ── Custom privilege ─────────────────────────────────────────────────────────
+function toggleCustomPriv(on) {
+    document.getElementById('customPrivForm').classList.toggle('d-none', !on);
+    if (!on) {
+        wizState.customPriv = null;
+        document.getElementById('customPrivPreview').classList.add('d-none');
+    }
+}
+
+function updateCustomPrivPreview(val) {
+    const preview = document.getElementById('customPrivPreview');
+    const badge   = document.getElementById('customPrivBadge');
+    if (val.trim()) {
+        badge.textContent = val.trim().toLowerCase().replace(/\s+/g, '_');
+        preview.classList.remove('d-none');
+        wizState.customPriv = val.trim().toLowerCase().replace(/\s+/g, '_');
+    } else {
+        preview.classList.add('d-none');
+        wizState.customPriv = null;
+    }
+}
+
+// ── Assertion ────────────────────────────────────────────────────────────────
+function selectAssertion(el, name) {
+    document.querySelectorAll('.assertion-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    wizState.assertion = name;
+    // assertion mode row is reserved for future multi-select support
+    document.getElementById('assertionModeRow').style.display = 'none';
+}
+
+// ── Wizard navigation ────────────────────────────────────────────────────────
+function wizGoto(step) {
+    wizState.step = step;
+
+    // Show/hide step panels
+    for (let i = 1; i <= wizState.totalSteps; i++) {
+        document.getElementById('wiz-step-' + i).classList.toggle('d-none', i !== step);
+    }
+
+    // Update stepper circles
+    document.querySelectorAll('.wiz-step').forEach(el => {
+        const s = parseInt(el.dataset.step, 10);
+        el.classList.remove('active', 'done');
+        if (s < step) el.classList.add('done');
+        else if (s === step) el.classList.add('active');
+    });
+
+    // Back / Next / Save buttons
+    document.getElementById('wizBack').disabled = step === 1;
+    const isLast = step === wizState.totalSteps;
+    document.getElementById('wizNext').classList.toggle('d-none', isLast);
+    document.getElementById('wizSave').classList.toggle('d-none', !isLast);
+
+    // Populate review step
+    if (step === wizState.totalSteps) populateReview();
+}
+
+function wizNav(dir) {
+    wizGoto(wizState.step + dir);
+}
+
+function populateReview() {
+    const s = wizState;
+    document.getElementById('rev-route').textContent = s.routeName;
+    document.getElementById('rev-grant-type').textContent = s.grantType;
+
+    const adEl = document.getElementById('rev-allow-deny');
+    adEl.innerHTML = s.allowDeny === 'allow'
+        ? '<span class="badge bg-success-subtle border border-success-subtle text-success-emphasis">allow</span>'
+        : '<span class="badge bg-danger-subtle border border-danger-subtle text-danger-emphasis">deny</span>';
+
+    document.getElementById('rev-role').innerHTML =
+        s.role ? `<span class="badge bg-secondary-subtle border text-secondary-emphasis">${s.role}</span>`
+               : '<span class="text-secondary small">—</span>';
+
+    const allPrivs = [...s.selectedPrivs, ...(s.customPriv ? [s.customPriv] : [])];
+    document.getElementById('rev-privs').innerHTML = allPrivs
+        .map(p => `<span class="badge bg-transparent border priv-${PRIV_COLOR[p] || 'custom'}" style="font-size:.7rem;">${p}</span>`)
+        .join('');
+
+    const assertEl = document.getElementById('rev-assertion');
+    assertEl.innerHTML = s.assertion
+        ? `<span class="badge bg-info-subtle border border-info-subtle text-info-emphasis" style="font-size:.7rem;">${s.assertion}</span>`
+        : '<span class="text-secondary small">none</span>';
+
+    // Propagation
+    const propEl = document.getElementById('rev-propagation');
+    const children = (s.grantType === 'inherited' && s.role) ? (ROLE_CHILDREN[s.role] || []) : [];
+    if (children.length > 0) {
+        propEl.classList.remove('d-none');
+        document.getElementById('rev-propagated').innerHTML = children
+            .map(r => `<span class="badge bg-secondary-subtle border text-secondary-emphasis" style="font-size:.65rem;">${r}</span>`)
+            .join('');
+    } else {
+        propEl.classList.add('d-none');
+    }
+
+    // Read allow/deny from radio
+    const ad = document.querySelector('input[name="grantType"]:checked');
+    if (ad) wizState.allowDeny = ad.value;
+}
+
+function saveRule() {
+    // In production: POST to server. For mockup, just show success toast.
+    bootstrap.Modal.getInstance(document.getElementById('protectWizardModal')).hide();
+    showToast('Rule saved successfully.', 'success');
+}
+
+// ── Filter + search ──────────────────────────────────────────────────────────
+let activeFilter = 'all';
+
+function setFilter(f) {
+    activeFilter = f;
+    ['all','unprotected','protected'].forEach(id => {
+        document.getElementById('filter' + id.charAt(0).toUpperCase() + id.slice(1))
+            ?.classList.toggle('active', id === f);
+    });
+    applyFilter();
+}
+
+function applyFilter() {
+    const q = document.getElementById('routeSearch').value.toLowerCase();
+    document.querySelectorAll('.route-entry').forEach(row => {
+        const name   = row.dataset.name || '';
+        const status = row.dataset.status || '';
+        const matchQ = !q || name.toLowerCase().includes(q);
+        const matchF = activeFilter === 'all' || status === activeFilter;
+        row.style.display = matchQ && matchF ? '' : 'none';
+    });
+    // Hide section cards if all rows hidden
+    ['Unprotected','Protected'].forEach(sec => {
+        const card  = document.getElementById('section' + sec);
+        const rows  = card?.querySelectorAll('.route-entry') || [];
+        const anyVisible = Array.from(rows).some(r => r.style.display !== 'none');
+        if (card) card.style.display = anyVisible ? '' : 'none';
+    });
+}
+
+document.getElementById('routeSearch').addEventListener('input', applyFilter);
+
+// Also filter the rules panels when their parent row is hidden
+function toggleRules(btn) {
+    const row   = btn.closest('.route-row');
+    const panel = row.nextElementSibling;
+    if (!panel || !panel.classList.contains('rules-panel')) return;
+    panel.classList.toggle('d-none');
+    const icon = btn.querySelector('i');
+    icon.className = panel.classList.contains('d-none') ? 'bi bi-list-ul me-1' : 'bi bi-chevron-up me-1';
+}
+
+// ── Toast helper ─────────────────────────────────────────────────────────────
+function showToast(msg, type) {
+    const container = document.getElementById('toastContainer') || (() => {
+        const el = document.createElement('div');
+        el.id = 'toastContainer';
+        el.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        el.style.zIndex = '9999';
+        document.body.appendChild(el);
+        return el;
+    })();
+    const t = document.createElement('div');
+    t.className = `toast align-items-center text-bg-${type} border-0 show`;
+    t.setAttribute('role', 'alert');
+    t.innerHTML = `<div class="d-flex"><div class="toast-body">${msg}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+    container.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+}
+</script>
+</body>
+</html>

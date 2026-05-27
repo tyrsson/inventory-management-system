@@ -14,22 +14,24 @@ declare(strict_types=1);
 
 namespace Webware\Acl\Middleware;
 
-use Mezzio\Authentication\UserInterface;
-use Mezzio\Session\SessionMiddleware;
+use Mezzio\Session\RetrieveSession;
+use Webware\UserManager\UserInterface;
 use Override;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
+use function is_array;
+
 /**
  * Resolves the current identity and attaches a UserInterface to every request.
  *
- * Two states only:
- *  - Session contains UserInterface data → deserialise and set the real user
- *  - No session data                     → set a guest user via the configured base role
+ * Reads the session written by LoginMiddleware. If session data is present and
+ * valid, calls the user factory to reconstruct the authenticated User. Otherwise
+ * creates a GuestUser for the request.
  *
- * Always calls the next handler — access decisions are AclMiddleware's job.
+ * Always calls the next handler — access decisions are AuthorizationMiddleware's job.
  * Pipe this once in the global pipeline, after SessionMiddleware.
  */
 final class IdentityMiddleware implements MiddlewareInterface
@@ -40,37 +42,28 @@ final class IdentityMiddleware implements MiddlewareInterface
     /**
      * @param callable(string, string[], array<string, mixed>): UserInterface $userFactory
      */
-    public function __construct(callable $userFactory, private readonly string $baseRole)
-    {
+    public function __construct(
+        callable $userFactory,
+    ) {
         $this->userFactory = $userFactory;
     }
 
     #[Override]
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $session = $request->getAttribute(SessionMiddleware::SESSION_ATTRIBUTE);
+        $session  = RetrieveSession::fromRequestOrNull($request);
+        $userInfo = $session?->get(UserInterface::class);
 
-        if ($session === null || ! $session->has(UserInterface::class)) {
-            $request = $request->withAttribute(
-                UserInterface::class,
-                ($this->userFactory)('guest', [$this->baseRole], []),
+        if (is_array($userInfo) && isset($userInfo['username'])) {
+            $user = ($this->userFactory)(
+                $userInfo['username'],
+                $userInfo['roles'] ?? [],
+                $userInfo['details'] ?? [],
             );
-
-            return $handler->handle($request);
+        } else {
+            $user = ($this->userFactory)('Guest', [], []);
         }
 
-        /** @var array{identity: string, roles: string[], details: array<string, mixed>} */
-        $data = $session->get(UserInterface::class);
-
-        return $handler->handle(
-            $request->withAttribute(
-                UserInterface::class,
-                ($this->userFactory)(
-                    $data['identity'] ?? 'guest',
-                    $data['roles']    ?? [$this->baseRole],
-                    $data['details']  ?? [],
-                ),
-            ),
-        );
+        return $handler->handle($request->withAttribute(UserInterface::class, $user));
     }
 }

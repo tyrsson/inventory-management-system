@@ -17,9 +17,10 @@ $this->headTitle('Manifests');
         <h1 class="h4 fw-bold mb-0">Manifests</h1>
         <p class="text-secondary small mb-0"><?= (int) $this->total ?> manifests</p>
     </div>
-    <a href="#" class="btn btn-primary btn-sm">
-        <i class="bi bi-plus-lg me-1"></i>New Manifest
-    </a>
+    <button type="button" class="btn btn-primary btn-sm"
+            data-bs-toggle="modal" data-bs-target="#uploadManifestModal">
+        <i class="bi bi-plus-lg me-1"></i>Upload Manifest
+    </button>
 </div>
 
 <!-- Manifest list -->
@@ -29,7 +30,7 @@ $this->headTitle('Manifests');
         $pieces  = $manifest->totalPieces();
         $damaged = $manifest->damagedLines();
     ?>
-    <a href="<?= $this->url('manifest.detail', ['id' => $manifest->id]) ?>"
+    <a href="<?= $this->manifestUrl('detail', ['id' => $manifest->id]) ?>"
        class="card text-decoration-none text-body"
        hx-boost="true">
         <div class="card-body">
@@ -81,21 +82,83 @@ $this->headTitle('Manifests');
     <ul class="pagination pagination-sm justify-content-center">
         <li class="page-item <?= $currentPage <= 1 ? 'disabled' : '' ?>">
             <a class="page-link"
-               href="<?= $this->url('manifest.list', [], ['query' => ['page' => $currentPage - 1]]) ?>"
+               href="<?= $this->manifestUrl('list', [], ['query' => ['page' => $currentPage - 1]]) ?>"
                hx-boost="true">Previous</a>
         </li>
         <?php for ($p = 1; $p <= $pages; $p++): ?>
         <li class="page-item <?= $p === $currentPage ? 'active' : '' ?>">
             <a class="page-link"
-               href="<?= $this->url('manifest.list', [], ['query' => ['page' => $p]]) ?>"
+               href="<?= $this->manifestUrl('list', [], ['query' => ['page' => $p]]) ?>"
                hx-boost="true"><?= $p ?></a>
         </li>
         <?php endfor; ?>
         <li class="page-item <?= $currentPage >= $pages ? 'disabled' : '' ?>">
             <a class="page-link"
-               href="<?= $this->url('manifest.list', [], ['query' => ['page' => $currentPage + 1]]) ?>"
+               href="<?= $this->manifestUrl('list', [], ['query' => ['page' => $currentPage + 1]]) ?>"
                hx-boost="true">Next</a>
         </li>
     </ul>
 </nav>
 <?php endif; ?>
+
+<!-- Upload Manifest Modal -->
+<div class="modal fade" id="uploadManifestModal" tabindex="-1"
+     aria-labelledby="uploadManifestModalLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadManifestModalLabel">
+                    <i class="bi bi-file-earmark-spreadsheet me-2"></i>Upload DC Truck Manifest
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post"
+                  action="<?= $this->manifestUrl('upload.store') ?>"
+                  enctype="multipart/form-data"
+                  novalidate>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="manifest_csv" class="form-label fw-semibold">
+                            Manifest CSV File <span class="text-danger">*</span>
+                        </label>
+                        <input type="file"
+                               class="form-control"
+                               id="manifest_csv"
+                               name="manifest_csv"
+                               accept=".csv,text/csv,text/plain"
+                               required>
+                        <div class="form-text">
+                            Select the CSV file exported from the DC system
+                            (e.g. <em>Dist DC Truck Manifest - Live.csv</em>).
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="received_date" class="form-label fw-semibold">
+                            Received Date Override
+                        </label>
+                        <input type="date"
+                               class="form-control"
+                               id="received_date"
+                               name="received_date">
+                        <div class="form-text">
+                            Defaults to the date in the consignment header. Override only if
+                            the truck arrived on a different calendar day.
+                        </div>
+                    </div>
+                    <p class="text-secondary small mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Customer allocation rows are automatically skipped. Unknown SKUs and major codes
+                        will be added to the catalogue and can be updated later from Settings.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload me-1"></i>Import Manifest
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

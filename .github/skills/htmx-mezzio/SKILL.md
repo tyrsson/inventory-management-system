@@ -4,6 +4,9 @@ description: "ALWAYS load this skill when creating or modifying any handler, pag
 argument-hint: "<what to create — e.g. 'new page handler', 'product detail handler', 'HTMX partial for form submission', 'navigation link'>"
 ---
 
+> ⚠ **SKILL INTEGRITY — NEVER REMOVE OR SHORTEN**
+> Content in this file may only be **added to or updated**. Removing or shortening existing sections is not permitted without explicit user approval. If you are adding new knowledge, append it as a new section.
+
 ## HTMX Swap Target — Critical Architecture Note
 
 HTMX **does not swap `<body>`**. The swap target is a `<main>` element inside the body template (`Htmx/templates/body/default.phtml`).
@@ -116,3 +119,50 @@ Key helpers available in every template:
 - `$this->headTitle()` — sets the `<title>` tag
 - `$this->escapeHtml($value)` — always escape untrusted output
 - `$this->escapeHtmlAttr($value)` — escape values placed inside HTML attributes
+
+## Toast / SystemMessenger Pattern — Mandatory
+
+**Never use `HX-Trigger` headers or custom JS events to show toasts.** The only correct pattern is `SystemMessengerInterface` → `ImsMessenger` view helper → body template pending elements → `showPendingToasts()` in JS.
+
+### How it works
+
+- `#systemMessage` container lives in the **layout** (Layer 3) — rendered once, never swapped out.
+- `.ims-pending-toast` elements are rendered by the `ImsMessenger` view helper inside the **body template** (Layer 2) — present on every response, full-page or HTMX boosted.
+- `showPendingToasts()` in `app.js` reads `.ims-pending-toast` elements from the swapped body and fires them into `#systemMessage`.
+- This works on both initial page loads and HTMX boosted navigations because the body always re-renders.
+
+### PHP side — from processing middleware
+
+```php
+// Flash for the CURRENT response (same render cycle — no redirect needed):
+$messenger = $request->getAttribute(SystemMessengerInterface::class);
+$messenger->danger('Your message here.', hops: 0, now: true);
+
+// Then pass to the handler to render the page with the toast embedded:
+return $handler->handle($request);
+```
+
+```php
+// Flash for the NEXT response (after a redirect):
+$messenger->danger('Your message here.', hops: 1, now: false);
+return new RedirectResponse($path);
+```
+
+### Hop rules
+
+| Scenario | `now` | `hops` |
+|---|---|---|
+| Same response (no redirect) | `true` | `0` |
+| After one redirect | `false` | `1` |
+| After two redirects | `false` | `2` |
+
+### Severity methods
+
+```php
+$messenger->danger('...',  hops: 0, now: true);   // red   — errors, access denied
+$messenger->warning('...', hops: 0, now: true);   // amber — soft warnings
+$messenger->success('...', hops: 0, now: true);   // green — completed actions
+$messenger->info('...',    hops: 0, now: true);   // blue  — neutral information
+```
+
+**Never** put toast logic in a handler — handlers only render responses. Toast calls belong in processing middleware before `$handler->handle($request)`.

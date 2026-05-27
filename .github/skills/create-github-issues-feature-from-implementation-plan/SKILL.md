@@ -3,6 +3,9 @@ name: create-github-issues-feature-from-implementation-plan
 description: 'Create GitHub Issues from implementation plan phases using feature_request.yml or chore_request.yml templates.'
 ---
 
+> ⚠ **SKILL INTEGRITY — NEVER REMOVE OR SHORTEN**
+> Content in this file may only be **added to or updated**. Removing or shortening existing sections is not permitted without explicit user approval. If you are adding new knowledge, append it as a new section.
+
 # Create GitHub Issue from Implementation Plan
 
 Create GitHub Issues for the implementation plan at `${file}`.

@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Webware\Navigation\Middleware;
 
-use Mezzio\Authentication\UserInterface;
+use Webware\UserManager\UserInterface;
 use Mezzio\Router\RouteResult;
 use Override;
 use Psr\Http\Message\ResponseInterface;
@@ -30,7 +30,7 @@ final class NavigationMiddleware implements MiddlewareInterface
         $user = $request->getAttribute(UserInterface::class);
 
         if ($user !== null) {
-            $this->helper->setRoles([...$user->getRoles()]);
+            $this->helper->setUser($user);
         }
 
         $routeResult = $request->getAttribute(RouteResult::class);

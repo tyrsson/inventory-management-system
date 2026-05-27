@@ -1,0 +1,147 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Database migration runner.
+ *
+ * Discovers and executes pending migrations from data/migrations/.
+ * Tracks applied versions in the `schema_migrations` table so each
+ * migration runs exactly once.
+ *
+ * Usage (from project root):
+ *   php bin/migrate
+ */
+
+use Ims\Migration\MigrationInterface;
+use PhpDb\Adapter\AdapterInterface;
+use PhpDb\Sql\Ddl\Column\Datetime;
+use PhpDb\Sql\Ddl\Column\Integer;
+use PhpDb\Sql\Ddl\Column\Varchar;
+use PhpDb\Sql\Ddl\Constraint\PrimaryKey;
+use PhpDb\Sql\Ddl\CreateTable;
+use PhpDb\Sql\Sql;
+
+
+chdir(dirname(__DIR__));
+
+require 'vendor/autoload.php';
+
+$container = require 'config/container.php';
+
+/** @var AdapterInterface $adapter */
+$adapter = $container->get(AdapterInterface::class);
+
+// ---------------------------------------------------------------------------
+// 1. Ensure the tracking table exists
+// ---------------------------------------------------------------------------
+
+$sql    = new Sql($adapter);
+$create = new CreateTable('schema_migrations');
+$create->ifNotExists();
+$create->addColumn((new Integer('version'))->setOption('unsigned', true));
+$create->addColumn(new Varchar('description', 255));
+$create->addColumn(new Datetime('migrated_at'));
+$create->addConstraint(new PrimaryKey('version'));
+
+$adapter->query(
+    $sql->buildSqlString($create),
+    AdapterInterface::QUERY_MODE_EXECUTE
+);
+
+// ---------------------------------------------------------------------------
+// 2. Load already-applied versions
+// ---------------------------------------------------------------------------
+
+$applied  = [];
+$result   = $adapter->query(
+    'SELECT version FROM schema_migrations ORDER BY version ASC',
+    AdapterInterface::QUERY_MODE_EXECUTE
+);
+
+foreach ($result as $row) {
+    $applied[(int) $row['version']] = true;
+}
+
+// ---------------------------------------------------------------------------
+// 3. Discover migration classes
+// ---------------------------------------------------------------------------
+
+$files = glob(__DIR__ . '/../src/ims-migration/src/Migration*.php');
+
+if ($files === false || $files === []) {
+    echo 'No migration files found in data/migrations/' . PHP_EOL;
+    exit(0);
+}
+
+sort($files);
+
+/** @var MigrationInterface[] $migrations */
+$migrations = [];
+
+foreach ($files as $file) {
+    // Derive the fully-qualified class name from the filename.
+    // e.g. Migration023AclResourceSystemColumn.php → App\Migration\Migration023AclResourceSystemColumn
+    $className = 'Ims\\Migration\\' . str_replace('.php', '', basename($file));
+
+    if (! class_exists($className) || ! is_a($className, MigrationInterface::class, true)) {
+        continue;
+    }
+
+    $migrations[] = new $className();
+}
+
+usort($migrations, static fn (MigrationInterface $a, MigrationInterface $b): int => $a->getStep() <=> $b->getStep());
+
+// ---------------------------------------------------------------------------
+// 4. Run pending migrations
+// ---------------------------------------------------------------------------
+
+$migrated = 0;
+$skipped  = 0;
+$errors   = 0;
+
+foreach ($migrations as $migration) {
+    $step        = $migration->getStep();
+    $description = $migration->getDescription();
+
+    if (isset($applied[$step])) {
+        printf("  SKIP  %03d — %s%s", $step, $description, PHP_EOL);
+        $skipped++;
+        continue;
+    }
+
+    printf("  RUN   %03d — %s%s", $step, $description, PHP_EOL);
+
+    try {
+        $migration->up($adapter);
+
+        $insertSql = sprintf(
+            "INSERT INTO schema_migrations (version, description, migrated_at) VALUES (%d, '%s', '%s')",
+            $step,
+            addslashes($description),
+            date('Y-m-d H:i:s')
+        );
+        $adapter->query($insertSql, AdapterInterface::QUERY_MODE_EXECUTE);
+
+        printf("  OK    %03d%s", $step, PHP_EOL);
+        $migrated++;
+    } catch (Throwable $e) {
+        printf("  ERROR %03d — %s%s", $step, $e->getMessage(), PHP_EOL);
+        $errors++;
+        // Stop on first error — do not run later migrations that may depend on this one.
+        break;
+    }
+}
+
+echo PHP_EOL;
+printf(
+    'Done. %d migrated, %d skipped, %d error(s).%s',
+    $migrated,
+    $skipped,
+    $errors,
+    PHP_EOL
+);
+
+exit($errors > 0 ? 1 : 0);

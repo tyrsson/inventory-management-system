@@ -14,13 +14,12 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\Container\Configuration;
 use App\RequestHandler\DashboardHandler;
 use App\RequestHandler\PingHandler;
 use Mezzio\MiddlewareFactoryInterface;
 use Mezzio\Router\RouteCollectorInterface;
 use Mezzio\Router\RouteProviderInterface;
-use Webware\Acl\Middleware\AuthorizationMiddleware;
-
 final class RouteProvider implements RouteProviderInterface
 {
     public function registerRoutes(
@@ -31,11 +30,10 @@ final class RouteProvider implements RouteProviderInterface
             '/',
             $middlewareFactory->prepare(
                 [
-                    AuthorizationMiddleware::class,
                     DashboardHandler::class,
                 ]
             ),
-            'dashboard'
+            Configuration::ROUTE_NAME_PREFIX_VALUE . 'dashboard'
         )->setOptions([
             'navigation' => 'main',
             'label'      => 'Dashboard',
@@ -48,11 +46,10 @@ final class RouteProvider implements RouteProviderInterface
             '/ping',
             $middlewareFactory->prepare(
                 [
-                    AuthorizationMiddleware::class,
                     PingHandler::class,
                 ]
             ),
-            'api.ping'
+            Configuration::ROUTE_NAME_PREFIX_VALUE . 'api.ping'
         );
     }
 }

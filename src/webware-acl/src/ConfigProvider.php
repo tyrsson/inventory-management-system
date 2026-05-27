@@ -4,54 +4,52 @@ declare(strict_types=1);
 
 namespace Webware\Acl;
 
-use Mezzio\Authentication\UserInterface;
 use Webware\Acl\Acl;
-use Webware\Acl\AclBuilder;
 use Webware\Acl\AclInterface;
-use Webware\Acl\Authentication\DefaultUserFactory;
-use Webware\Acl\Cache\AclCacheInterface;
-use Webware\Acl\Cache\FileAclCache;
-use Webware\Acl\Container\AclBuilderFactory;
 use Webware\Acl\Container\AclFactory;
-use Webware\Acl\Container\AclRepositoryFactory;
-use Webware\Acl\Container\AuthorizationMiddlewareFactory;
-use Webware\Acl\Container\FileAclCacheFactory;
+use Webware\Acl\Container\CommandHandlerMiddlewareFactory;
 use Webware\Acl\Container\IdentityMiddlewareFactory;
-use Webware\Acl\Container\RegisterAclWidgetListenerFactory;
 use Webware\Acl\Container\RouteProviderFactory;
+use Webware\Acl\Http\Container\RouteResourceFactoryFactory;
+use Webware\Acl\Http\RouteResourceFactory;
+use Webware\Acl\Http\RouteResourceFactoryInterface;
+use Webware\Acl\Middleware\AuthorizationMiddleware;
+use Webware\Acl\Middleware\Container\AuthorizationMiddlewareFactory;
+use Webware\Acl\Middleware\IdentityMiddleware;
+use Webware\Acl\RequestHandler\Container\ForbiddenHandlerFactory;
+use Webware\Acl\RequestHandler\ForbiddenHandler;
+use Webware\Acl\RequestHandler\ForbiddenHandlerInterface;
+use Webware\Acl\Admin\Command\DeleteRoleCommand;
+use Webware\Acl\Admin\Command\SaveRoleCommand;
+use Webware\Acl\Admin\Command\SaveRuleCommand;
+use Webware\Acl\Admin\Command\UpdateRuleTypeCommand;
+use Webware\Acl\Admin\CommandHandler\Container\DeleteRoleHandlerFactory;
+use Webware\Acl\Admin\CommandHandler\Container\SaveRoleHandlerFactory;
+use Webware\Acl\Admin\CommandHandler\Container\SaveRuleHandlerFactory;
+use Webware\Acl\Admin\CommandHandler\Container\UpdateRuleTypeHandlerFactory;
+use Webware\Acl\Admin\CommandHandler\DeleteRoleHandler;
+use Webware\Acl\Admin\CommandHandler\SaveRoleHandler;
+use Webware\Acl\Admin\CommandHandler\SaveRuleHandler;
+use Webware\Acl\Admin\CommandHandler\UpdateRuleTypeHandler;
+use Webware\Acl\Admin\Dashboard\Container\RegisterWidgetListenerFactory;
+use Webware\Acl\Admin\Dashboard\RegisterWidgetListener;
+use Webware\Acl\Admin\Middleware\BuildAccessControlMiddleware;
+use Webware\Acl\Admin\Middleware\Container\BuildAccessControlMiddlewareFactory;
+use Webware\Acl\Admin\Middleware\Container\ProcessRoleMiddlewareFactory;
+use Webware\Acl\Admin\Middleware\Container\ProcessRuleMiddlewareFactory;
+use Webware\Acl\Admin\Middleware\ProcessRoleMiddleware;
+use Webware\Acl\Admin\Middleware\ProcessRuleMiddleware;
 use Webware\Acl\Admin\RequestHandler\AclOverviewHandler;
 use Webware\Acl\Admin\RequestHandler\Container\AclOverviewHandlerFactory;
 use Webware\Acl\Admin\RequestHandler\Container\ResourceListHandlerFactory;
 use Webware\Acl\Admin\RequestHandler\Container\RoleListHandlerFactory;
-use Webware\Acl\Admin\RequestHandler\Container\RouteMapManagerHandlerFactory;
-use Webware\Acl\Admin\RequestHandler\Container\RuleManagerHandlerFactory;
 use Webware\Acl\Admin\RequestHandler\ResourceListHandler;
 use Webware\Acl\Admin\RequestHandler\RoleListHandler;
-use Webware\Acl\Admin\RequestHandler\RouteMapManagerHandler;
-use Webware\Acl\Admin\RequestHandler\RuleManagerHandler;
-use Webware\Acl\Event\AclBuiltEvent;
-use Webware\Acl\Event\ResourcesLoadedEvent;
-use Webware\Acl\Event\RulesLoadedEvent;
-use Webware\Acl\Listener\RegisterAclResourcesListener;
-use Webware\Acl\Listener\RegisterAclRouteMappingsListener;
-use Webware\Acl\Listener\RegisterAclRulesListener;
-use Webware\Acl\Listener\RegisterAclWidgetListener;
-use Webware\Acl\Listener\RegisterOwnershipAssertionListener;
-use Webware\Acl\Middleware\AuthorizationMiddleware;
-use Webware\Acl\Middleware\IdentityMiddleware;
-use Webware\Acl\Admin\Middleware\Container\ProcessAssertionMiddlewareFactory;
-use Webware\Acl\Admin\Middleware\Container\ProcessResourceMiddlewareFactory;
-use Webware\Acl\Admin\Middleware\Container\ProcessRoleMiddlewareFactory;
-use Webware\Acl\Admin\Middleware\Container\ProcessRouteMappingMiddlewareFactory;
-use Webware\Acl\Admin\Middleware\Container\ProcessRuleMiddlewareFactory;
-use Webware\Acl\Admin\Middleware\ProcessAssertionMiddleware;
-use Webware\Acl\Admin\Middleware\ProcessResourceMiddleware;
-use Webware\Acl\Admin\Middleware\ProcessRoleMiddleware;
-use Webware\Acl\Admin\Middleware\ProcessRouteMappingMiddleware;
-use Webware\Acl\Admin\Middleware\ProcessRuleMiddleware;
-use Webware\Acl\Repository\AclRepository;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Admin\Container\Configuration as AdminConfiguration;
 use Webware\Admin\Event\RegisterWidgetEvent;
+use Webware\CommandBus\CommandBusInterface;
+use Webware\CommandBus\ConfigProvider as BusProvider;
+use Webware\CommandBus\Middleware\CommandHandlerMiddleware;
 
 final class ConfigProvider
 {
@@ -64,10 +62,13 @@ final class ConfigProvider
     public function __invoke(): array
     {
         return [
-            'dependencies' => $this->getDependencies(),
-            'listeners'    => $this->getListeners(),
-            'router'       => $this->getRouteProviders(),
-            'templates'    => $this->getTemplates(),
+            'dependencies'             => $this->getDependencies(),
+            'listeners'                => $this->getListeners(),
+            'router'                   => $this->getRouteProviders(),
+            'templates'                => $this->getTemplates(),
+            AclInterface::class        => $this->getDefaultConfig(),
+            AssertionManager::class    => $this->getAssertionManagerConfig(),
+            CommandBusInterface::class => $this->getBusConfig(),
         ];
     }
 
@@ -75,38 +76,31 @@ final class ConfigProvider
     {
         return [
             'aliases'   => [
-                AclRepositoryInterface::class => AclRepository::class,
-                AclCacheInterface::class      => FileAclCache::class,
-                AclInterface::class           => Acl::class,
+                AclInterface::class                  => Acl::class,
+                ForbiddenHandlerInterface::class     => ForbiddenHandler::class,
+                RouteResourceFactoryInterface::class => RouteResourceFactory::class,
             ],
-            'invokables' => [
-                RegisterAclResourcesListener::class       => RegisterAclResourcesListener::class,
-                RegisterAclRouteMappingsListener::class   => RegisterAclRouteMappingsListener::class,
-                RegisterAclRulesListener::class           => RegisterAclRulesListener::class,
-                RegisterOwnershipAssertionListener::class => RegisterOwnershipAssertionListener::class,
-            ],
+            'invokables' => [],
             'factories' => [
-                Acl::class                        => AclFactory::class,
-                AclBuilder::class                 => AclBuilderFactory::class,
-                AclOverviewHandler::class         => AclOverviewHandlerFactory::class,
-                AclRepository::class              => AclRepositoryFactory::class,
-                FileAclCache::class               => FileAclCacheFactory::class,
-                AuthorizationMiddleware::class    => AuthorizationMiddlewareFactory::class,
-                IdentityMiddleware::class         => IdentityMiddlewareFactory::class,
-                RegisterAclWidgetListener::class  => RegisterAclWidgetListenerFactory::class,
-                ResourceListHandler::class        => ResourceListHandlerFactory::class,
-                RoleListHandler::class            => RoleListHandlerFactory::class,
-                RouteMapManagerHandler::class     => RouteMapManagerHandlerFactory::class,
-                RouteProvider::class              => RouteProviderFactory::class,
-                RuleManagerHandler::class         => RuleManagerHandlerFactory::class,
-                ProcessRuleMiddleware::class         => ProcessRuleMiddlewareFactory::class,
-                ProcessRoleMiddleware::class         => ProcessRoleMiddlewareFactory::class,
-                ProcessRouteMappingMiddleware::class => ProcessRouteMappingMiddlewareFactory::class,
-                ProcessResourceMiddleware::class     => ProcessResourceMiddlewareFactory::class,
-                ProcessAssertionMiddleware::class    => ProcessAssertionMiddlewareFactory::class,
-                // Replaces Mezzio\Authentication\DefaultUserFactory so that
-                // users with no roles are assigned the configured base role.
-                UserInterface::class => DefaultUserFactory::class,
+                Acl::class                          => AclFactory::class,
+                AssertionManager::class             => Container\AssertionManagerFactory::class,
+                RouteResourceFactory::class         => RouteResourceFactoryFactory::class,
+                BuildAccessControlMiddleware::class => BuildAccessControlMiddlewareFactory::class,
+                ForbiddenHandler::class             => ForbiddenHandlerFactory::class,
+                AclOverviewHandler::class           => AclOverviewHandlerFactory::class,
+                AuthorizationMiddleware::class      => AuthorizationMiddlewareFactory::class,
+                IdentityMiddleware::class           => IdentityMiddlewareFactory::class,
+                RegisterWidgetListener::class       => RegisterWidgetListenerFactory::class,
+                ResourceListHandler::class          => ResourceListHandlerFactory::class,
+                RoleListHandler::class              => RoleListHandlerFactory::class,
+                RouteProvider::class                => RouteProviderFactory::class,
+                ProcessRuleMiddleware::class        => ProcessRuleMiddlewareFactory::class,
+                ProcessRoleMiddleware::class        => ProcessRoleMiddlewareFactory::class,
+                DeleteRoleHandler::class            => DeleteRoleHandlerFactory::class,
+                SaveRoleHandler::class              => SaveRoleHandlerFactory::class,
+                SaveRuleHandler::class              => SaveRuleHandlerFactory::class,
+                UpdateRuleTypeHandler::class        => UpdateRuleTypeHandlerFactory::class,
+                CommandHandlerMiddleware::class     => CommandHandlerMiddlewareFactory::class,
             ],
         ];
     }
@@ -132,18 +126,59 @@ final class ConfigProvider
     public function getListeners(): array
     {
         return [
-            RegisterWidgetEvent::class  => [
-                ['listener' => RegisterAclWidgetListener::class, 'priority' => 1],
+            RegisterWidgetEvent::class => [
+                ['listener' => RegisterWidgetListener::class, 'priority' => 1],
             ],
-            ResourcesLoadedEvent::class => [
-                ['listener' => RegisterAclResourcesListener::class, 'priority' => 1],
+        ];
+    }
+
+    public function getDefaultConfig(): array
+    {
+        return [
+            'route_param_map'     => [],
+            'forbidden_redirect'  => '/',
+            'forbidden_template'  => null,
+            Container\Configuration::ADMIN_ROUTE_SEGMENT_KEY     => Container\Configuration::ADMIN_ROUTE_SEGMENT_VALUE,
+            Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_KEY => Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE,
+            'roles'     => [
+                'Developer' => ['Administrator'],
             ],
-            RulesLoadedEvent::class     => [
-                ['listener' => RegisterAclRulesListener::class, 'priority' => 1],
+            'resources' => [
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.') => null,
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'rule.create' => AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'rule.update' => AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'role.create' => AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'role.delete' => AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
             ],
-            AclBuiltEvent::class        => [
-                ['listener' => RegisterOwnershipAssertionListener::class, 'priority' => 1],
-                ['listener' => RegisterAclRouteMappingsListener::class,   'priority' => 2],
+            'allow'     => [
+                'Developer' => [
+                    AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.') => [],
+                ],
+            ],
+        ];
+    }
+
+    public function getAssertionManagerConfig(): array
+    {
+        return [
+            'aliases'   => [
+                'Ownership' => Assertion\OwnershipAssertion::class,
+            ],
+            'factories'  => [
+                // Since AbstractPluginManager::$autoAddInvokableClass = true and $instanceOf = AssertionInterface::class, we can directly reference the class as factory
+                Assertion\OwnershipAssertion::class => Assertion\OwnershipAssertion::class,
+            ],
+        ];
+    }
+
+    public function getBusConfig(): array
+    {
+        return [
+            BusProvider::COMMAND_MAP_KEY => [
+                SaveRoleCommand::class        => SaveRoleHandler::class,
+                DeleteRoleCommand::class      => DeleteRoleHandler::class,
+                SaveRuleCommand::class        => SaveRuleHandler::class,
+                UpdateRuleTypeCommand::class  => UpdateRuleTypeHandler::class,
             ],
         ];
     }

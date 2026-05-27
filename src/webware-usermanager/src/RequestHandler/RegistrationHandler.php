@@ -27,6 +27,7 @@ final class RegistrationHandler implements RequestHandlerInterface
 {
     public function __construct(
         private readonly TemplateRendererInterface $template,
+        private readonly string $loginUrl,
     ) {}
 
     #[Override]
@@ -35,7 +36,7 @@ final class RegistrationHandler implements RequestHandlerInterface
         $result = $request->getAttribute('registration_result');
 
         if ($result !== null && $result->getStatus() === CommandStatus::Success) {
-            return new RedirectResponse('/login');
+            return new RedirectResponse($this->loginUrl);
         }
 
         return new HtmlResponse($this->template->render('user::registration'));

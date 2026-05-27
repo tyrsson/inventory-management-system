@@ -13,9 +13,12 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Webware\Acl\Admin\Command\DeleteRoleCommand;
+use Webware\Acl\Admin\Command\SaveRoleCommand;
 use Webware\Acl\Admin\Middleware\ProcessRoleMiddleware;
-use Webware\Acl\Admin\WriteResult;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\CommandBus\Command\CommandResult;
+use Webware\CommandBus\Command\CommandStatus;
+use Webware\CommandBus\CommandBusInterface;
 
 #[CoversClass(ProcessRoleMiddleware::class)]
 final class ProcessRoleMiddlewareTest extends TestCase
@@ -33,13 +36,19 @@ final class ProcessRoleMiddlewareTest extends TestCase
         };
     }
 
-    #[Test]
-    public function postWithValidBodySavesRoleAndSetsSuccessTrue(): void
+    private function successResult(SaveRoleCommand|DeleteRoleCommand $cmd): CommandResult
     {
-        $repository = $this->createMock(AclRepositoryInterface::class);
-        $repository->expects($this->once())->method('saveRole')
-            ->with('Shift Lead', 2);
-        $repository->expects($this->once())->method('incrementVersion');
+        return new CommandResult($cmd, CommandStatus::Success, null);
+    }
+
+    #[Test]
+    public function postWithValidBodyDispatchesSaveRoleCommandAndSetsSuccess(): void
+    {
+        $bus = $this->createMock(CommandBusInterface::class);
+        $bus->expects($this->once())
+            ->method('handle')
+            ->with($this->isInstanceOf(SaveRoleCommand::class))
+            ->willReturnCallback(fn($cmd) => $this->successResult($cmd));
 
         $messenger = $this->createStub(SystemMessengerInterface::class);
 
@@ -48,57 +57,66 @@ final class ProcessRoleMiddlewareTest extends TestCase
             ->withAttribute(SystemMessengerInterface::class, $messenger);
 
         $handler    = $this->capturingHandler();
-        $middleware = new ProcessRoleMiddleware($repository);
+        $middleware = new ProcessRoleMiddleware($bus);
         $middleware->process($request, $handler);
 
-        self::assertTrue($handler->received?->getAttribute(WriteResult::Success->value));
+        $result = $handler->received?->getAttribute(CommandResult::class);
+        self::assertInstanceOf(CommandResult::class, $result);
+        self::assertSame(CommandStatus::Success, $result->getStatus());
     }
 
     #[Test]
-    public function postWithMissingRoleIdSetsSuccessFalse(): void
+    public function postWithMissingRoleIdSetsFailure(): void
     {
-        $repository = $this->createStub(AclRepositoryInterface::class);
+        $bus = $this->createStub(CommandBusInterface::class);
 
         $request = (new ServerRequest([], [], '/', 'POST'))
             ->withParsedBody(['parent_pk' => '2']);
 
         $handler    = $this->capturingHandler();
-        $middleware = new ProcessRoleMiddleware($repository);
+        $middleware = new ProcessRoleMiddleware($bus);
         $middleware->process($request, $handler);
 
-        self::assertFalse($handler->received?->getAttribute(WriteResult::Success->value));
+        $result = $handler->received?->getAttribute(CommandResult::class);
+        self::assertInstanceOf(CommandResult::class, $result);
+        self::assertSame(CommandStatus::Failure, $result->getStatus());
     }
 
     #[Test]
-    public function postWithZeroParentPkSetsSuccessFalse(): void
+    public function postWithZeroParentPkSetsFailure(): void
     {
-        $repository = $this->createStub(AclRepositoryInterface::class);
+        $bus = $this->createStub(CommandBusInterface::class);
 
         $request = (new ServerRequest([], [], '/', 'POST'))
             ->withParsedBody(['role_id' => 'Shift Lead', 'parent_pk' => '0']);
 
         $handler    = $this->capturingHandler();
-        $middleware = new ProcessRoleMiddleware($repository);
+        $middleware = new ProcessRoleMiddleware($bus);
         $middleware->process($request, $handler);
 
-        self::assertFalse($handler->received?->getAttribute(WriteResult::Success->value));
+        $result = $handler->received?->getAttribute(CommandResult::class);
+        self::assertInstanceOf(CommandResult::class, $result);
+        self::assertSame(CommandStatus::Failure, $result->getStatus());
     }
 
     #[Test]
-    public function patchWithValidBodySavesRole(): void
+    public function patchWithValidBodyDispatchesSaveRoleCommand(): void
     {
-        $repository = $this->createMock(AclRepositoryInterface::class);
-        $repository->expects($this->once())->method('saveRole')
-            ->with('Shift Lead', 2);
-        $repository->expects($this->once())->method('incrementVersion');
+        $bus = $this->createMock(CommandBusInterface::class);
+        $bus->expects($this->once())
+            ->method('handle')
+            ->with($this->isInstanceOf(SaveRoleCommand::class))
+            ->willReturnCallback(fn($cmd) => $this->successResult($cmd));
 
         $request = (new ServerRequest([], [], '/', 'PATCH'))
             ->withParsedBody(['role_id' => 'Shift Lead', 'parent_pk' => '2']);
 
         $handler    = $this->capturingHandler();
-        $middleware = new ProcessRoleMiddleware($repository);
+        $middleware = new ProcessRoleMiddleware($bus);
         $middleware->processPatch($request, $handler);
 
-        self::assertTrue($handler->received?->getAttribute(WriteResult::Success->value));
+        $result = $handler->received?->getAttribute(CommandResult::class);
+        self::assertInstanceOf(CommandResult::class, $result);
+        self::assertSame(CommandStatus::Success, $result->getStatus());
     }
 }

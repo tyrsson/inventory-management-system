@@ -15,47 +15,22 @@ declare(strict_types=1);
 namespace Webware\UserManager\Listener;
 
 use Axleus\Mailer\MailerInterface;
-use Override;
-use Webware\UserManager\Command\SaveUserCommand;
-use Webware\CommandBus\Command\CommandResultInterface;
-use Webware\CommandBus\Command\CommandStatus;
-use Webware\CommandBus\Event\EventInterface;
-use Webware\CommandBus\Event\ListenerInterface;
-use Webware\CommandBus\Event\PostHandleEvent;
+use Webware\UserManager\Event\SendVerificationEmailEvent;
 
-final class SendVerificationEmailListener implements ListenerInterface
+final class SendVerificationEmailListener
 {
-    public function __construct(
+        public function __construct(
         private readonly MailerInterface $mailer,
         private readonly string $fromEmail,
         private readonly string $fromName,
         private readonly string $baseUrl,
+        private readonly string $verificationSubject,
     ) {}
 
-    #[Override]
-    public function __invoke(EventInterface $event): void
+    public function __invoke(SendVerificationEmailEvent $event): void
     {
-        if (! $event instanceof PostHandleEvent) {
-            return;
-        }
-
-        $commandResult = $event->getCommand();
-
-        if (! $commandResult instanceof CommandResultInterface) {
-            return;
-        }
-
-        if ($commandResult->getStatus() !== CommandStatus::Success) {
-            return;
-        }
-
-        $command = $commandResult->getCommand();
-
-        if (! $command instanceof SaveUserCommand) {
-            return;
-        }
-
-        $token           = (string) $commandResult->getResult();
+        $command         = $event->getCommand();
+        $token           = $event->getToken();
         $verificationUrl = rtrim($this->baseUrl, '/') . '/verify-email/' . $token;
 
         $adapter = $this->mailer->getAdapter();
@@ -66,8 +41,8 @@ final class SendVerificationEmailListener implements ListenerInterface
 
         $adapter
             ->from($this->fromEmail, $this->fromName)
-            ->to($command->email, $command->firstName . ' ' . $command->lastName)
-            ->subject('Verify your Farmers IMS account')
+            ->to($event->getEmail())
+            ->subject($this->verificationSubject)
             ->isHtml(true)
             ->body(
                 '<p>Hello ' . htmlspecialchars($command->firstName, ENT_QUOTES, 'UTF-8') . ',</p>'

@@ -22,15 +22,17 @@ final class SendVerificationEmailListenerFactory
 {
     public function __invoke(ContainerInterface $container): SendVerificationEmailListener
     {
-        /** @var array{user: array{from_email: string, from_name: string, base_url: string}} $config */
-        $config    = $container->get('config');
-        $userConf  = $config['user'] ?? [];
+        /** @var array{user: array{from_email: string, from_name: string, base_url: string}, MailerInterface::class: array{verification_email_subject: string}} $config */
+        $config      = $container->get('config');
+        $userConf    = $config['user'] ?? [];
+        $mailerConf  = $config[MailerInterface::class] ?? [];
 
         return new SendVerificationEmailListener(
-            mailer:    $container->get(MailerInterface::class),
-            fromEmail: (string) ($userConf['from_email'] ?? 'noreply@farmers-ims.local'),
-            fromName:  (string) ($userConf['from_name']  ?? 'Farmers IMS'),
-            baseUrl:   (string) ($userConf['base_url']   ?? 'http://localhost:8080'),
+            mailer:              $container->get(MailerInterface::class),
+            fromEmail:           (string) ($userConf['from_email']                          ?? 'noreply@farmers-ims.local'),
+            fromName:            (string) ($userConf['from_name']                           ?? 'Farmers IMS'),
+            baseUrl:             (string) ($userConf['base_url']                            ?? 'http://localhost:8080'),
+            verificationSubject: (string) ($mailerConf['verification_email_subject']        ?? 'Verify your account'),
         );
     }
 }

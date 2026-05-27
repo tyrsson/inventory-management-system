@@ -6,71 +6,53 @@ namespace Webware\Acl;
 
 use Laminas\Permissions\Acl\AclInterface as LaminasAclInterface;
 use Laminas\Permissions\Acl\Resource\ResourceInterface;
-use Laminas\Permissions\Acl\Role\RoleInterface;
-use Mezzio\Router\RouteResult;
 use Override;
-use Psr\Http\Message\ServerRequestInterface;
+use Webware\Acl\Role\UserRoleIterator;
+use Webware\UserManager\UserInterface;
 
 final class Acl implements AclInterface
 {
-    /**
-     * @param array<string, array{resource_id: string, privilege_id: string}> $routeMappings
-     */
     public function __construct(
         private readonly LaminasAclInterface $acl,
-        private readonly array $routeMappings = [],
     ) {}
+
+    public function getAcl(): LaminasAclInterface
+    {
+        return $this->acl;
+    }
 
     #[Override]
     public function isAllowed(
-        array|RoleInterface|string|null $roles = null,
+        UserInterface|null $user = null,
         string|ResourceInterface|null $resource = null,
         ?string $privilege = null
     ): bool {
-        if (is_string($roles)) {
-            $roles = [$roles];
+        if ($user === null) {
+            return false;
         }
-        foreach ($roles as $role) {
-            if ($this->acl->isAllowed($role, $resource, $privilege)) {
+
+        foreach (new UserRoleIterator($user) as $roleProxy) {
+            if ($this->acl->isAllowed($roleProxy, $resource, $privilege)) {
                 return true;
             }
         }
+
         return false;
     }
 
     #[Override]
     public function isAllowedRoute(
-        ServerRequestInterface $request,
-        array|RoleInterface|string|null $roles = null,
+        UserInterface|null $user,
+        ResourceInterface $resource,
     ): bool {
-        $routeResult = $request->getAttribute(RouteResult::class);
-
-        if (! ($routeResult instanceof RouteResult) || $routeResult->isFailure()) {
-            return true;
-        }
-
-        $routeName = $routeResult->getMatchedRouteName();
-
-        if (! isset($this->routeMappings[$routeName])) {
+        // FAIL CLOSED — intentional, do not change to true.
+        // Routes must be explicitly registered as ACL resources to be accessible.
+        // This is a hard requirement; unregistered routes are always denied.
+        if (! $this->acl->hasResource($resource)) {
             return false;
         }
 
-        $mapping = $this->routeMappings[$routeName];
-
-        return $this->isAllowed($roles, $mapping['resource_id'], $mapping['privilege_id']);
+        return $this->isAllowed($user, $resource, null);
     }
 
-    #[Override]
-    public function isAllowedByRouteName(
-        string $routeName,
-        array|RoleInterface|string|null $roles = null,
-    ): bool {
-        if (! isset($this->routeMappings[$routeName])) {
-            return true;
-        }
-
-        $mapping = $this->routeMappings[$routeName];
-
-        return $this->isAllowed($roles, $mapping['resource_id'], $mapping['privilege_id']);
-    }
 }

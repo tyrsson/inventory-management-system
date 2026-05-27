@@ -1,8 +1,15 @@
 ---
 name: "webware-coding-standard"
-description: "Load this skill when writing or reviewing ANY PHP source file that uses the Webware 1.0 coding standard. Enforces vendor/webware/coding-standard rules that must be applied manually when php-cs-fixer cannot run."
+description: "ALWAYS load before writing or reviewing ANY PHP file in this project. No exceptions. Enforces Webware 1.0 coding standard rules manually when php-cs-fixer cannot run. Skipping this skill produces WET, non-compliant code."
 argument-hint: "<file or class being created/reviewed>"
 ---
+
+> ⚠ **MANDATORY — LOAD BEFORE TOUCHING ANY PHP FILE**
+> This skill must be loaded before writing or reviewing any PHP source file. No exceptions.
+> Failure to load this skill is the primary cause of coding standard violations in this project.
+
+> ⚠ **SKILL INTEGRITY — NEVER REMOVE OR SHORTEN**
+> Content in this file may only be **added to or updated**. Removing or shortening existing sections is not permitted without explicit user approval. If you are adding new knowledge, append it as a new section.
 
 ## Overview
 
@@ -304,3 +311,135 @@ namespace Vendor\Package;
 - [ ] PHPDoc only where native types are insufficient; no superfluous tags
 - [ ] Blank line before `return`, `throw`, `try` (when not the first statement in a block)
 - [ ] One blank line between methods/properties; no blank line between trait imports
+- [ ] PHPUnit test classes have `#[CoversClass(...)]` (one per class under test) — see PHPUnit Coverage Attributes section
+
+---
+
+## PHPUnit Coverage Attributes — Mandatory (PHPUnit 11+)
+
+PHPUnit 11 and later require **explicit coverage targets** on every test class. Missing attributes produce "risky test" warnings and will eventually become errors.
+
+### Rules
+- Every test class **must** have at least one `#[CoversClass(Foo::class)]` attribute
+- Add one `#[CoversClass]` per class under test — multiple are allowed
+- Place all `#[CoversClass]` attributes directly above the `class` declaration, after the docblock
+- Import `PHPUnit\Framework\Attributes\CoversClass` in the class imports
+- For tests that cover free functions, use `#[CoversFunction('functionName')]` instead
+
+---
+
+## PHPUnit Mocks vs Stubs — Mandatory Rule (PHPUnit 12+)
+
+**Using `with*()` without `expects()` is deprecated and will be an error in PHPUnit 14.**
+
+Rule: **if a test double does not set expectations, use `createStub()`. If it sets expectations (call count, arguments), use `createMock()` with `expects()`.**
+
+```php
+// ✅ Correct — expectation set, use createMock()
+$bus = $this->createMock(CommandBusInterface::class);
+$bus->expects($this->once())
+    ->method('handle')
+    ->with($this->isInstanceOf(SaveRoleCommand::class))
+    ->willReturn($result);
+
+// ✅ Correct — no expectation, use createStub()
+$messenger = $this->createStub(SystemMessengerInterface::class);
+$messenger->method('danger')->willReturn(null);
+
+// ❌ Wrong — with() without expects() is deprecated
+$acl = $this->createMock(AclInterface::class);
+$acl->method('isAllowed')->with($role, $resource, 'create')->willReturn(true);
+
+// ❌ Wrong — createMock() when no expectations are needed
+$messenger = $this->createMock(SystemMessengerInterface::class);
+```
+
+---
+
+## PHPUnit Coverage Attributes — Mandatory (PHPUnit 11+)
+
+PHPUnit 11 and later require **explicit coverage targets** on every test class. Missing attributes produce "risky test" warnings and will eventually become errors.
+
+### Rules
+- Every test class **must** have at least one `#[CoversClass(Foo::class)]` attribute
+- Add one `#[CoversClass]` per class under test — multiple are allowed
+- Place all `#[CoversClass]` attributes directly above the `class` declaration, after the docblock
+- Import `PHPUnit\Framework\Attributes\CoversClass` in the class imports
+- For tests that cover free functions, use `#[CoversFunction('functionName')]` instead
+
+```php
+// ✅ Correct
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
+use Webware\Acl\Assertion\OwnershipAssertion;
+
+#[CoversClass(OwnershipAssertion::class)]
+final class OwnershipAssertionTest extends TestCase
+{
+    #[Test]
+    public function returnsFalseWhenRoleIsNotProprietary(): void { ... }
+}
+
+// ✅ Multiple classes under test
+#[CoversClass(OwnershipAssertion::class)]
+#[CoversClass(AssertionAggregate::class)]
+final class OwnershipAssertionIntegrationTest extends TestCase { ... }
+
+// ❌ Wrong — missing CoversClass, will be reported as risky
+final class OwnershipAssertionTest extends TestCase { ... }
+```
+
+---
+
+## Readonly Classes — Prefer Class-Level over Property-Level
+
+When all properties of a class are readonly, use `readonly class` rather than marking each property individually.
+
+```php
+// ✅ Correct — class-level readonly
+final readonly class SaveRoleCommand implements CommandInterface
+{
+    public function __construct(
+        public string $name,
+        public string $description,
+    ) {}
+}
+
+// ❌ Wrong — per-property readonly when class-level is possible
+final class SaveRoleCommand implements CommandInterface
+{
+    public function __construct(
+        public readonly string $name,
+        public readonly string $description,
+    ) {}
+}
+```
+
+Fall back to per-property `readonly` only when `readonly class` is prevented:
+- The class extends a non-readonly parent
+- One or more properties must remain mutable
+- A dependency injection framework (or other tool) requires non-readonly construction
+
+---
+
+## Webware Component Config Key Convention
+
+All webware component configuration is stored in the merged config array under the **component's primary interface class** as the top-level key — never a plain string like `'webware-acl'` or `'webware-navigation'`.
+
+```php
+// ✅ Correct — factory reads from interface class key
+$config = $container->get('config');
+$acl    = $config[AclInterface::class] ?? [];
+$nav    = $config[NavigationInterface::class] ?? [];
+
+// ❌ Wrong — string keys
+$acl = $config['webware-acl'] ?? [];
+$nav = $config['webware-navigation'] ?? [];
+```
+
+Rules:
+- The config key is always the **FQCN of the component's primary interface** (e.g. `AclInterface::class`, `NavigationInterface::class`)
+- Defaults are declared in each module's `ConfigProvider` (e.g. `getAclConfig()`, `getNavigationConfig()`)
+- Application overrides are placed under the same interface key in `config/autoload/*.local.php`
+- Factories must import the interface and use `$config[TheInterface::class]` — never a hard-coded string

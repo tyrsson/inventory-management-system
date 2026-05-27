@@ -15,37 +15,48 @@ declare(strict_types=1);
 namespace Webware\UserManager\Entity;
 
 use DateTimeImmutable;
-use Laminas\Permissions\Acl\ProprietaryInterface;
-use Laminas\Permissions\Acl\Resource\ResourceInterface;
-use Mezzio\Authentication\UserInterface;
 use Override;
+use SensitiveParameter;
+use Webware\UserManager\UserInterface;
 
 use function array_merge;
 use function array_values;
+use function json_decode;
 
-final class User implements UserInterface, ResourceInterface, ProprietaryInterface
+final class User implements UserInterface
 {
-    public string $displayName {
-        get => $this->firstName . ' ' . $this->lastName;
-    }
-
     public function __construct(
         public readonly int $id,
         public readonly int $storeId,
-        public readonly int $roleId,
         public readonly string $firstName,
         public readonly string $lastName,
         public readonly string $email,
+        #[SensitiveParameter]
         public readonly string $passwordHash,
         public readonly bool $active,
         public readonly DateTimeImmutable $createdAt,
+        #[SensitiveParameter]
         public readonly ?string $verificationToken = null,
         public readonly ?DateTimeImmutable $tokenCreatedAt = null,
         /** @var string[] */
-        private readonly array $roles = [],
+        public string|array $roles = [] {
+            set(string|array $value) {
+                if (is_string($value)) {
+                    $decoded      = json_decode($value, true);
+                    $this->roles  = is_array($decoded) ? $decoded : [];
+                } else {
+                    $this->roles = $value;
+                }
+            }
+        },
         /** @var array<string, mixed> */
         private readonly array $details = [],
     ) {}
+
+    public function displayName(): string
+    {
+        return $this->firstName . ' ' . $this->lastName;
+    }
 
     #[Override]
     public function getIdentity(): string
@@ -74,11 +85,23 @@ final class User implements UserInterface, ResourceInterface, ProprietaryInterfa
         return $this->id;
     }
 
+    #[Override]
+    public function getRoleId(): string
+    {
+        return $this->roles[0] ?? '';
+    }
+
     /** @return string[] */
     #[Override]
     public function getRoles(): array
     {
         return $this->roles;
+    }
+
+    #[Override]
+    public function isGuest(): bool
+    {
+        return false;
     }
 
     /** @param mixed $default */
@@ -100,26 +123,6 @@ final class User implements UserInterface, ResourceInterface, ProprietaryInterfa
         return new self(
             $this->id,
             $storeId,
-            $this->roleId,
-            $this->firstName,
-            $this->lastName,
-            $this->email,
-            $this->passwordHash,
-            $this->active,
-            $this->createdAt,
-            $this->verificationToken,
-            $this->tokenCreatedAt,
-            $this->roles,
-            $this->details,
-        );
-    }
-
-    public function withRoleId(int $roleId): self
-    {
-        return new self(
-            $this->id,
-            $this->storeId,
-            $roleId,
             $this->firstName,
             $this->lastName,
             $this->email,
@@ -138,7 +141,6 @@ final class User implements UserInterface, ResourceInterface, ProprietaryInterfa
         return new self(
             $this->id,
             $this->storeId,
-            $this->roleId,
             $firstName,
             $this->lastName,
             $this->email,
@@ -157,7 +159,6 @@ final class User implements UserInterface, ResourceInterface, ProprietaryInterfa
         return new self(
             $this->id,
             $this->storeId,
-            $this->roleId,
             $this->firstName,
             $lastName,
             $this->email,
@@ -176,7 +177,6 @@ final class User implements UserInterface, ResourceInterface, ProprietaryInterfa
         return new self(
             $this->id,
             $this->storeId,
-            $this->roleId,
             $this->firstName,
             $this->lastName,
             $email,
@@ -195,7 +195,6 @@ final class User implements UserInterface, ResourceInterface, ProprietaryInterfa
         return new self(
             $this->id,
             $this->storeId,
-            $this->roleId,
             $this->firstName,
             $this->lastName,
             $this->email,
@@ -214,7 +213,6 @@ final class User implements UserInterface, ResourceInterface, ProprietaryInterfa
         return new self(
             $this->id,
             $this->storeId,
-            $this->roleId,
             $this->firstName,
             $this->lastName,
             $this->email,
@@ -234,7 +232,6 @@ final class User implements UserInterface, ResourceInterface, ProprietaryInterfa
         return new self(
             $this->id,
             $this->storeId,
-            $this->roleId,
             $this->firstName,
             $this->lastName,
             $this->email,
@@ -253,7 +250,6 @@ final class User implements UserInterface, ResourceInterface, ProprietaryInterfa
         return new self(
             $this->id,
             $this->storeId,
-            $this->roleId,
             $this->firstName,
             $this->lastName,
             $this->email,

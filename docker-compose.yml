@@ -26,7 +26,8 @@ services:
             - PMA_USER=root
             - PMA_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
         depends_on:
-            - mysql
+            mysql:
+                condition: service_healthy
 
     mailpit:
         image: axllent/mailpit:latest

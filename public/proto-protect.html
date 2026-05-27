@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Protect Route UI Prototype | webware-acl</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="../../../resources/ui-mockup/v2/custom.css" />
+    <style>
+        /* Variant label pill */
+        .variant-badge {
+            font-size: .65rem;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        /* Inline table route cell */
+        .route-code {
+            font-size: .8125rem;
+            font-family: var(--bs-font-monospace);
+            color: var(--bs-primary);
+        }
+        /* Already-protected resource row */
+        .route-protected td {
+            opacity: .45;
+            text-decoration: line-through;
+        }
+        /* Kill Bootstrap's bright blue on expanded accordion headers in dark mode */
+        .accordion-button:not(.collapsed) {
+            background-color: var(--bs-tertiary-bg);
+            color: var(--bs-body-color);
+            box-shadow: none;
+        }
+        /* Muted grey checkboxes — less distracting than Bootstrap blue */
+        .form-check-input:checked {
+            background-color: #495057;
+            border-color: #6c757d;
+        }
+        .form-check-input:focus {
+            border-color: #6c757d;
+            box-shadow: 0 0 0 .25rem rgba(108,117,125,.25);
+        }
+    </style>
+</head>
+<body>
+
+<!-- TOP NAVBAR -->
+<nav class="navbar fixed-top ims-topbar bg-body-tertiary border-bottom border-secondary-subtle px-3">
+    <div class="d-flex align-items-center gap-2 flex-grow-1">
+        <button class="btn btn-sm btn-link text-body p-1 d-lg-none" type="button"
+                data-bs-toggle="offcanvas" data-bs-target="#imsSidebar" aria-controls="imsSidebar">
+            <i class="bi bi-list fs-4"></i>
+        </button>
+        <div>
+            <div class="fw-bold lh-1 small">Resources &amp; Privileges</div>
+            <div class="text-secondary" style="font-size:0.7rem;">Administration › ACL Manager</div>
+        </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-warning text-dark variant-badge">UI Prototype</span>
+        <div class="ims-avatar">JW</div>
+    </div>
+</nav>
+
+<!-- SIDEBAR -->
+<div class="offcanvas-lg offcanvas-start ims-sidebar bg-body-tertiary border-end border-secondary-subtle d-flex flex-column"
+     tabindex="-1" id="imsSidebar" aria-labelledby="imsSidebarLabel">
+    <div class="offcanvas-header border-bottom border-secondary-subtle">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-boxes fs-4 text-primary"></i>
+            <div><div class="fw-bold lh-1" id="imsSidebarLabel">Farmers IMS</div><div class="text-secondary" style="font-size:0.7rem;">Inventory Management</div></div>
+        </div>
+        <button type="button" class="btn-close d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#imsSidebar" aria-label="Close"></button>
+    </div>
+    <div class="px-3 py-2 border-bottom border-secondary-subtle">
+        <div class="text-secondary" style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em;">Active Store</div>
+        <div class="fw-semibold small">Store #207 · Leeds, AL</div>
+    </div>
+    <div class="offcanvas-body p-2 d-flex flex-column flex-grow-1 overflow-y-auto">
+        <div class="sidebar-section-label">Main</div>
+        <nav class="nav flex-column gap-1">
+            <a href="#" class="nav-link"><i class="bi bi-grid-fill"></i> Dashboard</a>
+            <a href="#" class="nav-link"><i class="bi bi-boxes"></i> Inventory</a>
+            <a href="#" class="nav-link"><i class="bi bi-clipboard2-data"></i> Manifests</a>
+            <a href="#" class="nav-link"><i class="bi bi-receipt"></i> Tickets</a>
+            <a href="#" class="nav-link"><i class="bi bi-arrow-left-right"></i> Transfers</a>
+        </nav>
+        <div class="sidebar-section-label mt-2">Administration</div>
+        <nav class="nav flex-column gap-1">
+            <a href="#" class="nav-link"><i class="bi bi-speedometer2"></i> Admin Dashboard</a>
+            <button class="nav-link d-flex align-items-center gap-2 w-100 text-start border-0 bg-transparent" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#aclSubNav" aria-expanded="true">
+                <i class="bi bi-shield-lock text-primary"></i>
+                <span class="flex-grow-1" style="color:var(--bs-primary);">ACL Manager</span>
+                <i class="bi bi-chevron-down" style="font-size:.75rem;"></i>
+            </button>
+            <div class="collapse show" id="aclSubNav">
+                <div class="d-flex flex-column gap-1 ps-3">
+                    <a href="#" class="nav-link py-1" style="font-size:.8125rem;"><i class="bi bi-grid-3x3-gap"></i> Overview</a>
+                    <a href="#" class="nav-link py-1" style="font-size:.8125rem;"><i class="bi bi-people"></i> Roles</a>
+                    <a href="#" class="nav-link py-1 active" aria-current="page" style="font-size:.8125rem;"><i class="bi bi-collection"></i> Resources</a>
+                    <a href="#" class="nav-link py-1" style="font-size:.8125rem;"><i class="bi bi-toggles"></i> Rules</a>
+                </div>
+            </div>
+        </nav>
+        <div class="sidebar-section-label mt-2">Reporting</div>
+        <nav class="nav flex-column gap-1">
+            <a href="#" class="nav-link"><i class="bi bi-bar-chart-line"></i> Analytics</a>
+        </nav>
+        <div class="mt-auto pt-2 border-top border-secondary-subtle">
+            <nav class="nav flex-column gap-1">
+                <a href="#" class="nav-link"><i class="bi bi-gear"></i> Settings</a>
+                <a href="#" class="nav-link"><i class="bi bi-box-arrow-left"></i> Sign Out</a>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="ims-layout">
+    <main class="ims-main p-3 p-lg-4">
+
+        <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb small mb-0">
+                <li class="breadcrumb-item"><a href="#">Admin</a></li>
+                <li class="breadcrumb-item"><a href="#">ACL Manager</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Resources</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex align-items-start justify-content-between mb-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <i class="bi bi-collection text-primary fs-5"></i>
+                    <h1 class="h4 fw-bold mb-0">Resources &amp; Privileges</h1>
+                </div>
+                <p class="text-secondary small mb-0">Resources define what can be protected. Privileges define how.</p>
+            </div>
+            <button class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i> Add Resource
+            </button>
+        </div>
+
+        <div class="mb-4">
+                    <div class="fw-semibold small d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-exclamation text-warning"></i>
+                        Unprotected Routes
+                        <span id="b-badge" class="badge bg-warning text-dark">14</span>
+                    </div>
+                </div>
+
+                <div class="accordion accordion-flush border rounded" id="unprotectedAccordion">
+                    <!-- ═══ Example: multi-method route ════════════════════════════════
+                         When a route allows multiple HTTP methods, the accordion body
+                         shows privilege checkboxes (not a badge) and a multi-select for
+                         roles. All derived privileges are pre-checked.
+                         ═══════════════════════════════════════════════════════════════ -->
+                    <div class="accordion-item" id="b-example-multi">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button py-2 pe-2" type="button" data-bs-toggle="collapse" data-bs-target="#b-body-example-multi">
+                                <div class="d-flex align-items-center gap-2 flex-grow-1 me-2">
+                                    <code class="route-code">example.multi-method</code>
+                                    <span class="badge bg-secondary ms-1" style="font-size:.55rem;">example — GET + POST + PUT + DELETE</span>
+                                    <span class="badge bg-transparent border border-primary text-primary ms-auto" style="font-size:.65rem;">Read</span>
+                                    <span class="badge bg-transparent border border-success text-success" style="font-size:.65rem;">Create</span>
+                                    <span class="badge bg-transparent border border-warning text-warning" style="font-size:.65rem;">Update</span>
+                                    <span class="badge bg-transparent border border-danger text-danger" style="font-size:.65rem;">Delete</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="b-body-example-multi" class="accordion-collapse collapse show" data-bs-parent="#unprotectedAccordion">
+                            <div class="accordion-body py-2 px-3">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-auto">
+                                        <label class="form-label form-label-sm mb-1">Privileges to grant</label>
+                                        <div class="d-flex gap-3">
+                                            <div class="form-check mb-0">
+                                                <input class="form-check-input" type="checkbox" id="b-ex-read" name="privilege[]" value="read" checked>
+                                                <label class="form-check-label small" for="b-ex-read"><span class="badge bg-transparent border border-primary text-primary" style="font-size:.65rem;">Read</span></label>
+                                            </div>
+                                            <div class="form-check mb-0">
+                                                <input class="form-check-input" type="checkbox" id="b-ex-create" name="privilege[]" value="create">
+                                                <label class="form-check-label small" for="b-ex-create"><span class="badge bg-transparent border border-success text-success" style="font-size:.65rem;">Create</span></label>
+                                            </div>
+                                            <div class="form-check mb-0">
+                                                <input class="form-check-input" type="checkbox" id="b-ex-update" name="privilege[]" value="update">
+                                                <label class="form-check-label small" for="b-ex-update"><span class="badge bg-transparent border border-warning text-warning" style="font-size:.65rem;">Update</span></label>
+                                            </div>
+                                            <div class="form-check mb-0">
+                                                <input class="form-check-input" type="checkbox" id="b-ex-delete" name="privilege[]" value="delete">
+                                                <label class="form-check-label small" for="b-ex-delete"><span class="badge bg-transparent border border-danger text-danger" style="font-size:.65rem;">Delete</span></label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <label class="form-label form-label-sm mb-1">Starting Role(s)</label>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="font-size:.75rem;">
+                                                Select role(s)…
+                                            </button>
+                                            <ul class="dropdown-menu p-2" style="min-width:190px;">
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="guest" id="r16-guest"><label class="form-check-label small" for="r16-guest">guest</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="member" id="r16-member"><label class="form-check-label small" for="r16-member">member</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Sales" id="r16-sales"><label class="form-check-label small" for="r16-sales">Sales</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse" id="r16-warehouse"><label class="form-check-label small" for="r16-warehouse">Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse Supervisor" id="r16-wsup"><label class="form-check-label small" for="r16-wsup">Warehouse Supervisor</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Credit Manager" id="r16-cmgr"><label class="form-check-label small" for="r16-cmgr">Credit Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="DC Warehouse" id="r16-dcwh"><label class="form-check-label small" for="r16-dcwh">DC Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Manager" id="r16-mgr"><label class="form-check-label small" for="r16-mgr">Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Administrator" id="r16-admn"><label class="form-check-label small" for="r16-admn">Administrator</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Developer" id="r16-dev"><label class="form-check-label small" for="r16-dev">Developer</label></div></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto ms-auto">
+                                        <input type="hidden" name="routeName" value="example.multi-method">
+                                        <button type="button" class="btn btn-sm btn-outline-info py-1 px-3" disabled>
+                                            <i class="bi bi-shield-plus me-1"></i> Protect
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="form-text mt-1 mb-0">Multi-method route: checkboxes replace the fixed badge. Only <strong>Read</strong> is pre-checked — additional privileges must be explicitly opted into. One privilege DB row is inserted per checked privilege. An allow rule is created for each selected role + each checked privilege.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" id="b-admin-acl-read">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2 pe-2" type="button" data-bs-toggle="collapse" data-bs-target="#b-body-admin-acl-read">
+                                <div class="d-flex align-items-center gap-2 flex-grow-1 me-2">
+                                    <code class="route-code">admin.acl.read</code>
+                                    <span class="badge bg-transparent border border-primary text-primary ms-auto" style="font-size:.65rem;">Read</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="b-body-admin-acl-read" class="accordion-collapse collapse" data-bs-parent="#unprotectedAccordion">
+                            <div class="accordion-body py-2 px-3">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-auto">
+                                        <label class="form-label form-label-sm mb-1">Starting Role(s)</label>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="font-size:.75rem;">
+                                                Select role(s)…
+                                            </button>
+                                            <ul class="dropdown-menu p-2" style="min-width:190px;">
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="guest" id="r17-guest"><label class="form-check-label small" for="r17-guest">guest</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="member" id="r17-member"><label class="form-check-label small" for="r17-member">member</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Sales" id="r17-sales"><label class="form-check-label small" for="r17-sales">Sales</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse" id="r17-warehouse"><label class="form-check-label small" for="r17-warehouse">Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse Supervisor" id="r17-wsup"><label class="form-check-label small" for="r17-wsup">Warehouse Supervisor</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Credit Manager" id="r17-cmgr"><label class="form-check-label small" for="r17-cmgr">Credit Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="DC Warehouse" id="r17-dcwh"><label class="form-check-label small" for="r17-dcwh">DC Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Manager" id="r17-mgr"><label class="form-check-label small" for="r17-mgr">Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Administrator" id="r17-admn"><label class="form-check-label small" for="r17-admn">Administrator</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Developer" id="r17-dev"><label class="form-check-label small" for="r17-dev">Developer</label></div></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto ms-auto">
+                                        <input type="hidden" name="routeName" value="admin.acl.read">
+                                        <button type="button" class="btn btn-sm btn-warning py-1 px-3" onclick="protectRow('b-admin-acl-read', 'b-badge', '#unprotectedAccordion .accordion-item:not(#b-example-multi)', 'variant-b-empty')">
+                                            <i class="bi bi-shield-plus me-1"></i> Protect
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="form-text mt-1 mb-0">Creates the ACL resource + the derived privilege DB row(s). Grants <strong>GET → Read</strong> access to the selected role(s).</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" id="b-admin-acl-roles-read">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2 pe-2" type="button" data-bs-toggle="collapse" data-bs-target="#b-body-admin-acl-roles-read">
+                                <div class="d-flex align-items-center gap-2 flex-grow-1 me-2">
+                                    <code class="route-code">admin.acl.roles.read</code>
+                                    <span class="badge bg-transparent border border-primary text-primary ms-auto" style="font-size:.65rem;">Read</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="b-body-admin-acl-roles-read" class="accordion-collapse collapse" data-bs-parent="#unprotectedAccordion">
+                            <div class="accordion-body py-2 px-3">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-auto">
+                                        <label class="form-label form-label-sm mb-1">Starting Role(s)</label>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="font-size:.75rem;">
+                                                Select role(s)…
+                                            </button>
+                                            <ul class="dropdown-menu p-2" style="min-width:190px;">
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="guest" id="r18-guest"><label class="form-check-label small" for="r18-guest">guest</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="member" id="r18-member"><label class="form-check-label small" for="r18-member">member</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Sales" id="r18-sales"><label class="form-check-label small" for="r18-sales">Sales</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse" id="r18-warehouse"><label class="form-check-label small" for="r18-warehouse">Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse Supervisor" id="r18-wsup"><label class="form-check-label small" for="r18-wsup">Warehouse Supervisor</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Credit Manager" id="r18-cmgr"><label class="form-check-label small" for="r18-cmgr">Credit Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="DC Warehouse" id="r18-dcwh"><label class="form-check-label small" for="r18-dcwh">DC Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Manager" id="r18-mgr"><label class="form-check-label small" for="r18-mgr">Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Administrator" id="r18-admn"><label class="form-check-label small" for="r18-admn">Administrator</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Developer" id="r18-dev"><label class="form-check-label small" for="r18-dev">Developer</label></div></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto ms-auto">
+                                        <input type="hidden" name="routeName" value="admin.acl.roles.read">
+                                        <button type="button" class="btn btn-sm btn-warning py-1 px-3" onclick="protectRow('b-admin-acl-roles-read', 'b-badge', '#unprotectedAccordion .accordion-item:not(#b-example-multi)', 'variant-b-empty')">
+                                            <i class="bi bi-shield-plus me-1"></i> Protect
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="form-text mt-1 mb-0">Creates the ACL resource + the derived privilege DB row(s). Grants <strong>GET → Read</strong> access to the selected role(s).</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" id="b-admin-acl-roles-create">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2 pe-2" type="button" data-bs-toggle="collapse" data-bs-target="#b-body-admin-acl-roles-create">
+                                <div class="d-flex align-items-center gap-2 flex-grow-1 me-2">
+                                    <code class="route-code">admin.acl.roles.create</code>
+                                    <span class="badge bg-transparent border border-success text-success ms-auto" style="font-size:.65rem;">Create</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="b-body-admin-acl-roles-create" class="accordion-collapse collapse" data-bs-parent="#unprotectedAccordion">
+                            <div class="accordion-body py-2 px-3">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-auto">
+                                        <label class="form-label form-label-sm mb-1">Starting Role(s)</label>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="font-size:.75rem;">
+                                                Select role(s)…
+                                            </button>
+                                            <ul class="dropdown-menu p-2" style="min-width:190px;">
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="guest" id="r19-guest"><label class="form-check-label small" for="r19-guest">guest</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="member" id="r19-member"><label class="form-check-label small" for="r19-member">member</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Sales" id="r19-sales"><label class="form-check-label small" for="r19-sales">Sales</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse" id="r19-warehouse"><label class="form-check-label small" for="r19-warehouse">Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse Supervisor" id="r19-wsup"><label class="form-check-label small" for="r19-wsup">Warehouse Supervisor</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Credit Manager" id="r19-cmgr"><label class="form-check-label small" for="r19-cmgr">Credit Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="DC Warehouse" id="r19-dcwh"><label class="form-check-label small" for="r19-dcwh">DC Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Manager" id="r19-mgr"><label class="form-check-label small" for="r19-mgr">Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Administrator" id="r19-admn"><label class="form-check-label small" for="r19-admn">Administrator</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Developer" id="r19-dev"><label class="form-check-label small" for="r19-dev">Developer</label></div></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto ms-auto">
+                                        <input type="hidden" name="routeName" value="admin.acl.roles.create">
+                                        <button type="button" class="btn btn-sm btn-warning py-1 px-3" onclick="protectRow('b-admin-acl-roles-create', 'b-badge', '#unprotectedAccordion .accordion-item:not(#b-example-multi)', 'variant-b-empty')">
+                                            <i class="bi bi-shield-plus me-1"></i> Protect
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="form-text mt-1 mb-0">Creates the ACL resource + the derived privilege DB row(s). Grants <strong>POST → Create</strong> access to the selected role(s).</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" id="b-admin-acl-roles-delete">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2 pe-2" type="button" data-bs-toggle="collapse" data-bs-target="#b-body-admin-acl-roles-delete">
+                                <div class="d-flex align-items-center gap-2 flex-grow-1 me-2">
+                                    <code class="route-code">admin.acl.roles.delete</code>
+                                    <span class="badge bg-transparent border border-danger text-danger ms-auto" style="font-size:.65rem;">Delete</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="b-body-admin-acl-roles-delete" class="accordion-collapse collapse" data-bs-parent="#unprotectedAccordion">
+                            <div class="accordion-body py-2 px-3">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-auto">
+                                        <label class="form-label form-label-sm mb-1">Starting Role(s)</label>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="font-size:.75rem;">
+                                                Select role(s)…
+                                            </button>
+                                            <ul class="dropdown-menu p-2" style="min-width:190px;">
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="guest" id="r20-guest"><label class="form-check-label small" for="r20-guest">guest</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="member" id="r20-member"><label class="form-check-label small" for="r20-member">member</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Sales" id="r20-sales"><label class="form-check-label small" for="r20-sales">Sales</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse" id="r20-warehouse"><label class="form-check-label small" for="r20-warehouse">Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse Supervisor" id="r20-wsup"><label class="form-check-label small" for="r20-wsup">Warehouse Supervisor</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Credit Manager" id="r20-cmgr"><label class="form-check-label small" for="r20-cmgr">Credit Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="DC Warehouse" id="r20-dcwh"><label class="form-check-label small" for="r20-dcwh">DC Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Manager" id="r20-mgr"><label class="form-check-label small" for="r20-mgr">Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Administrator" id="r20-admn"><label class="form-check-label small" for="r20-admn">Administrator</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Developer" id="r20-dev"><label class="form-check-label small" for="r20-dev">Developer</label></div></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto ms-auto">
+                                        <input type="hidden" name="routeName" value="admin.acl.roles.delete">
+                                        <button type="button" class="btn btn-sm btn-warning py-1 px-3" onclick="protectRow('b-admin-acl-roles-delete', 'b-badge', '#unprotectedAccordion .accordion-item:not(#b-example-multi)', 'variant-b-empty')">
+                                            <i class="bi bi-shield-plus me-1"></i> Protect
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="form-text mt-1 mb-0">Creates the ACL resource + the derived privilege DB row(s). Grants <strong>DELETE → Delete</strong> access to the selected role(s).</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" id="b-admin-acl-resources-read">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2 pe-2" type="button" data-bs-toggle="collapse" data-bs-target="#b-body-admin-acl-resources-read">
+                                <div class="d-flex align-items-center gap-2 flex-grow-1 me-2">
+                                    <code class="route-code">admin.acl.resources.read</code>
+                                    <span class="badge bg-transparent border border-primary text-primary ms-auto" style="font-size:.65rem;">Read</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="b-body-admin-acl-resources-read" class="accordion-collapse collapse" data-bs-parent="#unprotectedAccordion">
+                            <div class="accordion-body py-2 px-3">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-auto">
+                                        <label class="form-label form-label-sm mb-1">Starting Role(s)</label>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="font-size:.75rem;">
+                                                Select role(s)…
+                                            </button>
+                                            <ul class="dropdown-menu p-2" style="min-width:190px;">
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="guest" id="r21-guest"><label class="form-check-label small" for="r21-guest">guest</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="member" id="r21-member"><label class="form-check-label small" for="r21-member">member</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Sales" id="r21-sales"><label class="form-check-label small" for="r21-sales">Sales</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse" id="r21-warehouse"><label class="form-check-label small" for="r21-warehouse">Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse Supervisor" id="r21-wsup"><label class="form-check-label small" for="r21-wsup">Warehouse Supervisor</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Credit Manager" id="r21-cmgr"><label class="form-check-label small" for="r21-cmgr">Credit Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="DC Warehouse" id="r21-dcwh"><label class="form-check-label small" for="r21-dcwh">DC Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Manager" id="r21-mgr"><label class="form-check-label small" for="r21-mgr">Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Administrator" id="r21-admn"><label class="form-check-label small" for="r21-admn">Administrator</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Developer" id="r21-dev"><label class="form-check-label small" for="r21-dev">Developer</label></div></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto ms-auto">
+                                        <input type="hidden" name="routeName" value="admin.acl.resources.read">
+                                        <button type="button" class="btn btn-sm btn-warning py-1 px-3" onclick="protectRow('b-admin-acl-resources-read', 'b-badge', '#unprotectedAccordion .accordion-item:not(#b-example-multi)', 'variant-b-empty')">
+                                            <i class="bi bi-shield-plus me-1"></i> Protect
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="form-text mt-1 mb-0">Creates the ACL resource + the derived privilege DB row(s). Grants <strong>GET → Read</strong> access to the selected role(s).</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" id="b-admin-acl-resources-create">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2 pe-2" type="button" data-bs-toggle="collapse" data-bs-target="#b-body-admin-acl-resources-create">
+                                <div class="d-flex align-items-center gap-2 flex-grow-1 me-2">
+                                    <code class="route-code">admin.acl.resources.create</code>
+                                    <span class="badge bg-transparent border border-success text-success ms-auto" style="font-size:.65rem;">Create</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="b-body-admin-acl-resources-create" class="accordion-collapse collapse" data-bs-parent="#unprotectedAccordion">
+                            <div class="accordion-body py-2 px-3">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-auto">
+                                        <label class="form-label form-label-sm mb-1">Starting Role(s)</label>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="font-size:.75rem;">
+                                                Select role(s)…
+                                            </button>
+                                            <ul class="dropdown-menu p-2" style="min-width:190px;">
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="guest" id="r22-guest"><label class="form-check-label small" for="r22-guest">guest</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="member" id="r22-member"><label class="form-check-label small" for="r22-member">member</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Sales" id="r22-sales"><label class="form-check-label small" for="r22-sales">Sales</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse" id="r22-warehouse"><label class="form-check-label small" for="r22-warehouse">Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse Supervisor" id="r22-wsup"><label class="form-check-label small" for="r22-wsup">Warehouse Supervisor</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Credit Manager" id="r22-cmgr"><label class="form-check-label small" for="r22-cmgr">Credit Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="DC Warehouse" id="r22-dcwh"><label class="form-check-label small" for="r22-dcwh">DC Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Manager" id="r22-mgr"><label class="form-check-label small" for="r22-mgr">Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Administrator" id="r22-admn"><label class="form-check-label small" for="r22-admn">Administrator</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Developer" id="r22-dev"><label class="form-check-label small" for="r22-dev">Developer</label></div></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto ms-auto">
+                                        <input type="hidden" name="routeName" value="admin.acl.resources.create">
+                                        <button type="button" class="btn btn-sm btn-warning py-1 px-3" onclick="protectRow('b-admin-acl-resources-create', 'b-badge', '#unprotectedAccordion .accordion-item:not(#b-example-multi)', 'variant-b-empty')">
+                                            <i class="bi bi-shield-plus me-1"></i> Protect
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="form-text mt-1 mb-0">Creates the ACL resource + the derived privilege DB row(s). Grants <strong>POST → Create</strong> access to the selected role(s).</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" id="b-admin-acl-resources-delete">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2 pe-2" type="button" data-bs-toggle="collapse" data-bs-target="#b-body-admin-acl-resources-delete">
+                                <div class="d-flex align-items-center gap-2 flex-grow-1 me-2">
+                                    <code class="route-code">admin.acl.resources.delete</code>
+                                    <span class="badge bg-transparent border border-danger text-danger ms-auto" style="font-size:.65rem;">Delete</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="b-body-admin-acl-resources-delete" class="accordion-collapse collapse" data-bs-parent="#unprotectedAccordion">
+                            <div class="accordion-body py-2 px-3">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-auto">
+                                        <label class="form-label form-label-sm mb-1">Starting Role(s)</label>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="font-size:.75rem;">
+                                                Select role(s)…
+                                            </button>
+                                            <ul class="dropdown-menu p-2" style="min-width:190px;">
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="guest" id="r23-guest"><label class="form-check-label small" for="r23-guest">guest</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="member" id="r23-member"><label class="form-check-label small" for="r23-member">member</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Sales" id="r23-sales"><label class="form-check-label small" for="r23-sales">Sales</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse" id="r23-warehouse"><label class="form-check-label small" for="r23-warehouse">Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse Supervisor" id="r23-wsup"><label class="form-check-label small" for="r23-wsup">Warehouse Supervisor</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Credit Manager" id="r23-cmgr"><label class="form-check-label small" for="r23-cmgr">Credit Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="DC Warehouse" id="r23-dcwh"><label class="form-check-label small" for="r23-dcwh">DC Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Manager" id="r23-mgr"><label class="form-check-label small" for="r23-mgr">Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Administrator" id="r23-admn"><label class="form-check-label small" for="r23-admn">Administrator</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Developer" id="r23-dev"><label class="form-check-label small" for="r23-dev">Developer</label></div></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto ms-auto">
+                                        <input type="hidden" name="routeName" value="admin.acl.resources.delete">
+                                        <button type="button" class="btn btn-sm btn-warning py-1 px-3" onclick="protectRow('b-admin-acl-resources-delete', 'b-badge', '#unprotectedAccordion .accordion-item:not(#b-example-multi)', 'variant-b-empty')">
+                                            <i class="bi bi-shield-plus me-1"></i> Protect
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="form-text mt-1 mb-0">Creates the ACL resource + the derived privilege DB row(s). Grants <strong>DELETE → Delete</strong> access to the selected role(s).</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" id="b-admin-acl-resources-protect">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2 pe-2" type="button" data-bs-toggle="collapse" data-bs-target="#b-body-admin-acl-resources-protect">
+                                <div class="d-flex align-items-center gap-2 flex-grow-1 me-2">
+                                    <code class="route-code">admin.acl.resources.protect</code>
+                                    <span class="badge bg-transparent border border-success text-success ms-auto" style="font-size:.65rem;">Create</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="b-body-admin-acl-resources-protect" class="accordion-collapse collapse" data-bs-parent="#unprotectedAccordion">
+                            <div class="accordion-body py-2 px-3">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-auto">
+                                        <label class="form-label form-label-sm mb-1">Starting Role(s)</label>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="font-size:.75rem;">
+                                                Select role(s)…
+                                            </button>
+                                            <ul class="dropdown-menu p-2" style="min-width:190px;">
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="guest" id="r24-guest"><label class="form-check-label small" for="r24-guest">guest</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="member" id="r24-member"><label class="form-check-label small" for="r24-member">member</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Sales" id="r24-sales"><label class="form-check-label small" for="r24-sales">Sales</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse" id="r24-warehouse"><label class="form-check-label small" for="r24-warehouse">Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse Supervisor" id="r24-wsup"><label class="form-check-label small" for="r24-wsup">Warehouse Supervisor</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Credit Manager" id="r24-cmgr"><label class="form-check-label small" for="r24-cmgr">Credit Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="DC Warehouse" id="r24-dcwh"><label class="form-check-label small" for="r24-dcwh">DC Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Manager" id="r24-mgr"><label class="form-check-label small" for="r24-mgr">Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Administrator" id="r24-admn"><label class="form-check-label small" for="r24-admn">Administrator</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Developer" id="r24-dev"><label class="form-check-label small" for="r24-dev">Developer</label></div></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto ms-auto">
+                                        <input type="hidden" name="routeName" value="admin.acl.resources.protect">
+                                        <button type="button" class="btn btn-sm btn-warning py-1 px-3" onclick="protectRow('b-admin-acl-resources-protect', 'b-badge', '#unprotectedAccordion .accordion-item:not(#b-example-multi)', 'variant-b-empty')">
+                                            <i class="bi bi-shield-plus me-1"></i> Protect
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="form-text mt-1 mb-0">Creates the ACL resource + the derived privilege DB row(s). Grants <strong>POST → Create</strong> access to the selected role(s).</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" id="b-admin-acl-rules-read">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2 pe-2" type="button" data-bs-toggle="collapse" data-bs-target="#b-body-admin-acl-rules-read">
+                                <div class="d-flex align-items-center gap-2 flex-grow-1 me-2">
+                                    <code class="route-code">admin.acl.rules.read</code>
+                                    <span class="badge bg-transparent border border-primary text-primary ms-auto" style="font-size:.65rem;">Read</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="b-body-admin-acl-rules-read" class="accordion-collapse collapse" data-bs-parent="#unprotectedAccordion">
+                            <div class="accordion-body py-2 px-3">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-auto">
+                                        <label class="form-label form-label-sm mb-1">Starting Role(s)</label>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="font-size:.75rem;">
+                                                Select role(s)…
+                                            </button>
+                                            <ul class="dropdown-menu p-2" style="min-width:190px;">
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="guest" id="r25-guest"><label class="form-check-label small" for="r25-guest">guest</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="member" id="r25-member"><label class="form-check-label small" for="r25-member">member</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Sales" id="r25-sales"><label class="form-check-label small" for="r25-sales">Sales</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse" id="r25-warehouse"><label class="form-check-label small" for="r25-warehouse">Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse Supervisor" id="r25-wsup"><label class="form-check-label small" for="r25-wsup">Warehouse Supervisor</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Credit Manager" id="r25-cmgr"><label class="form-check-label small" for="r25-cmgr">Credit Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="DC Warehouse" id="r25-dcwh"><label class="form-check-label small" for="r25-dcwh">DC Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Manager" id="r25-mgr"><label class="form-check-label small" for="r25-mgr">Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Administrator" id="r25-admn"><label class="form-check-label small" for="r25-admn">Administrator</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Developer" id="r25-dev"><label class="form-check-label small" for="r25-dev">Developer</label></div></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto ms-auto">
+                                        <input type="hidden" name="routeName" value="admin.acl.rules.read">
+                                        <button type="button" class="btn btn-sm btn-warning py-1 px-3" onclick="protectRow('b-admin-acl-rules-read', 'b-badge', '#unprotectedAccordion .accordion-item:not(#b-example-multi)', 'variant-b-empty')">
+                                            <i class="bi bi-shield-plus me-1"></i> Protect
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="form-text mt-1 mb-0">Creates the ACL resource + the derived privilege DB row(s). Grants <strong>GET → Read</strong> access to the selected role(s).</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" id="b-admin-acl-rules-create">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2 pe-2" type="button" data-bs-toggle="collapse" data-bs-target="#b-body-admin-acl-rules-create">
+                                <div class="d-flex align-items-center gap-2 flex-grow-1 me-2">
+                                    <code class="route-code">admin.acl.rules.create</code>
+                                    <span class="badge bg-transparent border border-success text-success ms-auto" style="font-size:.65rem;">Create</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="b-body-admin-acl-rules-create" class="accordion-collapse collapse" data-bs-parent="#unprotectedAccordion">
+                            <div class="accordion-body py-2 px-3">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-auto">
+                                        <label class="form-label form-label-sm mb-1">Starting Role(s)</label>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="font-size:.75rem;">
+                                                Select role(s)…
+                                            </button>
+                                            <ul class="dropdown-menu p-2" style="min-width:190px;">
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="guest" id="r26-guest"><label class="form-check-label small" for="r26-guest">guest</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="member" id="r26-member"><label class="form-check-label small" for="r26-member">member</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Sales" id="r26-sales"><label class="form-check-label small" for="r26-sales">Sales</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse" id="r26-warehouse"><label class="form-check-label small" for="r26-warehouse">Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse Supervisor" id="r26-wsup"><label class="form-check-label small" for="r26-wsup">Warehouse Supervisor</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Credit Manager" id="r26-cmgr"><label class="form-check-label small" for="r26-cmgr">Credit Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="DC Warehouse" id="r26-dcwh"><label class="form-check-label small" for="r26-dcwh">DC Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Manager" id="r26-mgr"><label class="form-check-label small" for="r26-mgr">Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Administrator" id="r26-admn"><label class="form-check-label small" for="r26-admn">Administrator</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Developer" id="r26-dev"><label class="form-check-label small" for="r26-dev">Developer</label></div></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto ms-auto">
+                                        <input type="hidden" name="routeName" value="admin.acl.rules.create">
+                                        <button type="button" class="btn btn-sm btn-warning py-1 px-3" onclick="protectRow('b-admin-acl-rules-create', 'b-badge', '#unprotectedAccordion .accordion-item:not(#b-example-multi)', 'variant-b-empty')">
+                                            <i class="bi bi-shield-plus me-1"></i> Protect
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="form-text mt-1 mb-0">Creates the ACL resource + the derived privilege DB row(s). Grants <strong>POST → Create</strong> access to the selected role(s).</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" id="b-admin-acl-rules-update">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2 pe-2" type="button" data-bs-toggle="collapse" data-bs-target="#b-body-admin-acl-rules-update">
+                                <div class="d-flex align-items-center gap-2 flex-grow-1 me-2">
+                                    <code class="route-code">admin.acl.rules.update</code>
+                                    <span class="badge bg-transparent border border-warning text-warning ms-auto" style="font-size:.65rem;">Update</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="b-body-admin-acl-rules-update" class="accordion-collapse collapse" data-bs-parent="#unprotectedAccordion">
+                            <div class="accordion-body py-2 px-3">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-auto">
+                                        <label class="form-label form-label-sm mb-1">Starting Role(s)</label>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="font-size:.75rem;">
+                                                Select role(s)…
+                                            </button>
+                                            <ul class="dropdown-menu p-2" style="min-width:190px;">
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="guest" id="r27-guest"><label class="form-check-label small" for="r27-guest">guest</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="member" id="r27-member"><label class="form-check-label small" for="r27-member">member</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Sales" id="r27-sales"><label class="form-check-label small" for="r27-sales">Sales</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse" id="r27-warehouse"><label class="form-check-label small" for="r27-warehouse">Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse Supervisor" id="r27-wsup"><label class="form-check-label small" for="r27-wsup">Warehouse Supervisor</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Credit Manager" id="r27-cmgr"><label class="form-check-label small" for="r27-cmgr">Credit Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="DC Warehouse" id="r27-dcwh"><label class="form-check-label small" for="r27-dcwh">DC Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Manager" id="r27-mgr"><label class="form-check-label small" for="r27-mgr">Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Administrator" id="r27-admn"><label class="form-check-label small" for="r27-admn">Administrator</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Developer" id="r27-dev"><label class="form-check-label small" for="r27-dev">Developer</label></div></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto ms-auto">
+                                        <input type="hidden" name="routeName" value="admin.acl.rules.update">
+                                        <button type="button" class="btn btn-sm btn-warning py-1 px-3" onclick="protectRow('b-admin-acl-rules-update', 'b-badge', '#unprotectedAccordion .accordion-item:not(#b-example-multi)', 'variant-b-empty')">
+                                            <i class="bi bi-shield-plus me-1"></i> Protect
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="form-text mt-1 mb-0">Creates the ACL resource + the derived privilege DB row(s). Grants <strong>PATCH → Update</strong> access to the selected role(s).</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" id="b-admin-acl-rules-delete">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2 pe-2" type="button" data-bs-toggle="collapse" data-bs-target="#b-body-admin-acl-rules-delete">
+                                <div class="d-flex align-items-center gap-2 flex-grow-1 me-2">
+                                    <code class="route-code">admin.acl.rules.delete</code>
+                                    <span class="badge bg-transparent border border-danger text-danger ms-auto" style="font-size:.65rem;">Delete</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="b-body-admin-acl-rules-delete" class="accordion-collapse collapse" data-bs-parent="#unprotectedAccordion">
+                            <div class="accordion-body py-2 px-3">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-auto">
+                                        <label class="form-label form-label-sm mb-1">Starting Role(s)</label>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="font-size:.75rem;">
+                                                Select role(s)…
+                                            </button>
+                                            <ul class="dropdown-menu p-2" style="min-width:190px;">
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="guest" id="r28-guest"><label class="form-check-label small" for="r28-guest">guest</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="member" id="r28-member"><label class="form-check-label small" for="r28-member">member</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Sales" id="r28-sales"><label class="form-check-label small" for="r28-sales">Sales</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse" id="r28-warehouse"><label class="form-check-label small" for="r28-warehouse">Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse Supervisor" id="r28-wsup"><label class="form-check-label small" for="r28-wsup">Warehouse Supervisor</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Credit Manager" id="r28-cmgr"><label class="form-check-label small" for="r28-cmgr">Credit Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="DC Warehouse" id="r28-dcwh"><label class="form-check-label small" for="r28-dcwh">DC Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Manager" id="r28-mgr"><label class="form-check-label small" for="r28-mgr">Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Administrator" id="r28-admn"><label class="form-check-label small" for="r28-admn">Administrator</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Developer" id="r28-dev"><label class="form-check-label small" for="r28-dev">Developer</label></div></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto ms-auto">
+                                        <input type="hidden" name="routeName" value="admin.acl.rules.delete">
+                                        <button type="button" class="btn btn-sm btn-warning py-1 px-3" onclick="protectRow('b-admin-acl-rules-delete', 'b-badge', '#unprotectedAccordion .accordion-item:not(#b-example-multi)', 'variant-b-empty')">
+                                            <i class="bi bi-shield-plus me-1"></i> Protect
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="form-text mt-1 mb-0">Creates the ACL resource + the derived privilege DB row(s). Grants <strong>DELETE → Delete</strong> access to the selected role(s).</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" id="b-admin-acl-assertions-create">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2 pe-2" type="button" data-bs-toggle="collapse" data-bs-target="#b-body-admin-acl-assertions-create">
+                                <div class="d-flex align-items-center gap-2 flex-grow-1 me-2">
+                                    <code class="route-code">admin.acl.assertions.create</code>
+                                    <span class="badge bg-transparent border border-success text-success ms-auto" style="font-size:.65rem;">Create</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="b-body-admin-acl-assertions-create" class="accordion-collapse collapse" data-bs-parent="#unprotectedAccordion">
+                            <div class="accordion-body py-2 px-3">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-auto">
+                                        <label class="form-label form-label-sm mb-1">Starting Role(s)</label>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="font-size:.75rem;">
+                                                Select role(s)…
+                                            </button>
+                                            <ul class="dropdown-menu p-2" style="min-width:190px;">
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="guest" id="r29-guest"><label class="form-check-label small" for="r29-guest">guest</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="member" id="r29-member"><label class="form-check-label small" for="r29-member">member</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Sales" id="r29-sales"><label class="form-check-label small" for="r29-sales">Sales</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse" id="r29-warehouse"><label class="form-check-label small" for="r29-warehouse">Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse Supervisor" id="r29-wsup"><label class="form-check-label small" for="r29-wsup">Warehouse Supervisor</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Credit Manager" id="r29-cmgr"><label class="form-check-label small" for="r29-cmgr">Credit Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="DC Warehouse" id="r29-dcwh"><label class="form-check-label small" for="r29-dcwh">DC Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Manager" id="r29-mgr"><label class="form-check-label small" for="r29-mgr">Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Administrator" id="r29-admn"><label class="form-check-label small" for="r29-admn">Administrator</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Developer" id="r29-dev"><label class="form-check-label small" for="r29-dev">Developer</label></div></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto ms-auto">
+                                        <input type="hidden" name="routeName" value="admin.acl.assertions.create">
+                                        <button type="button" class="btn btn-sm btn-warning py-1 px-3" onclick="protectRow('b-admin-acl-assertions-create', 'b-badge', '#unprotectedAccordion .accordion-item:not(#b-example-multi)', 'variant-b-empty')">
+                                            <i class="bi bi-shield-plus me-1"></i> Protect
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="form-text mt-1 mb-0">Creates the ACL resource + the derived privilege DB row(s). Grants <strong>POST → Create</strong> access to the selected role(s).</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" id="b-admin-acl-assertions-delete">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2 pe-2" type="button" data-bs-toggle="collapse" data-bs-target="#b-body-admin-acl-assertions-delete">
+                                <div class="d-flex align-items-center gap-2 flex-grow-1 me-2">
+                                    <code class="route-code">admin.acl.assertions.delete</code>
+                                    <span class="badge bg-transparent border border-danger text-danger ms-auto" style="font-size:.65rem;">Delete</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="b-body-admin-acl-assertions-delete" class="accordion-collapse collapse" data-bs-parent="#unprotectedAccordion">
+                            <div class="accordion-body py-2 px-3">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-auto">
+                                        <label class="form-label form-label-sm mb-1">Starting Role(s)</label>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="font-size:.75rem;">
+                                                Select role(s)…
+                                            </button>
+                                            <ul class="dropdown-menu p-2" style="min-width:190px;">
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="guest" id="r30-guest"><label class="form-check-label small" for="r30-guest">guest</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="member" id="r30-member"><label class="form-check-label small" for="r30-member">member</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Sales" id="r30-sales"><label class="form-check-label small" for="r30-sales">Sales</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse" id="r30-warehouse"><label class="form-check-label small" for="r30-warehouse">Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Warehouse Supervisor" id="r30-wsup"><label class="form-check-label small" for="r30-wsup">Warehouse Supervisor</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Credit Manager" id="r30-cmgr"><label class="form-check-label small" for="r30-cmgr">Credit Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="DC Warehouse" id="r30-dcwh"><label class="form-check-label small" for="r30-dcwh">DC Warehouse</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Manager" id="r30-mgr"><label class="form-check-label small" for="r30-mgr">Manager</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Administrator" id="r30-admn"><label class="form-check-label small" for="r30-admn">Administrator</label></div></li>
+                                                <li><div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="role[]" value="Developer" id="r30-dev"><label class="form-check-label small" for="r30-dev">Developer</label></div></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto ms-auto">
+                                        <input type="hidden" name="routeName" value="admin.acl.assertions.delete">
+                                        <button type="button" class="btn btn-sm btn-warning py-1 px-3" onclick="protectRow('b-admin-acl-assertions-delete', 'b-badge', '#unprotectedAccordion .accordion-item:not(#b-example-multi)', 'variant-b-empty')">
+                                            <i class="bi bi-shield-plus me-1"></i> Protect
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="form-text mt-1 mb-0">Creates the ACL resource + the derived privilege DB row(s). Grants <strong>DELETE → Delete</strong> access to the selected role(s).</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="variant-b-empty" class="text-secondary small text-center py-4 d-none">
+                    <i class="bi bi-shield-check fs-3 d-block mb-2 text-success"></i>
+                    All routes are protected.
+                </div>
+
+            </div>
+
+        <!-- Notes for review -->
+        <div class="card border-info mt-2">
+            <div class="card-header py-2">
+                <i class="bi bi-chat-square-text text-info me-1"></i>
+                <span class="small fw-semibold">Prototype Notes</span>
+            </div>
+            <div class="card-body py-2 small">
+                <ul class="mb-0 ps-3">
+                    <li>For <strong>single-method routes</strong> (all 14 shown here), the <strong>privilege badge</strong> is fixed and read-only — derived from the HTTP method via <code>METHOD_PRIVILEGE_MAP</code>. There is nothing to choose.</li>
+                    <li>For <strong>multi-method routes</strong> (e.g. <code>['GET', 'POST']</code>), the accordion body shows privilege checkboxes instead of a fixed badge — one per unique privilege derived from the allowed methods. Only <strong>Read</strong> is pre-checked; additional privileges must be explicitly opted into.</li>
+                    <li>The <strong>Starting Role(s)</strong> select is multi-select. Selecting multiple roles creates one allow rule per role. The form posts <code>role[]</code> as an array.</li>
+                    <li>Clicking <strong>Protect</strong> will: (1) create the ACL resource DB row, (2) insert one privilege DB row per unique privilege derived from the route's allowed methods, (3) create an allow rule for each selected role + the derived privilege(s).</li>                    <li><code>admin.acl.*</code> routes appear here because they are not yet seeded as protected resources. Once seeded they disappear from this list.</li>
+                </ul>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../../resources/ui-mockup/v2/app.js"></script>
+<script>
+    // Simulation only — mirrors what the HTMX swap would do on a successful protect response.
+    function protectRow(rowId, badgeId, rowSelector, emptyId) {
+        const el = document.getElementById(rowId);
+        if (!el) return;
+        el.style.transition = 'opacity .25s';
+        el.style.opacity = '0';
+        setTimeout(() => {
+            el.remove();
+            const remaining = document.querySelectorAll(rowSelector).length;
+            document.getElementById(badgeId).textContent = remaining;
+            if (remaining === 0) document.getElementById(emptyId).classList.remove('d-none');
+        }, 260);
+    }
+
+</script>
+</body>
+</html>

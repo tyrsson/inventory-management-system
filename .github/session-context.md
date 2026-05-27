@@ -1,5 +1,13 @@
 # Session Context — Inventory Management System
-_Last updated: May 7, 2026_
+_Last updated: May 13, 2026 (evening)_
+
+> **⚠ SESSION WORKFLOW — MANDATORY**
+>
+> - **Start of every session:** invoke `/session-start` in Copilot Chat — loads all skills, reads all docs, confirms state before any code is written.
+> - **End of every session:** invoke `/session-end` in Copilot Chat — updates this file, writes session memory, confirms next steps.
+>
+> Both prompt files live in `.github/prompts/`. Neither protocol may be skipped.
+> This file is **append-only** — never remove or shorten existing content without explicit user approval.
 
 > **⚠ Runtime environment changed (April 28, 2026):** TrueAsync (`php-async` extension) has been **removed** from the active stack. After 3 hours rebuilding the Docker environment and the VS Code devcontainer, the project now runs as a standard Mezzio application served by the **PHP built-in web server** (`php -S`) inside a `php:latest` Docker container. There is **no PHP-FPM and no nginx** in the active devcontainer stack. The decision was driven by current usability issues in TrueAsync (SIGABRT crashes, `proc_open` incompatibility inside coroutines, devcontainer instability). The `src/mezzio-async/` source tree and all TrueAsync planning docs (`docs/planning/php-async-api.md`, `docs/planning/trueasync-bugs.md`) are **retained** for future reintegration once the extension matures.
 >
@@ -175,6 +183,18 @@ the full Reporting nav section. This is intentional (these are detail pages).
    not yet functional; will need an HTMX swap on chart data.
 10. **Manifest, Inventory, Fulfilment modules** — not started.
 
+### ACL Ownership Assertion — In Progress (May 13, 2026)
+11. **Audit roles/resources/privileges for `StoreOwnedResourceAssertion` scope** — enumerate
+    every store-scoped resource and every mutating privilege (standard + domain-specific:
+    `process`, `flag-damage`, `approve`, `receive`, `pick-up`, etc.). Seed SQL is the
+    source of truth. Domain privileges must be in `acl_privilege` before listener can reference them.
+12. **Implement `RegisterOwnershipAssertionListener`** — un-deprecate, call
+    `$acl->allow([store-roles], [store-resources], ['update', 'delete', ...domain privs], new StoreOwnedResourceAssertion())`
+    — only after audit above is complete.
+13. **Unit tests** for `OwnershipAssertion`, `StoreOwnedResourceAssertion`, `CommandHandlerMiddleware` (override).
+14. **Wire `HandleAccessDeniedTrait`** into each `Process{Action}Middleware` that dispatches
+    an ownership-capable command.
+
 ### Future: `webware/composer-plugin`
 Feasibility assessed in `docs/planning/feature-admin-acl-listener-wiring-1.md` §10.
 Verdict: feasible and worthwhile. Suggested milestones:
@@ -190,6 +210,93 @@ Not started. Requires a separate package and separate plan.
 - Inherits from `Administrator` (sits above it in the hierarchy)
 - Explicit deny rules for `user/login` and `user/register` added (matches all authenticated role pattern)
 - Intended for developer tools, setup/config UI, and future `webware/composer-plugin` integration
+
+---
+
+## Key Design Decisions — May 13, 2026 (evening session)
+
+### ACL: Assertion Registration Strategy — CONFIRMED
+
+Two separate strategies are required depending on assertion scope:
+
+**1. `OwnershipAssertion` — DB-driven (`acl_rule_assertion` table)**
+- Scoped to a single rule: `member → user → update`
+- Seeded via `data/schema/999_seed.sql` INSERT into `acl_rule_assertion`
+- FQCN stored: `Webware\Acl\Assertion\OwnershipAssertion`
+- `AclBuilder::buildAssertion()` instantiates via `new $fqcn()` (no-arg constructor — confirmed)
+- Seed row added this session using a subquery to avoid hardcoded PKs (idempotent with `ON DUPLICATE KEY UPDATE`)
+
+**2. `StoreOwnedResourceAssertion` — Listener-driven (`RegisterOwnershipAssertionListener` on `AclBuiltEvent`)**
+- Must be applied as a bulk `$acl->allow(['member', 'sales', ...], [store-scoped resources], ['update', 'delete'], new StoreOwnedResourceAssertion())`
+- DB-driven approach would require dozens of rows (role × resource × privilege) — not maintainable
+- `RegisterOwnershipAssertionListener` is currently a **no-op** (deprecated); must be un-deprecated and properly implemented
+- **NOT YET IMPLEMENTED** — blocked pending role/resource/privilege audit
+
+### ACL: Assertions Do NOT Inherit Through Role Hierarchy — CONFIRMED
+Laminas `Acl::isAllowed()` walks the role DAG depth-first. When a matching rule is found it evaluates that rule's assertion. The assertion is bound to the specific role's rule — child roles do not inherit parent assertions. Explicit `allow()` calls with assertions must be made per-role.
+
+### ACL: `create` privilege does NOT need `StoreOwnedResourceAssertion` — CONFIRMED (reasoning)
+`store_id` on create commands is injected from the authenticated session, not from user input. Cross-store creation is prevented upstream. Only `update` and `delete` (and domain-specific mutating privileges like `process`, `flag-damage`) need the assertion.
+
+### `RegisterOwnershipAssertionListener` — Pending Audit Before Implementation
+Before implementing the listener, the following must be mapped:
+1. **Roles** — which roles operate within a store boundary? (`member`, `sales`, `manager`? hierarchy TBD)
+2. **Resources** — which resources are store-scoped? (`product`, `manifest`, `ticket`, `transfer` confirmed; `manifest.process`, damage flagging, PQA submission, etc. not yet fully identified)
+3. **Privileges** — `update` and `delete` confirmed; domain-specific privileges (`process`, `flag-damage`, `approve`, `receive`, `pick-up`) must be registered in `acl_privilege` before the listener can reference them
+4. Seed SQL (`999_seed.sql`) is the source of truth — audit it when resuming
+
+---
+
+## Application Layer Status — May 13, 2026 (evening session)
+
+### Files Created or Modified
+
+| File | Change |
+|---|---|
+| `src/webware-acl/src/CommandBus/Middleware/CommandHandlerMiddleware.php` | **CREATED** — ACL-aware override of upstream `CommandHandlerMiddleware`; injects `AclInterface`, `OwnershipAssertion`, `StoreOwnedResourceAssertion`; throws `AccessDeniedException` on ownership failure |
+| `src/webware-acl/src/Container/CommandHandlerMiddlewareFactory.php` | **CREATED** — Factory for the above |
+| `src/webware-acl/src/Exception/AccessDeniedException.php` | **CREATED** — extends `Webware\Acl\Exception\RuntimeException` |
+| `src/webware-acl/src/HandleAccessDeniedTrait.php` | **CREATED** — Used by PSR-15 `Process{Action}Middleware` to catch `AccessDeniedException`; calls `danger(hops:0, now:true)`, dispatches `LogEvent(Security, Critical)`, returns `$handler->handle($request)` (no redirect) |
+| `src/webware-acl/src/AclInterface.php` | **MODIFIED** — added `getAcl(): LaminasAclInterface` |
+| `src/webware-acl/src/Acl.php` | **MODIFIED** — implemented `getAcl()` returning `$this->acl` |
+| `src/webware-acl/src/ConfigProvider.php` | **MODIFIED** — registered `CommandHandlerMiddleware::class => CommandHandlerMiddlewareFactory::class` (replaces upstream factory) |
+| `src/webware-acl/src/Listener/RegisterOwnershipAssertionListener.php` | **NOT YET MODIFIED** — still a no-op; needs un-deprecating and implementation after resource/role/privilege audit |
+| `data/schema/999_seed.sql` | **MODIFIED** — added `acl_rule_assertion` INSERT for `member → user → update → OwnershipAssertion` (subquery-based, idempotent) |
+| `.github/skills/htmx-mezzio/SKILL.md` | **MODIFIED** — Toast/SystemMessenger pattern section added |
+| `.github/skills/webware-coding-standard/SKILL.md` | **MODIFIED** — PHPUnit 11 `#[CoversClass]` rule added |
+| All 19 `.github/skills/*/SKILL.md` | **MODIFIED** — NEVER REMOVE directive added to each |
+| `.github/prompts/session-start.prompt.md` | **CREATED** |
+| `.github/prompts/session-end.prompt.md` | **CREATED** |
+| `test/AppTest/Acl/StoreOwnershipAssertionPrototypeTest.php` | **MODIFIED** — risky test fixed (`#[CoversClass]` attributes added) |
+
+### CommandHandlerMiddleware — Key Pattern
+```php
+// Registered under the upstream key — replaces upstream factory in DI
+CommandHandlerMiddleware::class => CommandHandlerMiddlewareFactory::class
+
+// Logic (simplified):
+if ($command instanceof RoleProviderInterface) {
+    if ($command instanceof StoreOwnedResourceInterface) {
+        // StoreOwnedResourceAssertion::assert()
+    } elseif ($command instanceof ProprietaryInterface) {
+        // OwnershipAssertion::assert()
+    }
+    // throw AccessDeniedException on failure
+}
+```
+
+### HandleAccessDeniedTrait — Key Pattern
+```php
+// In Process{Action}Middleware — catch point for CommandBus exceptions
+} catch (AccessDeniedException $e) {
+    return $this->handleAccessDenied($e, $request, $handler, $dispatcher);
+}
+
+// Trait method:
+// 1. $messenger->danger('...', hops: 0, now: true)  ← current render, no redirect
+// 2. dispatch LogEvent(Security, Critical)
+// 3. return $handler->handle($request)               ← renders current page with toast
+```
 - No DB migration needed yet — applies on next clean seed
 
 ### ACL Listener Wiring — Planning complete (May 7, 2026)

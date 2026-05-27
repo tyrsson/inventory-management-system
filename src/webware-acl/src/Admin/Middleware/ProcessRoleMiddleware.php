@@ -19,15 +19,18 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Webware\Acl\Admin\WriteResult;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\Acl\Admin\Command\DeleteRoleCommand;
+use Webware\Acl\Admin\Command\SaveRoleCommand;
+use Webware\CommandBus\Command\CommandResult;
+use Webware\CommandBus\Command\CommandStatus;
+use Webware\CommandBus\CommandBusInterface;
 use Webware\Core\HttpMethodProcessorTrait;
 
 final class ProcessRoleMiddleware implements MiddlewareInterface
 {
     use HttpMethodProcessorTrait;
 
-    public function __construct(private readonly AclRepositoryInterface $aclRepository)
+    public function __construct(private readonly CommandBusInterface $commandBus)
     {
     }
 
@@ -54,16 +57,22 @@ final class ProcessRoleMiddleware implements MiddlewareInterface
         /** @var SystemMessengerInterface|null $messenger */
         $messenger = $request->getAttribute(SystemMessengerInterface::class);
 
-        $success = false;
+        $result = new CommandResult(new DeleteRoleCommand(0), CommandStatus::Failure, null);
 
         if ($rolePk > 0) {
-            $this->aclRepository->deleteRole($rolePk);
-            $this->aclRepository->incrementVersion();
-            $messenger?->success('Role deleted.');
-            $success = true;
+            $result = $this->commandBus->handle(new DeleteRoleCommand($rolePk));
+            if ($result->getStatus() === CommandStatus::Success) {
+                $messenger?->success('Role deleted.');
+            } elseif ($result->getStatus() === CommandStatus::Failure) {
+                $messenger?->warning(
+                    (string) ($result->getResult() ?? 'Role could not be deleted.'),
+                    hops: 0,
+                    now: true,
+                );
+            }
         }
 
-        return $handler->handle($request->withAttribute(WriteResult::Success->value, $success));
+        return $handler->handle($request->withAttribute(CommandResult::class, $result));
     }
 
     private function persistRole(
@@ -77,15 +86,15 @@ final class ProcessRoleMiddleware implements MiddlewareInterface
         /** @var SystemMessengerInterface|null $messenger */
         $messenger = $request->getAttribute(SystemMessengerInterface::class);
 
-        $success = false;
+        $result = new CommandResult(new SaveRoleCommand('', 0), CommandStatus::Failure, null);
 
         if ($roleId !== '' && $parentPk > 0) {
-            $this->aclRepository->saveRole($roleId, $parentPk);
-            $this->aclRepository->incrementVersion();
-            $messenger?->success('Role saved.');
-            $success = true;
+            $result = $this->commandBus->handle(new SaveRoleCommand($roleId, $parentPk));
+            if ($result->getStatus() === CommandStatus::Success) {
+                $messenger?->success('Role saved.');
+            }
         }
 
-        return $handler->handle($request->withAttribute(WriteResult::Success->value, $success));
+        return $handler->handle($request->withAttribute(CommandResult::class, $result));
     }
 }

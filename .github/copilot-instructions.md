@@ -287,3 +287,31 @@ composer install
 - https://true-async.github.io/en/docs.html — canonical TrueAsync documentation
 - https://true-async.github.io/en/docs.html — canonical TrueAsync documentation
 - Attached `mezzio-swoole/` workspace — the reference implementation to mirror
+
+---
+
+## ⚠ MANDATORY SESSION-START PROTOCOL — NOT OPTIONAL
+
+At the start of **every session**, before writing or modifying any code, you **MUST**:
+
+1. Read **all** documentation files in the following directories:
+   - `docs/` (project-level planning and architecture docs)
+   - `src/webware-acl/docs/`
+   - `src/webware-admin/docs/`
+   - `src/webware-navigation/docs/`
+   - `src/webware-usermanager/docs/`
+   - `src/ims-manifest/docs/`
+
+2. Load **all** applicable skills from `.github/skills/` before starting any task. At minimum load:
+   - `htmx-mezzio` — required for ANY handler, template, or HTMX interaction
+   - `webware-module-architecture` — required for ANY handler, middleware, or route work
+   - `webware-command-bus` — required for ANY command or handler work
+   - `webware-coding-standard` — required for ALL PHP files
+
+3. Check `/memories/session/` for any saved session state from a prior conversation.
+
+**Skipping this protocol wastes the user's request budget and forces them to repeat context they have already provided. This is unacceptable.**
+
+> ⚠ **THIS SECTION MUST NEVER BE REMOVED, SHORTENED, OR MODIFIED FOR ANY REASON.**
+> It exists because it was removed or lost in a prior session, costing significant user request budget.
+> Any agent or process that removes or alters this section is in violation of the project's instructions.

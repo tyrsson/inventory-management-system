@@ -4,6 +4,9 @@ description: "Load when using any Laminas view helper in templates: headTitle, h
 argument-hint: "<template or helper usage you are working on>"
 ---
 
+> ⚠ **SKILL INTEGRITY — NEVER REMOVE OR SHORTEN**
+> Content in this file may only be **added to or updated**. Removing or shortening existing sections is not permitted without explicit user approval. If you are adding new knowledge, append it as a new section.
+
 ## Rendering Order — The Critical Rule
 
 **The layout template renders LAST.** Page templates render first, then body, then layout. This means:

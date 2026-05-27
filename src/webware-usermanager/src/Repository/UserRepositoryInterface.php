@@ -14,11 +14,19 @@ declare(strict_types=1);
 
 namespace Webware\UserManager\Repository;
 
-use Mezzio\Authentication\UserRepositoryInterface as UserRepositoryContract;
 use Webware\UserManager\Entity\User;
+use Webware\UserManager\UserInterface;
 
-interface UserRepositoryInterface extends UserRepositoryContract
+interface UserRepositoryInterface
 {
+    /**
+     * Authenticate a user by credential and password.
+     *
+     * A successful authentication always returns a fully-hydrated User entity,
+     * or null if the credential/password pair is not valid.
+     */
+    public function authenticate(string $credential, ?string $password = null): (User&UserInterface)|null;
+
     /**
      * Find a user by their email address, or null if not found.
      */
@@ -51,9 +59,9 @@ interface UserRepositoryInterface extends UserRepositoryContract
     public function update(int $id, array $data): void;
 
     /**
-     * Return the numeric PK for a role by its name, or null if not found.
+     * Return the role identifier string for the given role name.
      */
-    public function findRoleIdByName(string $roleName): ?int;
+    public function findRoleIdByName(string $roleName): string;
 
     /**
      * Find a user by their verification token, or null if not found.

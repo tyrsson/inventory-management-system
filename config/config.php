@@ -17,16 +17,11 @@ $cacheConfig = [
 ];
 
 $aggregator = new ConfigAggregator([
-    \Mezzio\Authentication\Session\ConfigProvider::class,
-    \Mezzio\Authorization\Acl\ConfigProvider::class,
-    \Mezzio\Authorization\ConfigProvider::class,
-    \Mezzio\Authentication\ConfigProvider::class,
     \Axleus\Message\ConfigProvider::class,
-    \Mezzio\Session\Ext\ConfigProvider::class,
     \Mezzio\Session\ConfigProvider::class,
+    \PhpDb\Session\ConfigProvider::class,
     \Webware\CommandBus\ConfigProvider::class,
     \Axleus\Mailer\ConfigProvider::class,
-    \Webware\CommandBus\Event\ConfigProvider::class,
     \PhpDb\ConfigProvider::class,
     \PhpDb\Mysql\ConfigProvider::class,
     \Axleus\Log\ConfigProvider::class,
@@ -49,10 +44,13 @@ $aggregator = new ConfigAggregator([
             return [];
         },
     // Module config
+    Webware\ConfigManager\ConfigProvider::class,
+    Webware\Event\ConfigProvider::class,
     Webware\UserManager\ConfigProvider::class,
     WebwareAclConfigProvider::class,
     Webware\Admin\ConfigProvider::class,
     WebwareNavigationConfigProvider::class,
+    Ims\Store\ConfigProvider::class,
     Ims\Manifest\ConfigProvider::class,
     // Default App module config
     ConfigProvider::class,

@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS store (
     city         VARCHAR(100)       NOT NULL,
     state        CHAR(2)            NOT NULL COMMENT 'Two-letter US state abbreviation',
     pqa_email    VARCHAR(255)       NOT NULL COMMENT 'PQA system mailbox for damage images',
+    params       JSON               NULL     COMMENT 'Plugin extension data',
     PRIMARY KEY (store_number)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 SET FOREIGN_KEY_CHECKS = 1;

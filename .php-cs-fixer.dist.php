@@ -43,7 +43,12 @@ return (new Config())
             'test/AppTest/Handler/PingHandlerTest.php',
         ])
         ->exclude([
-            'config'
+            'config',
+            '.github',
+            'docs',
+            'data',
+            'resources',
+            'stubs',
         ])
         // 💡 additional files, eg bin entry file
         // ->append([__DIR__.'/bin-entry-file'])

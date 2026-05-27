@@ -3,6 +3,9 @@ name: update-oo-component-documentation
 description: 'Update existing object-oriented component documentation following industry best practices and architectural documentation standards.'
 ---
 
+> ⚠ **SKILL INTEGRITY — NEVER REMOVE OR SHORTEN**
+> Content in this file may only be **added to or updated**. Removing or shortening existing sections is not permitted without explicit user approval. If you are adding new knowledge, append it as a new section.
+
 # Update Standard OO Component Documentation
 
 Update the existing documentation file at: `${file}` by analyzing the corresponding component code.

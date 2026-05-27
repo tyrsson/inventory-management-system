@@ -159,7 +159,6 @@ Browser request
 | Command | Handler | Action |
 |---|---|---|
 | `SaveUserCommand` | `SaveUserHandler` | Inserts new user; generates UUID7 verification token; sets `active=0` |
-| `LoginCommand` | _(session-backed auth)_ | Auth via `mezzio-authentication-session` |
 
 #### Middleware
 
@@ -247,10 +246,9 @@ $result = $stmt->execute();
 
 | Concern | Package | Notes |
 |---|---|---|
-| Authentication | `mezzio/mezzio-authentication` + `mezzio-authentication-session` | Session-backed; `UserInterface` resolved from DB |
-| Authorisation | `mezzio/mezzio-authorization` + `mezzio-authorization-acl` | Laminas ACL; roles from `role` table; resources = route names |
-
-ACL config target: `config/autoload/authorization.global.php` (not yet created — see next steps).
+| Authentication | `LoginMiddleware` (custom) | POST-only credential check; writes session; no `mezzio-authentication-session` |
+| Identity restore | `IdentityMiddleware` (global pipeline) | Reads session; attaches `User` or `GuestUser` to request |
+| Authorisation | `webware/webware-acl` + Laminas ACL | Fail-closed; routes must be registered as ACL resources in `ConfigProvider::getAclConfig()` |
 
 ### Logging
 

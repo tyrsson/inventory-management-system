@@ -7,51 +7,6 @@
 (function () {
   'use strict';
 
-  // ── Resources accordion toggle ────────────────────────────────────────────
-  // Delegated on document — survives every HTMX swap.
-  // Manages open/close imperatively so Bootstrap data-api race is avoided.
-  document.addEventListener('click', function (e) {
-    var btn = e.target.closest('[data-ims-resource-toggle]');
-    if (!btn) return;
-    var targetId = btn.dataset.imsResourceToggle;
-    var targetEl = document.getElementById(targetId);
-    if (!targetEl) return;
-
-    var isShown = targetEl.classList.contains('show');
-
-    // Close any other open panels in the same accordion first
-    var accordion = btn.closest('#resourcesAccordion');
-    if (accordion) {
-      accordion.querySelectorAll('.accordion-collapse.show').forEach(function (el) {
-        if (el !== targetEl) {
-          bootstrap.Collapse.getOrCreateInstance(el, { toggle: false }).hide();
-          var otherBtn = accordion.querySelector('[data-ims-resource-toggle="' + el.id + '"]');
-          if (otherBtn) {
-            el.addEventListener('hidden.bs.collapse', function () {
-              otherBtn.setAttribute('aria-expanded', 'false');
-              otherBtn.classList.add('collapsed');
-            }, { once: true });
-          }
-        }
-      });
-    }
-
-    var instance = bootstrap.Collapse.getOrCreateInstance(targetEl, { toggle: false });
-    if (isShown) {
-      instance.hide();
-      targetEl.addEventListener('hidden.bs.collapse', function () {
-        btn.setAttribute('aria-expanded', 'false');
-        btn.classList.add('collapsed');
-      }, { once: true });
-    } else {
-      instance.show();
-      targetEl.addEventListener('shown.bs.collapse', function () {
-        btn.setAttribute('aria-expanded', 'true');
-        btn.classList.remove('collapsed');
-      }, { once: true });
-    }
-  });
-
   // ── Stores collapse toggle ────────────────────────────────────────────────
   // Delegated on document so it survives every HTMX body swap.
   // Uses Bootstrap imperatively — bypasses data-api to avoid double-toggle
@@ -236,18 +191,22 @@
 
     // Role edit modal
     if (e.target.id === 'editRoleModal') {
-      var roleId    = trigger.dataset.roleId    || '';
-      var rolePk    = trigger.dataset.rolePk    || '';
-      var parentId  = trigger.dataset.parentId  || '';
-      var userCount = parseInt(trigger.dataset.userCount || '0', 10);
+      var roleId      = trigger.dataset.roleId      || '';
+      var rolePk      = trigger.dataset.rolePk      || '';
+      var parentId    = trigger.dataset.parentId    || '';
+      var userCount   = parseInt(trigger.dataset.userCount || '0', 10);
+      var hasChildren = trigger.dataset.hasChildren === 'true';
       var nameEl  = document.getElementById('edit_role_name');
       var parEl   = document.getElementById('edit_parent_id');
       var delBtn  = document.getElementById('editRoleDeleteBtn');
       if (nameEl) nameEl.value = roleId;
       if (parEl)  Array.from(parEl.options).forEach(function (o) { o.selected = o.value === parentId; });
       if (delBtn) {
-        delBtn.disabled = userCount > 0;
-        delBtn.title    = userCount > 0 ? userCount + ' users assigned — cannot delete' : '';
+        var title = '';
+        if (userCount > 0)   title = userCount + ' users assigned — cannot delete';
+        else if (hasChildren) title = 'Has child roles — remove or reassign them first';
+        delBtn.disabled = userCount > 0 || hasChildren;
+        delBtn.title    = title;
         delBtn.setAttribute('hx-delete', '/admin/access/roles/' + rolePk);
         htmx.process(delBtn);
       }
@@ -265,29 +224,13 @@
       if (descEl)     descEl.innerHTML = '<strong>' + ruleType + '</strong> for <code>' + roleId + '</code> &#x2192; <code>' + resId + '</code> / <code>' + privId + '</code>';
       if (confirmBtn) {
         confirmBtn.setAttribute('hx-delete', '/admin/access/rules/' + ruleId);
-        htmx.process(confirmBtn);
-      }
-    }
-
-    // Add privilege modal — set resource context
-    if (e.target.id === 'addPrivilegeModal') {
-      var resourcePk    = trigger.dataset.resourcePk    || '';
-      var resourceLabel = trigger.dataset.resourceId    || '';
-      var pkEl    = document.getElementById('priv_resource_pk');
-      var labelEl = document.getElementById('privResourceLabel');
-      if (pkEl)    pkEl.value           = resourcePk;
-      if (labelEl) labelEl.textContent  = resourceLabel;
-    }
-
-    // Resource delete confirm modal
-    if (e.target.id === 'deleteResourceModal') {
-      var resourcePk = trigger.dataset.resourcePk || '';
-      var resourceId = trigger.dataset.resourceId || '';
-      var idEl       = document.getElementById('deleteResourceId');
-      var confirmBtn = document.getElementById('deleteResourceConfirmBtn');
-      if (idEl)       idEl.textContent = resourceId;
-      if (confirmBtn) {
-        confirmBtn.setAttribute('hx-delete', '/admin/access/resources/' + resourcePk);
+        confirmBtn.setAttribute('hx-swap', 'none');
+        confirmBtn.addEventListener('htmx:afterRequest', function handler() {
+          confirmBtn.removeEventListener('htmx:afterRequest', handler);
+          var modal = bootstrap.Modal.getInstance(document.getElementById('deleteRuleModal'));
+          if (modal) modal.hide();
+          htmx.ajax('GET', window.location.pathname, { target: 'main', swap: 'innerHTML' });
+        }, { once: true });
         htmx.process(confirmBtn);
       }
     }
@@ -360,5 +303,428 @@
             document.body.appendChild(tracyEl);
             tracyEl = null;
         }
+    });
+})();
+
+// Allow HTMX to swap 4xx/5xx responses (e.g. validation errors returning 422)
+document.addEventListener('htmx:beforeSwap', function (evt) {
+    if (evt.detail.xhr.status >= 400) {
+        evt.detail.shouldSwap = true;
+        evt.detail.isError    = false;
+    }
+});
+
+// ── ACL Wizard controller ────────────────────────────────────────────────────
+(function () {
+    'use strict';
+
+    var TOTAL_STEPS = 5;
+
+    // Wizard state
+    var _state = {
+        step:           1,
+        routeName:      '',
+        methods:        [],
+        privs:          [],
+        grantMode:      'explicit',
+        ruleType:       'allow',
+        roleId:         '',
+        selectedPrivs:  [],
+        assertionAlias: '',
+        assertionMode:  'none',
+    };
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    function _getModal() {
+        return document.getElementById('protectWizardModal');
+    }
+
+    function _bsModal() {
+        var el = _getModal();
+        return el ? bootstrap.Modal.getOrCreateInstance(el) : null;
+    }
+
+    function _showStep(n) {
+        _state.step = n;
+        for (var i = 1; i <= TOTAL_STEPS; i++) {
+            var panel = document.getElementById('wiz-panel-' + i);
+            if (panel) panel.classList.toggle('d-none', i !== n);
+        }
+
+        // Stepper indicators
+        var steps = document.querySelectorAll('#wiz-stepper .ims-acl-wiz-step');
+        steps.forEach(function (el, idx) {
+            el.classList.remove('active', 'done');
+            if (idx + 1 < n)  el.classList.add('done');
+            if (idx + 1 === n) el.classList.add('active');
+        });
+
+        // Footer buttons
+        var back = document.getElementById('ims-acl-wiz-back');
+        var next = document.getElementById('ims-acl-wiz-next');
+        var save = document.getElementById('ims-acl-wiz-save');
+        if (back) back.disabled = (n === 1);
+        if (next) next.classList.toggle('d-none', n === TOTAL_STEPS);
+        if (save) save.classList.toggle('d-none', n !== TOTAL_STEPS);
+
+        if (n === TOTAL_STEPS) _populateReview();
+    }
+
+    function _initWizard(btn) {
+        _state.routeName     = btn.dataset.routeName     || '';
+        _state.methods       = JSON.parse(btn.dataset.methods || '[]');
+        _state.privs         = JSON.parse(btn.dataset.privs   || '[]');
+        _state.grantMode     = 'explicit';
+        _state.ruleType      = 'allow';
+        _state.roleId        = '';
+        _state.selectedPrivs = [];
+        _state.assertionAlias = '';
+        _state.assertionMode  = 'none';
+
+        // Route context in header
+        var routeDisplay = document.getElementById('wiz-route-display');
+        if (routeDisplay) routeDisplay.textContent = _state.routeName;
+
+        var methodsSpan = document.getElementById('wiz-header-methods');
+        if (methodsSpan) {
+            methodsSpan.innerHTML = _state.methods.map(function (m) {
+                return '<span class="ims-acl-method-pill ims-acl-method-' + m + '">' + m + '</span>';
+            }).join('');
+        }
+
+        var privsSpan = document.getElementById('wiz-header-privs');
+        if (privsSpan) {
+            privsSpan.innerHTML = _state.privs.map(function (p) {
+                return '<span class="badge bg-transparent border ims-acl-priv-' + p + ' ims-badge-xs">' + p + '</span>';
+            }).join('');
+        }
+
+        // Populate privilege cards for step 3 (auto-selected, display-only)
+        var privCards = document.getElementById('wiz-priv-cards');
+        if (privCards) {
+            privCards.innerHTML = _state.privs.map(function (p) {
+                return '<div class="ims-acl-priv-card selected-' + p + '" data-priv="' + p + '">'
+                     + '<i class="bi bi-key-fill me-1"></i>' + p
+                     + '</div>';
+            }).join('');
+        }
+        _state.selectedPrivs = _state.privs.slice();
+        _syncPrivilegeInputs();
+
+        // Reset radios
+        var allowRadio = document.getElementById('wiz-rule-allow');
+        if (allowRadio) allowRadio.checked = true;
+        var noneAssert = document.querySelector('[data-assertion="none"]');
+        if (noneAssert) _selectAssertion(noneAssert);
+
+        // Reset grant cards
+        document.querySelectorAll('.ims-acl-grant-card').forEach(function (c) { c.classList.remove('selected'); });
+
+        // Reset role tree
+        document.querySelectorAll('.ims-acl-role-item').forEach(function (el) {
+            el.classList.remove('selected');
+            el.setAttribute('aria-selected', 'false');
+        });
+
+        // Reset search inputs
+        var roleSearch = document.getElementById('ims-acl-role-search');
+        if (roleSearch) { roleSearch.value = ''; _filterRoleTree(''); }
+
+        // Propagation alert
+        var propAlert = document.getElementById('wiz-propagation-alert');
+        if (propAlert) propAlert.classList.add('d-none');
+
+        // Hidden inputs
+        document.getElementById('wiz-input-route-name').value = _state.routeName;
+        document.getElementById('wiz-input-grant-mode').value = 'explicit';
+        document.getElementById('wiz-input-rule-type').value  = 'allow';
+
+        _showStep(1);
+    }
+
+    // ── Grant type (step 1) ──────────────────────────────────────────────────
+
+    function _selectGrant(el) {
+        document.querySelectorAll('.ims-acl-grant-card').forEach(function (c) { c.classList.remove('selected'); });
+        el.classList.add('selected');
+        _state.grantMode = el.dataset.aclStepGrant || 'explicit';
+        document.getElementById('wiz-input-grant-mode').value = _state.grantMode;
+    }
+
+    // ── Role tree (step 2) ───────────────────────────────────────────────────
+
+    function _getRoleChildren() {
+        try {
+            var modal = _getModal();
+            return modal ? JSON.parse(modal.dataset.roleChildren || '{}') : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function _selectRole(el) {
+        document.querySelectorAll('.ims-acl-role-item').forEach(function (r) {
+            r.classList.remove('selected');
+            r.setAttribute('aria-selected', 'false');
+        });
+        el.classList.add('selected');
+        el.setAttribute('aria-selected', 'true');
+        _state.roleId = el.dataset.roleId || '';
+        document.getElementById('wiz-input-role-id').value = _state.roleId;
+
+        // Propagation preview for inherited mode
+        var children = (_getRoleChildren()[_state.roleId] || []);
+        var propAlert    = document.getElementById('wiz-propagation-alert');
+        var propChildren = document.getElementById('wiz-propagation-children');
+        if (_state.grantMode === 'inherited' && children.length > 0) {
+            if (propAlert)    propAlert.classList.remove('d-none');
+            if (propChildren) propChildren.textContent = children.join(', ');
+        } else {
+            if (propAlert) propAlert.classList.add('d-none');
+        }
+    }
+
+    function _filterRoleTree(query) {
+        var q = query.toLowerCase();
+        document.querySelectorAll('.ims-acl-role-item').forEach(function (el) {
+            var label    = (el.dataset.roleId  || '').toLowerCase();
+            var ancestry = (el.dataset.ancestry || '').toLowerCase();
+            el.style.display = (!q || label.includes(q) || ancestry.includes(q)) ? '' : 'none';
+        });
+    }
+
+    // ── Privileges (step 3 — auto-selected, display-only) ───────────────────
+
+    function _syncPrivilegeInputs() {
+        // Remove existing privilege[] inputs
+        document.querySelectorAll('input[name="privileges[]"]').forEach(function (el) { el.remove(); });
+        var form = document.getElementById('wiz-form');
+        if (!form) return;
+        _state.selectedPrivs.forEach(function (p) {
+            var inp = document.createElement('input');
+            inp.type  = 'hidden';
+            inp.name  = 'privileges[]';
+            inp.value = p;
+            form.appendChild(inp);
+        });
+    }
+
+    // ── Assertion (step 4) ───────────────────────────────────────────────────
+
+    function _selectAssertion(el) {
+        document.querySelectorAll('.ims-acl-assertion-card').forEach(function (c) { c.classList.remove('selected'); });
+        el.classList.add('selected');
+        var isNone = el.dataset.assertion === 'none';
+        _state.assertionAlias = isNone ? '' : (el.dataset.assertionAlias || '');
+        _state.assertionMode  = isNone ? 'none' : 'must';
+        document.getElementById('wiz-input-assertion-alias').value = _state.assertionAlias;
+        document.getElementById('wiz-input-assertion-mode').value  = _state.assertionMode;
+        var modeWrap = document.getElementById('wiz-assertion-mode-wrap');
+        if (modeWrap) modeWrap.classList.toggle('d-none', isNone);
+    }
+
+    // ── Review (step 5) ──────────────────────────────────────────────────────
+
+    function _populateReview() {
+        var set = function (id, val) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = val;
+        };
+        set('wiz-review-route',  _state.routeName);
+        set('wiz-review-grant',  _state.grantMode);
+        set('wiz-review-role',   _state.roleId || '(none selected)');
+
+        var typeEl = document.getElementById('wiz-review-type');
+        if (typeEl) {
+            typeEl.innerHTML = _state.ruleType === 'allow'
+                ? '<span class="badge bg-success-subtle border border-success-subtle text-success-emphasis">allow</span>'
+                : '<span class="badge bg-danger-subtle border border-danger-subtle text-danger-emphasis">deny</span>';
+        }
+
+        var privsEl = document.getElementById('wiz-review-privs');
+        if (privsEl) {
+            privsEl.innerHTML = _state.selectedPrivs.length
+                ? _state.selectedPrivs.map(function (p) {
+                    return '<span class="badge bg-transparent border ims-acl-priv-' + p + ' ims-badge-xs">' + p + '</span>';
+                  }).join('')
+                : '<span class="text-secondary">(none)</span>';
+        }
+
+        var assertRow = document.getElementById('wiz-review-assert-row');
+        var assertEl  = document.getElementById('wiz-review-assertion');
+        if (_state.assertionAlias) {
+            if (assertRow) assertRow.classList.remove('d-none');
+            if (assertEl)  assertEl.textContent = _state.assertionAlias + ' [' + _state.assertionMode + ']';
+        } else {
+            if (assertRow) assertRow.classList.add('d-none');
+        }
+    }
+
+    // ── Step navigation ──────────────────────────────────────────────────────
+
+    function _canAdvance() {
+        if (_state.step === 1) return !!document.querySelector('.ims-acl-grant-card.selected');
+        if (_state.step === 2) return !!_state.roleId;
+        return true; // steps 3, 4 and 5 are always advanceable
+    }
+
+    // ── Route list filter ────────────────────────────────────────────────────
+
+    var _activeFilter = 'all';
+
+    function _filterRoutes() {
+        var query  = (document.getElementById('ims-acl-route-search') || {}).value || '';
+        var q = query.toLowerCase();
+        document.querySelectorAll('.ims-acl-route-entry').forEach(function (row) {
+            var name   = (row.dataset.routeName || '').toLowerCase();
+            var status = row.dataset.status || 'unprotected';
+            var matchFilter = (_activeFilter === 'all') || (_activeFilter === status);
+            var matchSearch = !q || name.includes(q);
+            row.style.display = (matchFilter && matchSearch) ? '' : 'none';
+
+            // Hide/show the sibling rules panel too
+            var next = row.nextElementSibling;
+            if (next && next.classList.contains('ims-acl-rules-panel')) {
+                if (!matchFilter || !matchSearch) next.classList.add('d-none');
+            }
+        });
+    }
+
+    // ── Init & event delegation ──────────────────────────────────────────────
+
+    function initAclPage() {
+        var modal = _getModal();
+        if (!modal) return; // not on the ACL page
+
+        // Wizard trigger buttons (both "Protect" and "Add rule")
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-wizard-action]');
+            if (btn) {
+                _initWizard(btn);
+                _bsModal().show();
+                return;
+            }
+
+            // Rules offcanvas trigger
+            var offcanvasTrigger = e.target.closest('.ims-acl-rules-offcanvas-trigger');
+            if (offcanvasTrigger) {
+                var panelId   = offcanvasTrigger.dataset.rulesPanel;
+                var routeName = offcanvasTrigger.dataset.routeName;
+                var source    = panelId ? document.getElementById(panelId) : null;
+                var body      = document.getElementById('ims-acl-offcanvas-body');
+                var titleEl   = document.getElementById('ims-acl-offcanvas-route-name');
+                if (titleEl) titleEl.textContent = routeName || '';
+                if (body) {
+                    body.innerHTML = source ? source.innerHTML : '<p class="text-secondary small">No rules found.</p>';
+                    htmx.process(body);
+                }
+                bootstrap.Offcanvas.getOrCreateInstance(
+                    document.getElementById('ims-acl-rule-offcanvas')
+                ).show();
+                return;
+            }
+
+            // Filter buttons
+            var filterBtn = e.target.closest('[data-acl-filter]');
+            if (filterBtn) {
+                _activeFilter = filterBtn.dataset.aclFilter || 'all';
+                document.querySelectorAll('[data-acl-filter]').forEach(function (b) { b.classList.remove('active'); });
+                filterBtn.classList.add('active');
+                _filterRoutes();
+                return;
+            }
+
+            // Step 1 — grant card
+            var grantCard = e.target.closest('[data-acl-step-grant]');
+            if (grantCard && modal.contains(grantCard)) {
+                _selectGrant(grantCard);
+                return;
+            }
+
+            // Step 2 — role item (stop at <ul> boundary)
+            var roleItem = e.target.closest('.ims-acl-role-item');
+            if (roleItem && modal.contains(roleItem)) {
+                _selectRole(roleItem);
+                return;
+            }
+
+            // Step 4 — assertion card
+            var assertCard = e.target.closest('.ims-acl-assertion-card');
+            if (assertCard && modal.contains(assertCard)) {
+                _selectAssertion(assertCard);
+                return;
+            }
+
+            // Wizard Next
+            if (e.target.closest('#ims-acl-wiz-next')) {
+                if (_canAdvance() && _state.step < TOTAL_STEPS) {
+                    _showStep(_state.step + 1);
+                }
+                return;
+            }
+
+            // Wizard Back
+            if (e.target.closest('#ims-acl-wiz-back')) {
+                if (_state.step > 1) _showStep(_state.step - 1);
+                return;
+            }
+        });
+
+        // Route search input
+        document.addEventListener('input', function (e) {
+            if (e.target.id === 'ims-acl-route-search') {
+                _filterRoutes();
+                return;
+            }
+            // Role tree search
+            if (e.target.id === 'ims-acl-role-search') {
+                _filterRoleTree(e.target.value);
+                return;
+            }
+        });
+
+        // Rule type / assertion radio changes
+        document.addEventListener('change', function (e) {
+            // Rule type radio
+            if (e.target.name === 'rule_type_ui') {
+                _state.ruleType = e.target.value;
+                document.getElementById('wiz-input-rule-type').value = _state.ruleType;
+                return;
+            }
+            // Assertion mode radio
+            if (e.target.name === 'assertion_mode_ui') {
+                _state.assertionMode = e.target.value;
+                document.getElementById('wiz-input-assertion-mode').value = _state.assertionMode;
+                return;
+            }
+        });
+
+        // Keyboard support for grant/role/priv/assertion cards
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            var t = e.target;
+            if (t.matches('[data-acl-step-grant]') && modal.contains(t)) { e.preventDefault(); _selectGrant(t); }
+            if (t.matches('.ims-acl-role-item')    && modal.contains(t)) { e.preventDefault(); _selectRole(t); }
+            if (t.matches('.ims-acl-assertion-card') && modal.contains(t)) { e.preventDefault(); _selectAssertion(t); }
+        });
+    }
+
+    // Hide the rules offcanvas before any HTMX swap so Bootstrap can remove
+    // its backdrop cleanly (the offcanvas node lives inside <main> and would
+    // otherwise be ripped out of the DOM while still "shown").
+    document.addEventListener('htmx:beforeRequest', function () {
+        var oc = document.getElementById('ims-acl-rule-offcanvas');
+        if (!oc) return;
+        var instance = bootstrap.Offcanvas.getInstance(oc);
+        if (instance) instance.hide();
+    });
+
+    initAclPage();
+    document.addEventListener('htmx:afterSettle', function () {
+        initAclPage();
+        // Re-wire the rules offcanvas instance after every HTMX body swap
+        var oc = document.getElementById('ims-acl-rule-offcanvas');
+        if (oc) bootstrap.Offcanvas.getOrCreateInstance(oc);
     });
 })();

@@ -14,6 +14,13 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\CommandBus\Middleware\CommandLoggingMiddleware;
+use App\CommandBus\Middleware\Container\CommandLoggingMiddlewareFactory;
+use App\Container\Configuration;
+use Webware\Acl\AclInterface;
+use Webware\CommandBus\CommandBusInterface;
+use Webware\CommandBus\ConfigProvider as BusProvider;
+
 /**
  * @phpstan-type dependencyArray array{
  *                      delegators?: array<class-string, list<class-string>>,
@@ -42,10 +49,12 @@ class ConfigProvider
     public function __invoke(): array
     {
         return [
-            'dependencies' => $this->getDependencies(),
-            'router'       => $this->getRouteProviders(),
-            'templates'    => $this->getTemplates(),
-            'view_helpers' => $this->getViewHelpers(),
+            'dependencies'             => $this->getDependencies(),
+            'router'                   => $this->getRouteProviders(),
+            'templates'                => $this->getTemplates(),
+            'view_helpers'             => $this->getViewHelpers(),
+            CommandBusInterface::class => $this->getBusConfig(),
+            AclInterface::class        => $this->getAclConfig(),
         ];
     }
 
@@ -58,6 +67,7 @@ class ConfigProvider
     {
         return [
             'factories'  => [
+                CommandLoggingMiddleware::class         => CommandLoggingMiddlewareFactory::class,
                 Middleware\ImsMessengerMiddleware::class => Middleware\ImsMessengerMiddlewareFactory::class,
                 RequestHandler\DashboardHandler::class  => RequestHandler\Container\DashboardHandlerFactory::class,
                 RouteProvider::class                    => Container\RouteProviderFactory::class,
@@ -94,6 +104,18 @@ class ConfigProvider
         ];
     }
 
+    public function getBusConfig(): array
+    {
+        return [
+            BusProvider::MIDDLEWARE_PIPELINE_KEY => [
+                [
+                    'middleware' => CommandLoggingMiddleware::class,
+                    'priority'   => 0,
+                ],
+            ],
+        ];
+    }
+
     /**
      * Returns the templates configuration
      *
@@ -113,6 +135,20 @@ class ConfigProvider
                 'error' => [__DIR__ . '/../templates/error'],
             ],
             'default_layout' => 'layout::default',
+        ];
+    }
+
+    public function getAclConfig(): array
+    {
+        return [
+            'resources' => [
+                Configuration::ROUTE_NAME_PREFIX_VALUE . 'dashboard' => true,
+            ],
+            'allow'     => [
+                'Member' => [
+                    Configuration::ROUTE_NAME_PREFIX_VALUE . 'dashboard' => [],
+                ],
+            ],
         ];
     }
 }

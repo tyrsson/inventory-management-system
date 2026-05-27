@@ -13,14 +13,16 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Webware\Acl\Admin\Command\SaveRuleCommand;
+use Webware\Acl\Admin\Command\UpdateRuleTypeCommand;
 use Webware\Acl\Admin\Middleware\ProcessRuleMiddleware;
-use Webware\Acl\Admin\WriteResult;
-use Webware\Acl\Repository\AclRepositoryInterface;
+use Webware\CommandBus\Command\CommandResult;
+use Webware\CommandBus\Command\CommandStatus;
+use Webware\CommandBus\CommandBusInterface;
 
 #[CoversClass(ProcessRuleMiddleware::class)]
 final class ProcessRuleMiddlewareTest extends TestCase
 {
-    /** Captures the request forwarded to the next handler. */
     private function capturingHandler(): RequestHandlerInterface
     {
         return new class implements RequestHandlerInterface {
@@ -35,12 +37,13 @@ final class ProcessRuleMiddlewareTest extends TestCase
     }
 
     #[Test]
-    public function postWithValidBodySavesRuleAndSetsSuccessTrue(): void
+    public function postWithValidBodyDispatchesSaveRuleCommandAndSetsSuccess(): void
     {
-        $repository = $this->createMock(AclRepositoryInterface::class);
-        $repository->expects($this->once())->method('saveRule')
-            ->with(1, 2, 3, 'allow');
-        $repository->expects($this->once())->method('incrementVersion');
+        $bus = $this->createMock(CommandBusInterface::class);
+        $bus->expects($this->once())
+            ->method('handle')
+            ->with($this->isInstanceOf(SaveRuleCommand::class))
+            ->willReturnCallback(fn($cmd) => new CommandResult($cmd, CommandStatus::Success, null));
 
         $messenger = $this->createStub(SystemMessengerInterface::class);
 
@@ -49,69 +52,39 @@ final class ProcessRuleMiddlewareTest extends TestCase
             ->withAttribute(SystemMessengerInterface::class, $messenger);
 
         $handler    = $this->capturingHandler();
-        $middleware = new ProcessRuleMiddleware($repository);
+        $middleware = new ProcessRuleMiddleware($bus);
         $middleware->process($request, $handler);
 
-        self::assertTrue($handler->received?->getAttribute(WriteResult::Success->value));
+        $result = $handler->received?->getAttribute(CommandResult::class);
+        self::assertInstanceOf(CommandResult::class, $result);
+        self::assertSame(CommandStatus::Success, $result->getStatus());
     }
 
     #[Test]
-    public function postWithMissingRolePkSetsSuccessFalse(): void
+    public function postWithMissingRolePkSetsFailure(): void
     {
-        $repository = $this->createStub(AclRepositoryInterface::class);
+        $bus = $this->createStub(CommandBusInterface::class);
 
         $request = (new ServerRequest([], [], '/', 'POST'))
             ->withParsedBody(['resource_pk' => '2', 'privilege_pk' => '3']);
 
         $handler    = $this->capturingHandler();
-        $middleware = new ProcessRuleMiddleware($repository);
+        $middleware = new ProcessRuleMiddleware($bus);
         $middleware->process($request, $handler);
 
-        self::assertFalse($handler->received?->getAttribute(WriteResult::Success->value));
+        $result = $handler->received?->getAttribute(CommandResult::class);
+        self::assertInstanceOf(CommandResult::class, $result);
+        self::assertSame(CommandStatus::Failure, $result->getStatus());
     }
 
     #[Test]
-    public function deleteWithValidIdDeletesRuleAndSetsSuccessTrue(): void
+    public function patchWithValidBodyDispatchesUpdateRuleTypeCommandAndSetsSuccess(): void
     {
-        $repository = $this->createMock(AclRepositoryInterface::class);
-        $repository->expects($this->once())->method('deleteRule')->with(42);
-        $repository->expects($this->once())->method('incrementVersion');
-
-        $messenger = $this->createStub(SystemMessengerInterface::class);
-
-        $request = (new ServerRequest([], [], '/', 'DELETE'))
-            ->withAttribute('id', '42')
-            ->withAttribute(SystemMessengerInterface::class, $messenger);
-
-        $handler    = $this->capturingHandler();
-        $middleware = new ProcessRuleMiddleware($repository);
-        $middleware->processDelete($request, $handler);
-
-        self::assertTrue($handler->received?->getAttribute(WriteResult::Success->value));
-    }
-
-    #[Test]
-    public function deleteWithZeroIdSetsSuccessFalse(): void
-    {
-        $repository = $this->createStub(AclRepositoryInterface::class);
-
-        $request = (new ServerRequest([], [], '/', 'POST'))
-            ->withParsedBody(['id' => '0']);
-
-        $handler    = $this->capturingHandler();
-        $middleware = new ProcessRuleMiddleware($repository);
-        $middleware->processDelete($request, $handler);
-
-        self::assertFalse($handler->received?->getAttribute(WriteResult::Success->value));
-    }
-
-    #[Test]
-    public function patchWithValidBodySavesRule(): void
-    {
-        $repository = $this->createMock(AclRepositoryInterface::class);
-        $repository->expects($this->once())->method('updateRuleType')
-            ->with(7, 'deny');
-        $repository->expects($this->once())->method('incrementVersion');
+        $bus = $this->createMock(CommandBusInterface::class);
+        $bus->expects($this->once())
+            ->method('handle')
+            ->with($this->isInstanceOf(UpdateRuleTypeCommand::class))
+            ->willReturnCallback(fn($cmd) => new CommandResult($cmd, CommandStatus::Success, null));
 
         $messenger = $this->createStub(SystemMessengerInterface::class);
 
@@ -121,9 +94,11 @@ final class ProcessRuleMiddlewareTest extends TestCase
             ->withAttribute(SystemMessengerInterface::class, $messenger);
 
         $handler    = $this->capturingHandler();
-        $middleware = new ProcessRuleMiddleware($repository);
+        $middleware = new ProcessRuleMiddleware($bus);
         $middleware->processPatch($request, $handler);
 
-        self::assertTrue($handler->received?->getAttribute(WriteResult::Success->value));
+        $result = $handler->received?->getAttribute(CommandResult::class);
+        self::assertInstanceOf(CommandResult::class, $result);
+        self::assertSame(CommandStatus::Success, $result->getStatus());
     }
 }

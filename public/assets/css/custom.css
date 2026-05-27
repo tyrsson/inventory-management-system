@@ -626,4 +626,99 @@
 .ims-badge-xs   { font-size: .65rem; }
 .ims-text-ro    { font-size: .72rem; font-style: italic; }
 .ims-switch-wide { width: 2.2rem; }
+.ims-col-methods { width: 10rem; }
+.ims-col-action  { width: 6rem; text-align: right; }
+
+/* ── ACL Access Control page — route-centric view ────────── */
+.ims-acl-search-box { max-width: 320px; }
+
+/* Route list rows */
+.ims-acl-route-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--bs-border-color-translucent); font-size: 0.8125rem; }
+.ims-acl-route-row:last-of-type { border-bottom: none; }
+.ims-acl-route-row:hover { background: var(--bs-tertiary-bg); }
+.ims-acl-route-name { font-family: var(--bs-font-monospace); color: var(--bs-primary); font-size: 0.8125rem; }
+
+/* HTTP method pills */
+.ims-acl-method-pill   { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.04em; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; }
+.ims-acl-method-GET    { background: rgba( 25,135, 84,.18); color: #2eca8b; border: 1px solid rgba(25,135,84,.35); }
+.ims-acl-method-POST   { background: rgba( 13,110,253,.15); color: #6ea8fe; border: 1px solid rgba(13,110,253,.30); }
+.ims-acl-method-PUT    { background: rgba(255,193,  7,.12); color: #f0c040; border: 1px solid rgba(255,193,7,.30); }
+.ims-acl-method-PATCH  { background: rgba(255,193,  7,.12); color: #f0c040; border: 1px solid rgba(255,193,7,.30); }
+.ims-acl-method-DELETE { background: rgba(220, 53, 69,.15); color: #f1707d; border: 1px solid rgba(220,53,69,.35); }
+
+/* Privilege badges */
+.ims-acl-priv-read   { border-color: var(--bs-primary) !important; color: var(--bs-primary) !important; }
+.ims-acl-priv-create { border-color: var(--bs-success) !important; color: var(--bs-success) !important; }
+.ims-acl-priv-update { border-color: var(--bs-warning) !important; color: var(--bs-warning) !important; }
+.ims-acl-priv-delete { border-color: var(--bs-danger)  !important; color: var(--bs-danger)  !important; }
+.ims-acl-priv-custom { border-color: var(--bs-info)    !important; color: var(--bs-info)    !important; }
+
+/* Rules panel expanded under a protected route row */
+.ims-acl-rules-panel { background: var(--bs-tertiary-bg); border-top: 1px solid var(--bs-border-color-translucent); padding: 10px 12px; font-size: 0.8rem; }
+.ims-acl-rule-inherited { opacity: 0.72; }
+.ims-acl-rules-table thead th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; padding-bottom: 4px; }
+.ims-acl-rules-table td { vertical-align: middle; }
+.ims-acl-rules-table .badge { white-space: normal; word-break: break-word; }
+.ims-acl-rules-inherited-header td { border-top: 1px solid var(--bs-border-color-translucent); background: var(--bs-tertiary-bg); font-size: 0.75rem; }
+#ims-acl-rule-offcanvas { --bs-offcanvas-width: min(600px, 95vw); }
+
+/* ── ACL Protect Route Wizard ────────────────────────────── */
+
+/* Stepper */
+.ims-acl-wiz-stepper { display: flex; align-items: flex-start; gap: 0; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 4px; }
+.ims-acl-wiz-step { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; min-width: 0; }
+.ims-acl-wiz-step:not(:last-child)::after { content: ''; position: absolute; top: 13px; left: calc(50% + 14px); right: calc(-50% + 14px); height: 2px; background: var(--bs-border-color); z-index: 0; }
+.ims-acl-wiz-step:not(:last-child).done::after { background: var(--bs-primary); }
+.ims-acl-wiz-circle { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; border: 2px solid var(--bs-border-color); background: var(--bs-body-bg); color: var(--bs-secondary-color); position: relative; z-index: 1; flex-shrink: 0; transition: border-color 0.2s, color 0.2s, background 0.2s; }
+.ims-acl-wiz-step.active .ims-acl-wiz-circle { border-color: var(--bs-primary); color: var(--bs-primary); }
+.ims-acl-wiz-step.done .ims-acl-wiz-circle { border-color: var(--bs-primary); background: var(--bs-primary); color: #fff; }
+.ims-acl-wiz-label { font-size: 0.65rem; text-align: center; margin-top: 4px; color: var(--bs-secondary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px; }
+.ims-acl-wiz-step.active .ims-acl-wiz-label { color: var(--bs-primary); font-weight: 600; }
+.ims-acl-wiz-step.done .ims-acl-wiz-label { color: var(--bs-body-color); }
+
+/* Grant type cards */
+.ims-acl-grant-card { border: 2px solid var(--bs-border-color); border-radius: 8px; padding: 14px 16px; cursor: pointer; transition: border-color 0.15s, background 0.15s; height: 100%; }
+.ims-acl-grant-card:hover { border-color: var(--bs-secondary-color); }
+.ims-acl-grant-card.selected { border-color: var(--bs-primary); background: rgba(var(--bs-primary-rgb), 0.07); }
+.ims-acl-grant-icon { font-size: 1.4rem; margin-bottom: 6px; }
+
+/* Role hierarchy tree */
+.ims-acl-role-tree-wrap { max-height: 260px; overflow-y: auto; }
+.ims-acl-role-list { list-style: none; padding-left: 0; margin: 0; }
+.ims-acl-role-item { display: block; padding: 4px 6px; border-radius: 4px; cursor: pointer; transition: background 0.1s; user-select: none; }
+.ims-acl-role-item:hover { background: var(--bs-tertiary-bg); }
+.ims-acl-role-item.selected { background: rgba(var(--bs-primary-rgb), 0.15); outline: 1px solid rgba(var(--bs-primary-rgb), 0.35); }
+.ims-acl-role-item-main { display: flex; align-items: center; gap: 6px; }
+.ims-acl-role-ancestry { font-size: .75rem; color: var(--bs-secondary-color); padding-left: 1.4rem; }
+.ims-acl-role-item[data-depth="1"] .ims-acl-role-item-main { padding-left: 1rem; }
+.ims-acl-role-item[data-depth="1"] .ims-acl-role-ancestry { padding-left: 2.4rem; }
+.ims-acl-role-item[data-depth="2"] .ims-acl-role-item-main { padding-left: 2rem; }
+.ims-acl-role-item[data-depth="2"] .ims-acl-role-ancestry { padding-left: 3.4rem; }
+.ims-acl-role-item[data-depth="3"] .ims-acl-role-item-main { padding-left: 3rem; }
+.ims-acl-role-item[data-depth="3"] .ims-acl-role-ancestry { padding-left: 4.4rem; }
+.ims-acl-role-item[data-depth="4"] .ims-acl-role-item-main { padding-left: 4rem; }
+.ims-acl-role-item[data-depth="4"] .ims-acl-role-ancestry { padding-left: 5.4rem; }
+.ims-acl-role-item[data-depth="5"] .ims-acl-role-item-main { padding-left: 5rem; }
+.ims-acl-role-item[data-depth="5"] .ims-acl-role-ancestry { padding-left: 6.4rem; }
+.ims-acl-role-item[data-depth="6"] .ims-acl-role-item-main { padding-left: 6rem; }
+.ims-acl-role-item[data-depth="6"] .ims-acl-role-ancestry { padding-left: 7.4rem; }
+
+/* Privilege select cards */
+.ims-acl-priv-card { border: 2px solid var(--bs-border-color); border-radius: 6px; padding: 8px 12px; cursor: pointer; transition: border-color 0.15s, background 0.15s; display: flex; align-items: center; gap: 8px; }
+.ims-acl-priv-card:hover { border-color: var(--bs-secondary-color); }
+.ims-acl-priv-card.selected-read   { border-color: var(--bs-primary); background: rgba(var(--bs-primary-rgb), .10); }
+.ims-acl-priv-card.selected-create { border-color: var(--bs-success); background: rgba(var(--bs-success-rgb), .08); }
+.ims-acl-priv-card.selected-update { border-color: var(--bs-warning); background: rgba(255,193,7,.08); }
+.ims-acl-priv-card.selected-delete { border-color: var(--bs-danger);  background: rgba(var(--bs-danger-rgb),  .08); }
+.ims-acl-priv-card.selected-custom { border-color: var(--bs-info);    background: rgba(var(--bs-info-rgb),    .08); }
+
+/* Assertion option cards */
+.ims-acl-assertion-card { display: flex; flex-direction: column; justify-content: center; width: 100%; height: 100%; border: 1px solid var(--bs-border-color); border-radius: 6px; padding: 8px 12px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.ims-acl-assertion-card:hover { border-color: var(--bs-primary); background: rgba(var(--bs-primary-rgb), 0.05); }
+.ims-acl-assertion-card.selected { border-color: var(--bs-primary); background: rgba(var(--bs-primary-rgb), 0.10); }
+
+/* Review summary list */
+.ims-acl-summary-item { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--bs-border-color-translucent); font-size: 0.8125rem; }
+.ims-acl-summary-item:last-child { border-bottom: none; }
+.ims-acl-summary-label { color: var(--bs-secondary-color); font-size: 0.75rem; }
 

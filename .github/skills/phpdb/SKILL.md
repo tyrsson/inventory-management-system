@@ -1,8 +1,15 @@
 ---
 name: "phpdb"
-description: "Load when writing or reviewing any code that uses PhpDb: adapters, TableGateway, Sql query builder (Select/Insert/Update/Delete), the Profiler, or wiring the ProfilingDelegator for Tracy. Covers all DML patterns, last-insert-id retrieval, and the Tracy profiler integration via webware/traccio."
+description: "ALWAYS load when writing or reviewing any code that uses PhpDb: adapters, TableGateway, Sql query builder (Select/Insert/Update/Delete), the Profiler, or wiring the ProfilingDelegator for Tracy. Covers all DML patterns, last-insert-id retrieval, and the Tracy profiler integration via webware/traccio."
 argument-hint: "<what you are working on — e.g. 'new repository', 'INSERT query', 'profiler setup'>"
 ---
+
+> ⚠ **MANDATORY — LOAD BEFORE WRITING ANY PHPDB / REPOSITORY CODE**
+> This skill must be loaded before writing or reviewing any repository, TableGateway, or Sql query builder code. No exceptions.
+> Failure to load this skill is the primary cause of raw SQL and query builder violations in this project.
+
+> ⚠ **SKILL INTEGRITY — NEVER REMOVE OR SHORTEN**
+> Content in this file may only be **added to or updated**. Removing or shortening existing sections is not permitted without explicit user approval. If you are adding new knowledge, append it as a new section.
 
 ## Core Rule — Always Use the `PhpDb\Sql\*` API for DML
 

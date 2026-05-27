@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Webware\UserManager\CommandHandler\Container;
 
 use Psr\Container\ContainerInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Webware\UserManager\CommandHandler\SaveUserHandler;
 use Webware\UserManager\Repository\UserRepositoryInterface;
 
@@ -24,6 +25,7 @@ final class SaveUserHandlerFactory
     {
         return new SaveUserHandler(
             users: $container->get(UserRepositoryInterface::class),
+            eventDispatcher: $container->get(EventDispatcherInterface::class),
         );
     }
 }
