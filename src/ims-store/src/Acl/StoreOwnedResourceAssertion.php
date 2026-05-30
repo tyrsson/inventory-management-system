@@ -13,6 +13,11 @@ use Override;
 
 final class StoreOwnedResourceAssertion implements AssertionInterface
 {
+    public function __invoke(): static
+    {
+        return new self();
+    }
+
     #[Override]
     public function assert(
         Acl $acl,

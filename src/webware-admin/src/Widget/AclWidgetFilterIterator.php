@@ -6,6 +6,7 @@ namespace Webware\Admin\Widget;
 
 use FilterIterator;
 use Iterator;
+use Webware\Acl\Acl;
 use Webware\Acl\AclInterface;
 use Webware\UserManager\UserInterface;
 
@@ -22,7 +23,7 @@ final class AclWidgetFilterIterator extends FilterIterator
      */
     public function __construct(
         Iterator $iterator,
-        private readonly AclInterface $acl,
+        private readonly AclInterface&Acl $acl,
         private readonly UserInterface|null $user,
     ) {
         parent::__construct($iterator);

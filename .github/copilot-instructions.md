@@ -240,6 +240,7 @@ the new process can bind the port immediately without waiting for the old socket
 
 ## What to Avoid
 
+- Do **not** use PHP type casting operators (`(int)`, `(string)`, `(array)`, `(bool)`, `(float)`, `(object)`). **No exceptions, ever.**
 - Do **not** add Swoole-specific classes or type hints (`Swoole\*`)
 - Do **not** use FrankenPHP APIs
 - Do **not** use `async`/`await` keywords (this is not JavaScript)

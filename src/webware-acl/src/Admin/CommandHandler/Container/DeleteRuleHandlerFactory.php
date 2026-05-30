@@ -15,15 +15,15 @@ declare(strict_types=1);
 namespace Webware\Acl\Admin\CommandHandler\Container;
 
 use Psr\Container\ContainerInterface;
-use Webware\Acl\Admin\CommandHandler\SaveRoleHandler;
-use Webware\Acl\Repository\RoleRepository;
+use Webware\Acl\Admin\CommandHandler\DeleteRuleHandler;
+use Webware\Acl\Repository\RuleRepository;
 
-final class SaveRoleHandlerFactory
+final class DeleteRuleHandlerFactory
 {
-    public function __invoke(ContainerInterface $container): SaveRoleHandler
+    public function __invoke(ContainerInterface $container): DeleteRuleHandler
     {
-        return new SaveRoleHandler(
-            $container->get(RoleRepository::class),
+        return new DeleteRuleHandler(
+            $container->get(RuleRepository::class),
         );
     }
 }

@@ -4,19 +4,25 @@ declare(strict_types=1);
 
 namespace Webware\Acl;
 
-use Laminas\Permissions\Acl\AclInterface as LaminasAclInterface;
 use Laminas\Permissions\Acl\Resource\ResourceInterface;
 use Webware\UserManager\UserInterface;
 
 interface AclInterface
 {
-    public function getAcl(): LaminasAclInterface;
+    public final const string DEVELOPER_ROLE_ID = 'Developer';
+    
+    /**
+     * Returns all roles keyed by role ID with their parent role IDs.
+     *
+     * @return array<string, string[]>
+     */
+    public function getRoles(): array;
 
-    public function isAllowed(
-        UserInterface|null $user = null,
-        string|ResourceInterface|null $resource = null,
-        ?string $privilege = null,
-    ): bool;
+    /**
+     * Returns the resource ID of the direct parent of $resourceId, or null if it has none.
+     */
+    public function getResourceParentId(string $resourceId): ?string;
+
 
     /**
      * Checks whether the authenticated user may access the matched route resource.

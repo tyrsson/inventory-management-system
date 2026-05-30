@@ -133,21 +133,39 @@
   });
 
   // Redundancy warning confirm — submit the pending POST
+  // WARNING: do NOT call _submitRulePost() before the modal is fully hidden.
+  // modal.hide() only starts the Bootstrap close animation; HTMX swapping <main>
+  // while the animation is still running tears the modal element out of the DOM
+  // before Bootstrap can remove the backdrop, leaving the page frozen with a
+  // CPU-spiking event loop. Always wait for hidden.bs.modal before firing the request.
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('#redundancyConfirmBtn');
     if (!btn || !_pendingRulePost) return;
     var pending = _pendingRulePost;
     _pendingRulePost = null;
-    var modal = bootstrap.Modal.getInstance(document.getElementById('redundancyWarningModal'));
-    if (modal) modal.hide();
-    _submitRulePost(pending);
+    var modalEl = document.getElementById('redundancyWarningModal');
+    var modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) {
+      modalEl.addEventListener('hidden.bs.modal', function handler() {
+        modalEl.removeEventListener('hidden.bs.modal', handler);
+        _submitRulePost(pending);
+      }, { once: true });
+      modal.hide();
+    } else {
+      _submitRulePost(pending);
+    }
   });
 
   function _submitRulePost(data) {
-    // Submit via HTMX programmatic request so hx-boost and swap work correctly
+    // Submit via HTMX programmatic request so hx-boost and swap work correctly.
+    // push:false prevents the global hx-push-url="true" on <body> from pushing
+    // this action URL into browser history — it's a write operation, not navigation.
+    // NOTE: the correct htmx.ajax() option is `push`, NOT `pushUrl` — `pushUrl` is
+    // silently ignored, causing the URL to be pushed despite the intent.
     htmx.ajax('POST', data.url, {
       target: 'main',
       swap:   'innerHTML',
+      push:   false,
       values: {
         role_pk:      data.role_pk,
         resource_pk:  data.resource_pk,
@@ -214,24 +232,30 @@
 
     // Rule delete confirm modal
     if (e.target.id === 'deleteRuleModal') {
-      var roleId    = trigger.dataset.roleId    || '';
-      var resId     = trigger.dataset.resourceId || '';
-      var privId    = trigger.dataset.privilegeId || '';
-      var ruleType  = trigger.dataset.ruleType  || '';
-      var ruleId    = trigger.dataset.ruleId    || '';
-      var descEl    = document.getElementById('deleteRuleDesc');
+      var roleId     = trigger.dataset.roleId     || '';
+      var resId      = trigger.dataset.resourceId || '';
+      var privId     = trigger.dataset.privilegeId || '';
+      var ruleType   = trigger.dataset.ruleType   || '';
+      var descEl     = document.getElementById('deleteRuleDesc');
       var confirmBtn = document.getElementById('deleteRuleConfirmBtn');
-      if (descEl)     descEl.innerHTML = '<strong>' + ruleType + '</strong> for <code>' + roleId + '</code> &#x2192; <code>' + resId + '</code> / <code>' + privId + '</code>';
+      if (descEl) descEl.innerHTML = '<strong>' + ruleType + '</strong> for <code>' + roleId + '</code> &#x2192; <code>' + resId + '</code> / <code>' + privId + '</code>';
       if (confirmBtn) {
-        confirmBtn.setAttribute('hx-delete', '/admin/access/rules/' + ruleId);
-        confirmBtn.setAttribute('hx-swap', 'none');
-        confirmBtn.addEventListener('htmx:afterRequest', function handler() {
-          confirmBtn.removeEventListener('htmx:afterRequest', handler);
-          var modal = bootstrap.Modal.getInstance(document.getElementById('deleteRuleModal'));
-          if (modal) modal.hide();
-          htmx.ajax('GET', window.location.pathname, { target: 'main', swap: 'innerHTML' });
-        }, { once: true });
-        htmx.process(confirmBtn);
+        var urlTpl    = e.target.dataset.deleteUrlTpl || '';
+        var deleteUrl = urlTpl
+          .replace('__ROLE__', encodeURIComponent(roleId))
+          .replace('__RES__',  encodeURIComponent(resId));
+        var modalEl   = e.target;
+        // Replace onclick each open — no handler accumulation, no htmx.process()
+        confirmBtn.onclick = function () {
+          var bsModal = bootstrap.Modal.getInstance(modalEl);
+          // Fire DELETE only after modal is fully hidden (animation done, backdrop gone)
+          // This avoids the race where HTMX swaps <main> while Bootstrap is still closing.
+          modalEl.addEventListener('hidden.bs.modal', function handler() {
+            modalEl.removeEventListener('hidden.bs.modal', handler);
+            htmx.ajax('DELETE', deleteUrl, { target: 'main', swap: 'innerHTML' });
+          }, { once: true });
+          if (bsModal) bsModal.hide();
+        };
       }
     }
   });
@@ -327,7 +351,7 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
         methods:        [],
         privs:          [],
         grantMode:      'explicit',
-        ruleType:       'allow',
+        ruleType:       'Allow',
         roleId:         '',
         selectedPrivs:  [],
         assertionAlias: '',
@@ -376,7 +400,7 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
         _state.methods       = JSON.parse(btn.dataset.methods || '[]');
         _state.privs         = JSON.parse(btn.dataset.privs   || '[]');
         _state.grantMode     = 'explicit';
-        _state.ruleType      = 'allow';
+        _state.ruleType      = 'Allow';
         _state.roleId        = '';
         _state.selectedPrivs = [];
         _state.assertionAlias = '';
@@ -438,7 +462,7 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
         // Hidden inputs
         document.getElementById('wiz-input-route-name').value = _state.routeName;
         document.getElementById('wiz-input-grant-mode').value = 'explicit';
-        document.getElementById('wiz-input-rule-type').value  = 'allow';
+        document.getElementById('wiz-input-rule-type').value  = 'Allow';
 
         _showStep(1);
     }
@@ -537,9 +561,9 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
 
         var typeEl = document.getElementById('wiz-review-type');
         if (typeEl) {
-            typeEl.innerHTML = _state.ruleType === 'allow'
-                ? '<span class="badge bg-success-subtle border border-success-subtle text-success-emphasis">allow</span>'
-                : '<span class="badge bg-danger-subtle border border-danger-subtle text-danger-emphasis">deny</span>';
+            typeEl.innerHTML = _state.ruleType === 'Allow'
+                ? '<span class="badge bg-success-subtle border border-success-subtle text-success-emphasis">Allow</span>'
+                : '<span class="badge bg-danger-subtle border border-danger-subtle text-danger-emphasis">Deny</span>';
         }
 
         var privsEl = document.getElementById('wiz-review-privs');

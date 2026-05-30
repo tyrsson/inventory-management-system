@@ -45,7 +45,7 @@ final class AclWidgetFilterIteratorTest extends TestCase
         $iterator = new AclWidgetFilterIterator(
             new ArrayIterator([$widget]),
             $acl,
-            ['Developer'],
+            [AclInterface::DEVELOPER_ROLE_ID],
         );
 
         self::assertCount(1, iterator_to_array($iterator));
@@ -99,7 +99,7 @@ final class AclWidgetFilterIteratorTest extends TestCase
 
         /** @var ArrayIterator<int, mixed> $inner */
         $inner    = new ArrayIterator(['not-a-widget']);
-        $iterator = new AclWidgetFilterIterator($inner, $acl, ['Developer']);
+        $iterator = new AclWidgetFilterIterator($inner, $acl, [AclInterface::DEVELOPER_ROLE_ID]);
 
         self::assertCount(0, iterator_to_array($iterator));
     }

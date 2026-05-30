@@ -4,35 +4,168 @@ declare(strict_types=1);
 
 namespace Webware\Acl;
 
-use Laminas\Permissions\Acl\AclInterface as LaminasAclInterface;
+use Laminas\Permissions\Acl\Acl as LaminasAcl;
+use Laminas\Permissions\Acl\Assertion\AssertionAggregate;
+use Laminas\Permissions\Acl\Assertion\AssertionInterface;
 use Laminas\Permissions\Acl\Resource\ResourceInterface;
+use Laminas\Permissions\Acl\Role\RoleInterface;
+use Mezzio\Router\RouteCollectorInterface;
 use Override;
+use Webware\Acl\AssertionManager;
+use Webware\Acl\RuleType;
+use Webware\Acl\Exception\RuntimeException;
+use Webware\Acl\Repository\RoleRepository;
+use Webware\Acl\Repository\RuleRepository;
 use Webware\Acl\Role\UserRoleIterator;
 use Webware\UserManager\UserInterface;
 
-final class Acl implements AclInterface
+use function array_flip;
+use function count;
+use function is_array;
+use function sort;
+use function strrpos;
+use function substr;
+
+final class Acl extends LaminasAcl implements AclInterface
 {
+    private bool $loaded = false;
+
     public function __construct(
-        private readonly LaminasAclInterface $acl,
+        private readonly RoleRepository $roleRepository,
+        private readonly RuleRepository $ruleRepository,
+        private readonly AssertionManager $assertionManager,
+        private readonly RouteCollectorInterface $routeCollector,
     ) {}
 
-    public function getAcl(): LaminasAclInterface
+    private function load(): void
     {
-        return $this->acl;
+        if ($this->loaded) {
+            return;
+        }
+
+        $resourceIds = $this->ruleRepository->fetchDistinctResourceIds();
+        sort($resourceIds);
+        $known = array_flip($resourceIds);
+
+        foreach ($resourceIds as $resourceId) {
+            if ($this->hasResource($resourceId)) {
+                continue;
+            }
+            $parent  = null;
+            $lastDot = strrpos($resourceId, '.');
+            if ($lastDot !== false) {
+                $candidate = substr($resourceId, 0, $lastDot);
+                if (isset($known[$candidate])) {
+                    $parent = $candidate;
+                }
+            }
+            parent::addResource($resourceId, $parent);
+        }
+
+        foreach ($this->ruleRepository->fetchAll() as $rule) {
+            $assertion = $this->buildAssertion($rule['assertions']);
+            $type      = RuleType::from($rule['type'])->toAclConstant();
+            $this->setRule(self::OP_ADD, $type, $rule['role_id'], $rule['resource_id'], null, $assertion);
+        }
+
+        if ($this->hasRole(self::DEVELOPER_ROLE_ID)) {
+            $this->setRule(self::OP_ADD, self::TYPE_ALLOW, self::DEVELOPER_ROLE_ID);
+        }
+
+        // Register all known routes as resources so the full hierarchy is available.
+        // Routes with no rules are registered here under their nearest ancestor.
+        foreach ($this->routeCollector->getRoutes() as $route) {
+            $name = $route->getName();
+            if ($name === null || $name === '' || $this->hasResource($name)) {
+                continue;
+            }
+            $candidate = $name;
+            $parent    = null;
+            while (($pos = strrpos($candidate, '.')) !== false) {
+                $candidate = substr($candidate, 0, $pos);
+                if ($this->hasResource($candidate)) {
+                    $parent = $candidate;
+                    break;
+                }
+            }
+            parent::addResource($name, $parent);
+        }
+
+        $this->loaded = true;
+    }
+
+    private function buildAssertion(array $aliases): ?AssertionInterface
+    {
+        $instances = [];
+        foreach ($aliases as $alias) {
+            $instances[] = $this->assertionManager->get($alias);
+        }
+
+        if ($instances === []) {
+            return null;
+        }
+
+        if (count($instances) === 1) {
+            return $instances[0];
+        }
+
+        $aggregate = new AssertionAggregate();
+        $aggregate->setMode(AssertionAggregate::MODE_AT_LEAST_ONE);
+        foreach ($instances as $instance) {
+            $aggregate->addAssertion($instance);
+        }
+
+        return $aggregate;
+    }
+
+    public function addRole($role, $parents = null, bool $persist = false)
+    {
+        parent::addRole($role, $parents);
+
+        if ($persist) {
+            $roleId = $role instanceof RoleInterface ? $role->getRoleId() : $role;
+
+            if ($parents === null) {
+                $this->roleRepository->save($roleId, null);
+            } else {
+                $parentIds    = [];
+                $parentsArray = is_array($parents) ? $parents : [$parents];
+                foreach ($parentsArray as $parent) {
+                    $parentIds[] = $parent instanceof RoleInterface ? $parent->getRoleId() : $parent;
+                }
+                $this->roleRepository->save($roleId, $parentIds);
+            }
+        }
+
+        return $this;
+    }
+
+    public function addResource($resource, $parent = null, bool $persist = false)
+    {
+        throw RuntimeException::forAclAddResource();
     }
 
     #[Override]
     public function isAllowed(
-        UserInterface|null $user = null,
-        string|ResourceInterface|null $resource = null,
-        ?string $privilege = null
+        $role = null,
+        $resource = null,
+        $privilege = null
     ): bool {
-        if ($user === null) {
+        if ($role === null) {
             return false;
         }
 
-        foreach (new UserRoleIterator($user) as $roleProxy) {
-            if ($this->acl->isAllowed($roleProxy, $resource, $privilege)) {
+        $this->load();
+
+        // FAIL CLOSED — intentional, do not change to true.
+        // Routes must be explicitly registered as ACL resources to be accessible.
+        // This is a hard requirement; unregistered routes are always denied.
+        if (! $this->hasResource($resource)) {
+            return false;
+        }
+
+        foreach (new UserRoleIterator($role) as $roleProxy) {
+            if (parent::isAllowed($roleProxy, $resource, $privilege)) {
                 return true;
             }
         }
@@ -45,14 +178,36 @@ final class Acl implements AclInterface
         UserInterface|null $user,
         ResourceInterface $resource,
     ): bool {
-        // FAIL CLOSED — intentional, do not change to true.
-        // Routes must be explicitly registered as ACL resources to be accessible.
-        // This is a hard requirement; unregistered routes are always denied.
-        if (! $this->acl->hasResource($resource)) {
-            return false;
-        }
-
-        return $this->isAllowed($user, $resource, null);
+        return $this->isAllowed($user, $resource);
     }
 
+    public function getRoles(): array
+    {
+        $registry = $this->getRoleRegistry();
+        $result   = [];
+        foreach (array_keys($registry->getRoles()) as $roleId) {
+            $parents = [];
+            foreach ($registry->getParents($roleId) as $parentId => $parent) {
+                $parents[] = $parentId;
+            }
+            $result[$roleId] = $parents;
+        }
+        return $result;
+    }
+
+    public function getResourceParentId(string $resourceId): ?string
+    {
+        if (! $this->hasResource($resourceId)) {
+            return null;
+        }
+        return $this->resources[$resourceId]['parent']?->getResourceId();
+    }
+
+    protected function getRoleRegistry()
+    {
+        if (null === $this->roleRegistry) {
+            $this->roleRegistry = $this->roleRepository->fetchAclRoleRegistry();
+        }
+        return $this->roleRegistry;
+    }
 }

@@ -104,6 +104,7 @@ final class ConfigProvider
             Container\Configuration::ROUTE_NAME_PREFIX_KEY     => Container\Configuration::ROUTE_NAME_PREFIX_VALUE,
             Container\Configuration::ADMIN_ROUTE_SEGMENT_KEY   => Container\Configuration::ADMIN_ROUTE_SEGMENT_VALUE,
             Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_KEY => Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE,
+            'login_path' => '/' . Container\Configuration::ROUTE_SEGMENT_VALUE . '/login',
         ];
     }
 
@@ -134,7 +135,6 @@ final class ConfigProvider
     public function getAclConfig(): array
     {
         return [
-            'login_path' => '/' . Container\Configuration::ROUTE_SEGMENT_VALUE . '/login',
             'roles'      => [
                 'Guest'  => [],
                 'Member' => ['Guest'],

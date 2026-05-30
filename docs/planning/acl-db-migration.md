@@ -26,9 +26,13 @@ wiring) remains unchanged.
 |----------|------|
 | Schema | 2 new migration files |
 | Seed | `999_seed.sql` additions |
-| Factories | `AclFactory`, `BuildAccessControlMiddlewareFactory`, `SaveRuleHandlerFactory`, `UpdateRuleTypeHandlerFactory`, `SaveRoleHandlerFactory`, `DeleteRoleHandlerFactory` |
+| New | `Middleware/AclMiddleware.php` + `Middleware/Container/AclMiddlewareFactory.php` |
+| New | `Repository/RoleRepository.php` + `Repository/Container/RoleRepositoryFactory.php` |
+| New | `Repository/RuleRepository.php` + `Repository/Container/RuleRepositoryFactory.php` |
+| Modified factories | `AclFactory`, `BuildAccessControlMiddlewareFactory`, `SaveRuleHandlerFactory`, `UpdateRuleTypeHandlerFactory`, `SaveRoleHandlerFactory`, `DeleteRoleHandlerFactory`, `AuthorizationMiddlewareFactory` |
 | Handlers | `SaveRuleHandler`, `UpdateRuleTypeHandler`, `SaveRoleHandler`, `DeleteRoleHandler` |
-| Middleware | `BuildAccessControlMiddleware`, `ProcessRuleMiddleware` (minor) |
+| Middleware | `AclFactory` (simplified), `BuildAccessControlMiddleware`, `AuthorizationMiddleware` (read attribute), `ProcessRuleMiddleware` (minor) |
+| Pipeline | `config/pipeline.php` — add `AclMiddleware` |
 | Config file | `acl.global.php` — strip mutable sections only |
 | Constants | `Container/Configuration.php` — remove `LOCAL_CONFIG_FILE` |
 
@@ -37,7 +41,7 @@ wiring) remains unchanged.
 - All `Command` classes — they are pure data carriers, unchanged
 - All templates and partials
 - `RouteProvider`, `ProcessRoleMiddleware`, `ProcessRuleMiddleware` (except one line)
-- `AuthorizationMiddleware`, `IdentityMiddleware`
+- `IdentityMiddleware`
 - `AclOverviewHandler`, `RoleListHandler`, `ResourceListHandler`
 - `AssertionManager`, `OwnershipAssertion`
 - `AclInterface`, `Acl`, `Entity/Role`, `Role/*`, `Http/*`
@@ -162,103 +166,185 @@ INSERT INTO `acl_rule` (type, role_id, resource_id, assertions) VALUES
 
 ### 1. `Container/AclFactory.php`
 
-**What changes:** Reads from DB instead of config.
+**What changes:** Simplified to bare instantiation only — no DB queries, no config reads.
 
-- In `__invoke()`: get `AdapterInterface` from container; query `acl_role` and `acl_rule`
-  instead of reading `$config['roles']`, `$config['allow']`, `$config['deny']`
-- `addRoles()`: receives rows from `SELECT id, role_id, parent_id FROM acl_role`
-- `addResources()`: derive unique `resource_id` values from `SELECT DISTINCT resource_id FROM acl_rule`
-  (no separate resource table — RouteCollector is source of truth for what routes exist)
-- `applyRules()`: receives rows from `SELECT type, role_id, resource_id, assertions FROM acl_rule`
-- **Bug fix included:** `buildAssertion()` currently tries `class_exists($fqcn)` but config
-  (and DB) stores alias strings like `'Store Owned Resource'`. Inject `AssertionManager` and
-  resolve via `$assertionManager->get($alias)` instead of `new $fqcn()`.
+- Returns a new empty `Acl` instance wrapping a bare `LaminasAcl`
+- The Developer blanket-allow and all role/rule population moves to `AclMiddleware`
+- Still registered in the DI container as `AclInterface::class` so the container entry
+  exists, but downstream consumers that need a populated ACL read from the request
+  attribute set by `AclMiddleware` instead
 
-### 2. `Admin/Middleware/BuildAccessControlMiddleware.php`
+### 2. `Middleware/AclMiddleware.php` *(new file)*
 
-**What changes:** Reads from DB instead of config; stale-data workaround removed.
+**What it does:** Builds the fully populated Laminas ACL per-request from the DB and sets
+it as a `AclInterface::class` request attribute.
 
-- Constructor: remove `private array $config`; add `private AdapterInterface $adapter`
+- Constructor: `RoleRepository $roleRepository`, `RuleRepository $ruleRepository`,
+  `AssertionManager $assertionManager`
+- `process()`:
+  1. `$roleRepository->fetchAll()` — build roles with topological sort
+  2. `$ruleRepository->fetchDistinctResourceIds()` — register resources
+  3. `$ruleRepository->fetchAll()` — apply rules; resolve assertion alias strings via
+     `$this->assertionManager->get($alias)`
+  4. Apply Developer blanket-allow (same logic currently in `AclFactory`)
+  5. `$request->withAttribute(AclInterface::class, $populatedAcl)`
+  6. Call `$handler->handle($request)`
+- **Bug fix included:** assertion resolution uses `AssertionManager::get($alias)` —
+  fixes the existing broken `class_exists($fqcn)` path in the current `AclFactory`
+
+### 3. `Middleware/Container/AclMiddlewareFactory.php` *(new file)*
+
+- Injects `RoleRepository`, `RuleRepository`, `AssertionManager`
+
+### 4. `config/pipeline.php`
+
+- Add `AclMiddleware` to the pipeline before `AuthorizationMiddleware`
+
+### 5. `Repository/RoleRepository.php` *(new file)*
+
+Wraps a `TableGateway` on `acl_role`. Exposes only the methods required by the files
+in scope — nothing else.
+
+| Method | SQL | Used by |
+|--------|-----|---------|
+| `fetchAll(): array` | `SELECT role_id, parent_id FROM acl_role` | `AclMiddleware`, `BuildAccessControlMiddleware` |
+| `fetchDirectChildren(string $roleId): array` | `SELECT role_id FROM acl_role WHERE JSON_CONTAINS(parent_id, JSON_QUOTE(?))` | `UpdateRuleTypeHandler` (cascade) |
+| `save(string $roleId, array $parents): void` | `INSERT ... ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id)` | `SaveRoleHandler` |
+| `delete(string $roleId): void` | `DELETE FROM acl_role WHERE role_id = ?` | `DeleteRoleHandler` |
+
+`parent_id` JSON encoding/decoding is handled inside the repository — callers pass and
+receive plain PHP arrays.
+
+### 6. `Repository/Container/RoleRepositoryFactory.php` *(new file)*
+
+- Constructs a `TableGateway` for `acl_role` using `AdapterInterface`, passes to
+  `RoleRepository`
+
+### 7. `Repository/RuleRepository.php` *(new file)*
+
+Wraps a `TableGateway` on `acl_rule`. Exposes only the methods required by the files
+in scope — nothing else.
+
+| Method | SQL | Used by |
+|--------|-----|---------|
+| `fetchAll(): array` | `SELECT type, role_id, resource_id, assertions FROM acl_rule` | `AclMiddleware`, `BuildAccessControlMiddleware` |
+| `fetchDistinctResourceIds(): array` | `SELECT DISTINCT resource_id FROM acl_rule` | `AclMiddleware` |
+| `findByRoleAndResource(string $roleId, string $resourceId): ?array` | `SELECT ... WHERE role_id = ? AND resource_id = ?` | `UpdateRuleTypeHandler` (cascade check) |
+| `save(string $type, string $roleId, string $resourceId, array $assertions): void` | `INSERT ... ON DUPLICATE KEY UPDATE type = VALUES(type), assertions = VALUES(assertions)` | `SaveRuleHandler`, `UpdateRuleTypeHandler` (cascade inserts) |
+| `updateType(string $roleId, string $resourceId, string $newType): void` | `UPDATE acl_rule SET type = ? WHERE role_id = ? AND resource_id = ?` | `UpdateRuleTypeHandler` |
+
+`assertions` JSON encoding/decoding is handled inside the repository — callers pass and
+receive plain PHP arrays.
+
+### 8. `Repository/Container/RuleRepositoryFactory.php` *(new file)*
+
+- Constructs a `TableGateway` for `acl_rule` using `AdapterInterface`, passes to
+  `RuleRepository`
+
+### 9. `Middleware/AuthorizationMiddleware.php`
+
+**What changes:** Reads the populated ACL from the request attribute instead of
+constructor injection.
+
+- Remove: `AclInterface $acl` constructor parameter
+- In `process()`: `$acl = $request->getAttribute(AclInterface::class)` — fail fast with
+  a 500 if the attribute is absent (means `AclMiddleware` was not in the pipeline)
+
+### 10. `Middleware/Container/AuthorizationMiddlewareFactory.php`
+
+- Remove: `$container->get(AclInterface::class)` injection
+
+### 11. `Admin/Middleware/BuildAccessControlMiddleware.php`
+
+**What changes:** Reads from DB via repositories instead of config; stale-data workaround removed.
+
+- Constructor: remove `private array $config`; add `private RoleRepository $roleRepository`,
+  `private RuleRepository $ruleRepository`
 - `process()`: remove `$request->getAttribute(AclInterface::class) ?? $this->config` — gone entirely
-- `$configRoles`: query `SELECT role_id, parent_id FROM acl_role`; decode JSON parent_id
-- `$configAllow` / `$configDeny`: query `SELECT type, role_id, resource_id, assertions FROM acl_rule`; decode JSON assertions
-- `$configResources`: derived from the union of resource_ids in the rule rows (same logic, different source)
-- Everything downstream (protectedRoutes, unprotectedRoutes, rules view model, inherited detection) — **unchanged**
+- `$configRoles`: `$this->roleRepository->fetchAll()` — returns `[roleId => parents[]]`
+- `$configAllow` / `$configDeny`: `$this->ruleRepository->fetchAll()` — returns rows;
+  split by `type` into allow/deny maps
+- `$configResources`: derived from the union of resource_ids in the rule rows (same logic,
+  different source)
+- Everything downstream (protectedRoutes, unprotectedRoutes, rules view model, inherited
+  detection) — **unchanged**
 
-### 3. `Admin/Middleware/Container/BuildAccessControlMiddlewareFactory.php`
+### 12. `Admin/Middleware/Container/BuildAccessControlMiddlewareFactory.php`
 
 - Remove: `$config[AclInterface::class]` injection
-- Add: `$container->get(AdapterInterface::class)`
-- Add: `AssertionManager` (already injected, no change)
+- Add: `RoleRepository`, `RuleRepository`
+- `AssertionManager` (already injected, no change)
 
-### 4. `Admin/CommandHandler/SaveRuleHandler.php`
+### 13. `Admin/CommandHandler/SaveRuleHandler.php`
 
-**What changes:** INSERT/UPDATE DB row instead of ConfigSaveEvent.
+**What changes:** INSERT/UPDATE via `RuleRepository` instead of `ConfigSaveEvent`.
 
-- Constructor: remove `array $config`, `EventDispatcherInterface`; add `AdapterInterface $adapter`
-- `handle()`: `INSERT INTO acl_rule (type, role_id, resource_id, assertions) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE type = VALUES(type), assertions = VALUES(assertions)`
+- Constructor: remove `array $config`, `EventDispatcherInterface`; add
+  `RuleRepository $ruleRepository`
+- `handle()`: `$this->ruleRepository->save($command->type, $command->roleId,
+  $command->resourceId, $command->assertions)`
 - Remove all `ConfigSaveEvent` / `ConfigBustCacheEvent` code
-- Result payload: return the inserted/updated row id or null (no view model needed — same as before)
 
-### 5. `Admin/CommandHandler/Container/SaveRuleHandlerFactory.php`
+### 14. `Admin/CommandHandler/Container/SaveRuleHandlerFactory.php`
 
 - Remove: config + EventDispatcher injection
-- Add: `AdapterInterface`
+- Add: `RuleRepository`
 
-### 6. `Admin/CommandHandler/UpdateRuleTypeHandler.php`
+### 15. `Admin/CommandHandler/UpdateRuleTypeHandler.php`
 
-**What changes:** UPDATE DB row instead of config read-modify-write.
+**What changes:** UPDATE via repositories instead of config read-modify-write.
 
-- Constructor: remove `array $config`, `EventDispatcherInterface`; add `AdapterInterface $adapter`
+- Constructor: remove `array $config`, `EventDispatcherInterface`; add
+  `RoleRepository $roleRepository`, `RuleRepository $ruleRepository`
 - `handle()`:
-  1. `UPDATE acl_rule SET type = :newType WHERE role_id = :roleId AND resource_id = :resourceId`
-  2. Cascade — query direct children: `SELECT role_id FROM acl_role WHERE JSON_CONTAINS(parent_id, JSON_QUOTE(:roleId))`
-     For each child with no existing rule for `$resourceId`, INSERT explicit `$oldType` rule with empty assertions
+  1. `$this->ruleRepository->updateType($roleId, $resourceId, $newType)`
+  2. Cascade — `$this->roleRepository->fetchDirectChildren($roleId)`: for each child
+     where `$this->ruleRepository->findByRoleAndResource($child, $resourceId) === null`,
+     call `$this->ruleRepository->save($oldType, $child, $resourceId, [])`
   3. Return `CommandStatus::Success` — no payload needed (stale-data workaround removed)
 - Remove all `ConfigSaveEvent` / `ConfigBustCacheEvent` / `AclInterface::class` payload code
 
-### 7. `Admin/CommandHandler/Container/UpdateRuleTypeHandlerFactory.php`
+### 16. `Admin/CommandHandler/Container/UpdateRuleTypeHandlerFactory.php`
 
 - Remove: config + EventDispatcher injection
-- Add: `AdapterInterface`
+- Add: `RoleRepository`, `RuleRepository`
 
-### 8. `Admin/CommandHandler/SaveRoleHandler.php`
+### 17. `Admin/CommandHandler/SaveRoleHandler.php`
 
-**What changes:** Implement the `@todo` — INSERT/UPDATE `acl_role`.
+**What changes:** Implement the `@todo` — save via `RoleRepository`.
 
-- Constructor: remove `array $config`; add `AdapterInterface $adapter`
-- `handle()`: `INSERT INTO acl_role (role_id, parent_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id)`
+- Constructor: remove `array $config`; add `RoleRepository $roleRepository`
+- `handle()`: `$this->roleRepository->save($command->roleId, $command->parents)`
 
-### 9. `Admin/CommandHandler/Container/SaveRoleHandlerFactory.php`
-
-- Remove: config injection
-- Add: `AdapterInterface`
-
-### 10. `Admin/CommandHandler/DeleteRoleHandler.php`
-
-**What changes:** Implement the `@todo` — DELETE from `acl_role`.
-
-- Constructor: remove `array $config`; add `AdapterInterface $adapter`
-- `handle()`: `DELETE FROM acl_role WHERE role_id = :roleId`
-- **Decision:** orphaned `acl_rule` rows (rules referencing a deleted role) are left in place.
-  They become inert — the role no longer exists in Laminas ACL so the rules are never applied.
-  A follow-up cleanup query can be added later if needed.
-
-### 11. `Admin/CommandHandler/Container/DeleteRoleHandlerFactory.php`
+### 18. `Admin/CommandHandler/Container/SaveRoleHandlerFactory.php`
 
 - Remove: config injection
-- Add: `AdapterInterface`
+- Add: `RoleRepository`
 
-### 12. `Admin/Middleware/ProcessRuleMiddleware.php`
+### 19. `Admin/CommandHandler/DeleteRoleHandler.php`
+
+**What changes:** Implement the `@todo` — delete via `RoleRepository`.
+
+- Constructor: remove `array $config`; add `RoleRepository $roleRepository`
+- `handle()`: `$this->roleRepository->delete($command->roleId)`
+- **Decision:** orphaned `acl_rule` rows for a deleted role are left in place.
+  They become inert — the role no longer exists so rules are never applied.
+
+### 20. `Admin/CommandHandler/Container/DeleteRoleHandlerFactory.php`
+
+- Remove: config injection
+- Add: `RoleRepository`
+
+### 21. `Admin/Middleware/ProcessRuleMiddleware.php`
 
 **One line removed:** The `$request->withAttribute(AclInterface::class, $result->getResult())`
 line added as the stale-data workaround is no longer needed. Remove it.
 
-### 13. `Container/Configuration.php`
+### 22. `Container/Configuration.php`
 
 - Remove: `LOCAL_CONFIG_FILE` constant — no more config writes
 
-### 14. `config/autoload/acl.global.php`
+### 23. `config/autoload/acl.global.php`
 
 **Strip mutable sections; keep structural config only.**
 
@@ -300,17 +386,23 @@ The following are confirmed unchanged — do not touch them:
 
 1. Write migration files `016_acl_role.sql`, `017_acl_rule.sql`
 2. Add seed entries to `999_seed.sql`
-3. Run migrations against DB
-4. Modify `AclFactory` (+ fix assertion resolution bug)
-5. Modify `BuildAccessControlMiddleware` + its factory
-6. Modify `SaveRuleHandler` + factory
-7. Modify `UpdateRuleTypeHandler` + factory
-8. Implement `SaveRoleHandler` + factory
-9. Implement `DeleteRoleHandler` + factory
-10. Remove stale-data line from `ProcessRuleMiddleware`
-11. Remove `LOCAL_CONFIG_FILE` from `Configuration.php`
-12. Strip `acl.global.php`
-13. Verify: page loads, rules display, toggle works, toast appears
+3. Run migrations + seed against DB
+4. Create `RoleRepository` + `RoleRepositoryFactory`
+5. Create `RuleRepository` + `RuleRepositoryFactory`
+6. Register both repositories in `ConfigProvider::getDependencies()`
+7. Simplify `AclFactory` (bare instantiation only)
+8. Create `AclMiddleware` + `AclMiddlewareFactory`
+9. Add `AclMiddleware` to `config/pipeline.php`
+10. Modify `AuthorizationMiddleware` + factory (read from request attribute)
+11. Modify `BuildAccessControlMiddleware` + its factory (use repositories)
+12. Modify `SaveRuleHandler` + factory
+13. Modify `UpdateRuleTypeHandler` + factory
+14. Implement `SaveRoleHandler` + factory
+15. Implement `DeleteRoleHandler` + factory
+16. Remove stale-data line from `ProcessRuleMiddleware`
+17. Remove `LOCAL_CONFIG_FILE` from `Configuration.php`
+18. Strip `acl.global.php`
+19. Verify: page loads, rules display, toggle works, toast appears
 
 ---
 

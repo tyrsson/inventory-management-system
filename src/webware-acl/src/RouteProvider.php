@@ -127,6 +127,11 @@ final readonly class RouteProvider implements RouteProviderInterface
             $middlewareFactory->prepare([BodyParamsMiddleware::class, ProcessRuleMiddleware::class, BuildAccessControlMiddleware::class, AclOverviewHandler::class]),
             $this->adminRouteNamePrefix . 'rule.update'
         );
+        $routeCollector->delete(
+            '/' . $this->adminRouteSegment . '/rule/{role_id:[^/]+}/{resource_id:[^/]+}',
+            $middlewareFactory->prepare([ProcessRuleMiddleware::class, BuildAccessControlMiddleware::class, AclOverviewHandler::class]),
+            $this->adminRouteNamePrefix . 'rule.delete'
+        );
 
         // Roles write/delete
         $routeCollector->post(
