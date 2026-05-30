@@ -7,27 +7,31 @@ namespace Webware\Acl;
 use Webware\Acl\Acl;
 use Webware\Acl\AclInterface;
 use Webware\Acl\Container\AclFactory;
-use Webware\Acl\Container\CommandHandlerMiddlewareFactory;
 use Webware\Acl\Container\IdentityMiddlewareFactory;
 use Webware\Acl\Container\RouteProviderFactory;
 use Webware\Acl\Http\Container\RouteResourceFactoryFactory;
 use Webware\Acl\Http\RouteResourceFactory;
 use Webware\Acl\Http\RouteResourceFactoryInterface;
+use Webware\Acl\Middleware\AclMiddleware;
 use Webware\Acl\Middleware\AuthorizationMiddleware;
+use Webware\Acl\Middleware\Container\AclMiddlewareFactory;
 use Webware\Acl\Middleware\Container\AuthorizationMiddlewareFactory;
 use Webware\Acl\Middleware\IdentityMiddleware;
 use Webware\Acl\RequestHandler\Container\ForbiddenHandlerFactory;
 use Webware\Acl\RequestHandler\ForbiddenHandler;
 use Webware\Acl\RequestHandler\ForbiddenHandlerInterface;
 use Webware\Acl\Admin\Command\DeleteRoleCommand;
+use Webware\Acl\Admin\Command\DeleteRuleCommand;
 use Webware\Acl\Admin\Command\SaveRoleCommand;
 use Webware\Acl\Admin\Command\SaveRuleCommand;
 use Webware\Acl\Admin\Command\UpdateRuleTypeCommand;
 use Webware\Acl\Admin\CommandHandler\Container\DeleteRoleHandlerFactory;
+use Webware\Acl\Admin\CommandHandler\Container\DeleteRuleHandlerFactory;
 use Webware\Acl\Admin\CommandHandler\Container\SaveRoleHandlerFactory;
 use Webware\Acl\Admin\CommandHandler\Container\SaveRuleHandlerFactory;
 use Webware\Acl\Admin\CommandHandler\Container\UpdateRuleTypeHandlerFactory;
 use Webware\Acl\Admin\CommandHandler\DeleteRoleHandler;
+use Webware\Acl\Admin\CommandHandler\DeleteRuleHandler;
 use Webware\Acl\Admin\CommandHandler\SaveRoleHandler;
 use Webware\Acl\Admin\CommandHandler\SaveRuleHandler;
 use Webware\Acl\Admin\CommandHandler\UpdateRuleTypeHandler;
@@ -45,11 +49,13 @@ use Webware\Acl\Admin\RequestHandler\Container\ResourceListHandlerFactory;
 use Webware\Acl\Admin\RequestHandler\Container\RoleListHandlerFactory;
 use Webware\Acl\Admin\RequestHandler\ResourceListHandler;
 use Webware\Acl\Admin\RequestHandler\RoleListHandler;
-use Webware\Admin\Container\Configuration as AdminConfiguration;
+use Webware\Acl\Repository\Container\RoleRepositoryFactory;
+use Webware\Acl\Repository\Container\RuleRepositoryFactory;
+use Webware\Acl\Repository\RoleRepository;
+use Webware\Acl\Repository\RuleRepository;
 use Webware\Admin\Event\RegisterWidgetEvent;
 use Webware\CommandBus\CommandBusInterface;
 use Webware\CommandBus\ConfigProvider as BusProvider;
-use Webware\CommandBus\Middleware\CommandHandlerMiddleware;
 
 final class ConfigProvider
 {
@@ -88,6 +94,7 @@ final class ConfigProvider
                 BuildAccessControlMiddleware::class => BuildAccessControlMiddlewareFactory::class,
                 ForbiddenHandler::class             => ForbiddenHandlerFactory::class,
                 AclOverviewHandler::class           => AclOverviewHandlerFactory::class,
+                AclMiddleware::class                 => AclMiddlewareFactory::class,
                 AuthorizationMiddleware::class      => AuthorizationMiddlewareFactory::class,
                 IdentityMiddleware::class           => IdentityMiddlewareFactory::class,
                 RegisterWidgetListener::class       => RegisterWidgetListenerFactory::class,
@@ -97,10 +104,12 @@ final class ConfigProvider
                 ProcessRuleMiddleware::class        => ProcessRuleMiddlewareFactory::class,
                 ProcessRoleMiddleware::class        => ProcessRoleMiddlewareFactory::class,
                 DeleteRoleHandler::class            => DeleteRoleHandlerFactory::class,
+                DeleteRuleHandler::class            => DeleteRuleHandlerFactory::class,
                 SaveRoleHandler::class              => SaveRoleHandlerFactory::class,
                 SaveRuleHandler::class              => SaveRuleHandlerFactory::class,
                 UpdateRuleTypeHandler::class        => UpdateRuleTypeHandlerFactory::class,
-                CommandHandlerMiddleware::class     => CommandHandlerMiddlewareFactory::class,
+                RoleRepository::class               => RoleRepositoryFactory::class,
+                RuleRepository::class               => RuleRepositoryFactory::class,
             ],
         ];
     }
@@ -140,21 +149,6 @@ final class ConfigProvider
             'forbidden_template'  => null,
             Container\Configuration::ADMIN_ROUTE_SEGMENT_KEY     => Container\Configuration::ADMIN_ROUTE_SEGMENT_VALUE,
             Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_KEY => Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE,
-            'roles'     => [
-                'Developer' => ['Administrator'],
-            ],
-            'resources' => [
-                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.') => null,
-                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'rule.create' => AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
-                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'rule.update' => AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
-                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'role.create' => AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
-                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'role.delete' => AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.'),
-            ],
-            'allow'     => [
-                'Developer' => [
-                    AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.') => [],
-                ],
-            ],
         ];
     }
 
@@ -165,7 +159,7 @@ final class ConfigProvider
                 'Ownership' => Assertion\OwnershipAssertion::class,
             ],
             'factories'  => [
-                // Since AbstractPluginManager::$autoAddInvokableClass = true and $instanceOf = AssertionInterface::class, we can directly reference the class as factory
+                // OwnershipAssertion defines __invoke(): static, making it usable as its own factory key.
                 Assertion\OwnershipAssertion::class => Assertion\OwnershipAssertion::class,
             ],
         ];
@@ -177,6 +171,7 @@ final class ConfigProvider
             BusProvider::COMMAND_MAP_KEY => [
                 SaveRoleCommand::class        => SaveRoleHandler::class,
                 DeleteRoleCommand::class      => DeleteRoleHandler::class,
+                DeleteRuleCommand::class      => DeleteRuleHandler::class,
                 SaveRuleCommand::class        => SaveRuleHandler::class,
                 UpdateRuleTypeCommand::class  => UpdateRuleTypeHandler::class,
             ],

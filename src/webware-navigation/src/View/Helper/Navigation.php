@@ -40,7 +40,7 @@ final class Navigation implements StatefulHelperInterface
 
     public function __construct(
         private readonly RouteCollectorInterface $routeCollector,
-        private readonly AclInterface $acl,
+        private AclInterface $acl,
         // Future injection points — NavigationFactory will resolve these from
         // a RendererPluginManager once renderers are implemented.
         private readonly ?RendererInterface $menuRenderer = null,
@@ -53,6 +53,11 @@ final class Navigation implements StatefulHelperInterface
         $this->user = $user;
     }
 
+    public function setAcl(AclInterface $acl): void
+    {
+        $this->acl = $acl;
+    }
+
     public function setActiveRouteName(?string $name): void
     {
         $this->activeRouteName = $name;
@@ -63,6 +68,7 @@ final class Navigation implements StatefulHelperInterface
     {
         $this->user            = null;
         $this->activeRouteName = null;
+        // acl is intentionally not reset — it is repopulated each request by NavigationMiddleware
     }
 
     /**

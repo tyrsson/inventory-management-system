@@ -17,8 +17,6 @@ final readonly class Configuration extends Config
     public const string ADMIN_ROUTE_SEGMENT_VALUE     = 'acl.manager';
     public const string ADMIN_ROUTE_NAME_PREFIX_VALUE = 'acl.manager.';
 
-    public const string LOCAL_CONFIG_FILE = __DIR__ . '/../../../../config/autoload/acl.global.php';
-
     public static function getAssertionManagerConfig(
         ContainerInterface $container,
         string $callingFactory

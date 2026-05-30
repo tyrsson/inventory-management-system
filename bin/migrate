@@ -11,7 +11,8 @@ declare(strict_types=1);
  * migration runs exactly once.
  *
  * Usage (from project root):
- *   php bin/migrate
+ *   php bin/migrate            # run pending migrations only
+ *   php bin/migrate --rebuild   # drop and recreate all tables, re-run every migration
  */
 
 use Ims\Migration\MigrationInterface;
@@ -27,6 +28,8 @@ use PhpDb\Sql\Sql;
 chdir(dirname(__DIR__));
 
 require 'vendor/autoload.php';
+
+$rebuild = in_array('--rebuild', $argv ?? [], true);
 
 $container = require 'config/container.php';
 
@@ -98,6 +101,21 @@ usort($migrations, static fn (MigrationInterface $a, MigrationInterface $b): int
 // 4. Run pending migrations
 // ---------------------------------------------------------------------------
 
+// In rebuild mode: tear everything down in reverse order first, then rebuild
+// forward. This respects FK constraints (child tables dropped before parents).
+if ($rebuild) {
+    echo 'Rebuilding: dropping all tables in reverse order...' . PHP_EOL;
+    foreach (array_reverse($migrations) as $migration) {
+        try {
+            $migration->down($adapter);
+        } catch (Throwable $e) {
+            printf("  WARN  down %03d — %s%s", $migration->getStep(), $e->getMessage(), PHP_EOL);
+        }
+    }
+    $adapter->query('TRUNCATE TABLE schema_migrations', AdapterInterface::QUERY_MODE_EXECUTE);
+    echo PHP_EOL;
+}
+
 $migrated = 0;
 $skipped  = 0;
 $errors   = 0;
@@ -106,7 +124,7 @@ foreach ($migrations as $migration) {
     $step        = $migration->getStep();
     $description = $migration->getDescription();
 
-    if (isset($applied[$step])) {
+    if (! $rebuild && isset($applied[$step])) {
         printf("  SKIP  %03d — %s%s", $step, $description, PHP_EOL);
         $skipped++;
         continue;

@@ -15,27 +15,23 @@ declare(strict_types=1);
 namespace Webware\Acl\Admin\CommandHandler;
 
 use Override;
-use Psr\EventDispatcher\EventDispatcherInterface;
 use Webware\Acl\Admin\Command\UpdateRuleTypeCommand;
-use Webware\Acl\AclInterface;
-use Webware\Acl\Container\Configuration;
+use Webware\Acl\Repository\RoleRepository;
+use Webware\Acl\Repository\RuleRepository;
 use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandResultInterface;
 use Webware\CommandBus\Command\CommandStatus;
 use Webware\CommandBus\CommandHandlerInterface;
+use Webware\Acl\RuleType;
 use Webware\CommandBus\CommandInterface;
-use Webware\ConfigManager\Event\ConfigBustCacheEvent;
-use Webware\ConfigManager\Event\ConfigSaveEvent;
 
-use function array_key_exists;
 use function assert;
-use function in_array;
 
 final class UpdateRuleTypeHandler implements CommandHandlerInterface
 {
     public function __construct(
-        private readonly array $config,
-        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly RuleRepository $ruleRepository,
+        private readonly RoleRepository $roleRepository,
     ) {}
 
     #[Override]
@@ -45,57 +41,28 @@ final class UpdateRuleTypeHandler implements CommandHandlerInterface
 
         $roleId     = $command->roleId;
         $resourceId = $command->resourceId;
-        $newType    = $command->newType;
-        $oldType    = $newType === 'allow' ? 'deny' : 'allow';
-
-        $aclConfig  = $this->config;
-
-        // Determine the assertions that were on the old rule (preserve them)
-        $assertions = $aclConfig[$oldType][$roleId][$resourceId] ?? [];
-
-        // Remove the old rule entry
-        unset($aclConfig[$oldType][$roleId][$resourceId]);
-        if (empty($aclConfig[$oldType][$roleId])) {
-            unset($aclConfig[$oldType][$roleId]);
-        }
-
-        // Add the new rule entry
-        $aclConfig[$newType][$roleId][$resourceId] = $assertions;
-
-        // Cascade: for each direct child of $roleId that has no explicit rule
-        // for this resource, add an explicit $oldType rule so they keep their access.
-        $roles = $aclConfig['roles'] ?? [];
-        foreach ($roles as $childRole => $parents) {
-            if (! in_array($roleId, (array) $parents, true)) {
-                continue;
-            }
-
-            $hasExplicitAllow = array_key_exists($resourceId, $aclConfig['allow'][$childRole] ?? []);
-            $hasExplicitDeny  = array_key_exists($resourceId, $aclConfig['deny'][$childRole] ?? []);
-
-            if (! $hasExplicitAllow && ! $hasExplicitDeny) {
-                $aclConfig[$oldType][$childRole][$resourceId] = [];
-            }
-        }
-
-        $saveEvent = new ConfigSaveEvent(
-            target:        AclInterface::class,
-            targetFile:    Configuration::LOCAL_CONFIG_FILE,
-            updatedConfig: $aclConfig,
-            replace:       true,
-        );
+        $newType    = RuleType::from($command->newType);
+        $oldType    = $newType === RuleType::Allow ? RuleType::Deny : RuleType::Allow;
 
         try {
-            $this->eventDispatcher->dispatch($saveEvent);
+            $updated = $this->ruleRepository->updateType($roleId, $resourceId, $newType->value);
+
+            if (! $updated) {
+                return new CommandResult($command, CommandStatus::Failure, null);
+            }
+
+            // Cascade: children with no explicit rule inherit the parent rule type.
+            // Add an explicit old-type rule for each such child so they keep their access.
+            foreach ($this->roleRepository->fetchDirectChildren($roleId) as $childRole) {
+                if ($this->ruleRepository->findByRoleAndResource($childRole, $resourceId) === null) {
+                    $this->ruleRepository->save($oldType->value, $childRole, $resourceId, []);
+                }
+            }
         } catch (\Throwable $e) {
             return new CommandResult($command, CommandStatus::Failure, $e);
         }
 
-        if (! $saveEvent->isPropagationStopped()) {
-            $this->eventDispatcher->dispatch(new ConfigBustCacheEvent());
-        }
-
-        return new CommandResult($command, CommandStatus::Success, $aclConfig);
+        return new CommandResult($command, CommandStatus::Success, null);
     }
 }
 

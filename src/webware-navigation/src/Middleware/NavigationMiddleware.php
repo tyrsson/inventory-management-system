@@ -5,14 +5,15 @@ declare(strict_types=1);
 
 namespace Webware\Navigation\Middleware;
 
-use Webware\UserManager\UserInterface;
 use Mezzio\Router\RouteResult;
 use Override;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Webware\Acl\AclInterface;
 use Webware\Navigation\View\Helper\Navigation;
+use Webware\UserManager\UserInterface;
 
 /**
  * Pipes per-request roles and the active route name into the Navigation helper.
@@ -31,6 +32,12 @@ final class NavigationMiddleware implements MiddlewareInterface
 
         if ($user !== null) {
             $this->helper->setUser($user);
+        }
+
+        $acl = $request->getAttribute(AclInterface::class);
+
+        if ($acl instanceof AclInterface) {
+            $this->helper->setAcl($acl);
         }
 
         $routeResult = $request->getAttribute(RouteResult::class);

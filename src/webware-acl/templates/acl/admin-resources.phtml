@@ -95,6 +95,7 @@ foreach ($this->privileges as $priv) {
                         hx-post="<?= $this->adminUrl('acl.manager.rule.create') ?>"
                         hx-target="main"
                         hx-swap="innerHTML"
+                        hx-push-url="false"
                     >
                         <input type="hidden" name="routeName" value="<?= $this->escapeHtmlAttr($routeName) ?>">
                         <p class="small text-secondary mb-2">Select role(s) to grant access:</p>

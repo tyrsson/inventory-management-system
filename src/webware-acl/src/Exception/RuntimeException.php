@@ -21,17 +21,11 @@ use function sprintf;
 
 final class RuntimeException extends SplRuntimeException implements ExceptionInterface
 {
-    public static function forAclBuildEvent(
-        string $message,
-        string $eventClass,
+    public static function forAclAddResource(
         ?ExceptionInterface $previous = null
     ): self {
         return new self(
-            sprintf(
-                'An error occurred while dispatching event %s: %s',
-                $eventClass,
-                $message
-            ),
+            'Direct resource registration is not supported; resources are derived from the acl_rule table.',
             0,
             $previous
         );

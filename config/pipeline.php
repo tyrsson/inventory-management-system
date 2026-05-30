@@ -17,6 +17,7 @@ use Mezzio\Router\Middleware\RouteMiddleware;
 use Axleus\Log\Middleware\MonologMiddleware;
 use Mezzio\Session\SessionMiddleware;
 use Psr\Container\ContainerInterface;
+use Webware\Acl\Middleware\AclMiddleware;
 use Webware\Acl\Middleware\AuthorizationMiddleware;
 use Webware\Acl\Middleware\IdentityMiddleware;
 use Webware\Event\Middleware\EventDispatcherMiddleware;
@@ -78,6 +79,7 @@ return function (Application $app, MiddlewareFactory $factory, ContainerInterfac
 
     // ACL route access check — must run after routing and identity are resolved,
     // before dispatch.
+    $app->pipe(AclMiddleware::class);
     $app->pipe(AuthorizationMiddleware::class);
 
     // Register the dispatch middleware in the middleware pipeline

@@ -7,6 +7,7 @@ namespace Webware\Acl\RequestHandler\Container;
 use Psr\Container\ContainerInterface;
 use Webware\Acl\AclInterface;
 use Webware\Acl\RequestHandler\ForbiddenHandler;
+use Webware\UserManager\UserInterface;
 
 /**
  * Creates the default ForbiddenHandler.
@@ -33,9 +34,10 @@ final class ForbiddenHandlerFactory
     {
         $config = $container->get('config');
         $acl    = $config[AclInterface::class] ?? [];
+        $user   = $config[UserInterface::class] ?? [];
 
         return new ForbiddenHandler(
-            loginPath:         (string) ($acl['login_path']         ?? '/login'),
+            loginPath:         (string) ($user['login_path']          ?? '/login'),
             forbiddenRedirect: ($acl['forbidden_redirect'] ?? '/') === '' ? null : ($acl['forbidden_redirect'] ?? '/'),
             forbiddenTemplate: ($acl['forbidden_template'] ?? null) ?: null,
         );

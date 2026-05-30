@@ -15,7 +15,8 @@ declare(strict_types=1);
 namespace Webware\Acl\Admin\CommandHandler;
 
 use Override;
-use Webware\Acl\Admin\Command\SaveRuleCommand;
+use Throwable;
+use Webware\Acl\Admin\Command\DeleteRuleCommand;
 use Webware\Acl\Repository\RuleRepository;
 use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandResultInterface;
@@ -25,7 +26,7 @@ use Webware\CommandBus\CommandInterface;
 
 use function assert;
 
-final class SaveRuleHandler implements CommandHandlerInterface
+final class DeleteRuleHandler implements CommandHandlerInterface
 {
     public function __construct(
         private readonly RuleRepository $ruleRepository,
@@ -34,19 +35,14 @@ final class SaveRuleHandler implements CommandHandlerInterface
     #[Override]
     public function handle(CommandInterface $command): CommandResultInterface
     {
-        assert($command instanceof SaveRuleCommand);
+        assert($command instanceof DeleteRuleCommand);
 
         try {
-            $saved = $this->ruleRepository->save(
-                $command->type,
-                $command->roleId,
-                $command->resourceId,
-                $command->assertions,
-            );
-        } catch (\Throwable $e) {
+            $deleted = $this->ruleRepository->delete($command->roleId, $command->resourceId);
+        } catch (Throwable $e) {
             return new CommandResult($command, CommandStatus::Failure, $e);
         }
 
-        return new CommandResult($command, $saved ? CommandStatus::Success : CommandStatus::Failure, null);
+        return new CommandResult($command, $deleted ? CommandStatus::Success : CommandStatus::Failure, null);
     }
 }

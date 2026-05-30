@@ -25,6 +25,9 @@ $methodPrivMap = [
 ];
 
 $filters = $this->routeFilters ?? ['all' => 0, 'unprotected' => 0, 'protected' => 0];
+
+// URL template for rule deletion — placeholders replaced by JS at click time.
+$deleteRuleUrlTpl = $this->adminUrl('acl.manager.rule.delete', ['role_id' => '__ROLE__', 'resource_id' => '__RES__']);
 ?>
 
 <!-- Breadcrumb -->
@@ -82,6 +85,12 @@ $filters = $this->routeFilters ?? ['all' => 0, 'unprotected' => 0, 'protected' =
         <span class="badge bg-warning text-dark ms-auto"><?= (int) $filters['unprotected'] ?></span>
     </div>
     <div class="card-body p-0">
+        <div class="px-3 pt-3 pb-2">
+            <p class="small text-warning mb-0">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                Routes listed here are <strong>not accessible to any role</strong>. To allow access, add at least one rule &mdash; for example, <em>Guest &rarr; Allow &rarr; read</em>. Until then the ACL will deny all requests to these routes.
+            </p>
+        </div>
         <?php foreach ($this->unprotectedRoutes as $routeName => $methods): ?>
             <?php
             $privs = array_values(array_unique(array_map(
@@ -206,16 +215,16 @@ $filters = $this->routeFilters ?? ['all' => 0, 'unprotected' => 0, 'protected' =
                             <tr class="<?= $isInherited ? 'ims-acl-rule-inherited' : '' ?>">
                                 <td class="align-middle">
                                     <?php if ($isInherited): ?>
-                                        <?php if ($rule['type'] === 'allow'): ?>
+                                        <?php if ($rule['type'] === 'Allow'): ?>
                                             <span class="badge bg-success-subtle border border-success-subtle text-success-emphasis ims-badge-xs">allow</span>
                                         <?php else: ?>
                                             <span class="badge bg-danger-subtle border border-danger-subtle text-danger-emphasis ims-badge-xs">deny</span>
                                         <?php endif; ?>
                                     <?php else: ?>
                                         <?php
-                                            $newRuleType  = $rule['type'] === 'allow' ? 'deny' : 'allow';
+                                            $newRuleType  = $rule['type'] === 'Allow' ? 'Deny' : 'Allow';
                                             $toggleVals   = (string) json_encode(['role_id' => $rule['role_id'], 'route_name' => $rule['resource_id'], 'type' => $newRuleType]);
-                                            $toggleClass  = $rule['type'] === 'allow'
+                                            $toggleClass  = $rule['type'] === 'Allow'
                                                 ? 'bg-success-subtle border-success-subtle text-success-emphasis'
                                                 : 'bg-danger-subtle border-danger-subtle text-danger-emphasis';
                                         ?>
@@ -301,7 +310,8 @@ $filters = $this->routeFilters ?? ['all' => 0, 'unprotected' => 0, 'protected' =
 
 <!-- ── Delete rule confirmation modal ───────────────────── -->
 <div class="modal fade" id="deleteRuleModal" tabindex="-1"
-     aria-labelledby="deleteRuleModalLabel" aria-hidden="true">
+     aria-labelledby="deleteRuleModalLabel" aria-hidden="true"
+     data-delete-url-tpl="<?= $this->escapeHtmlAttr($deleteRuleUrlTpl) ?>">
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
             <div class="modal-header py-2 border-danger">
@@ -317,10 +327,7 @@ $filters = $this->routeFilters ?? ['all' => 0, 'unprotected' => 0, 'protected' =
             <div class="modal-footer py-2">
                 <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button id="deleteRuleConfirmBtn" type="button"
-                        class="btn btn-sm btn-danger"
-                        hx-delete=""
-                        hx-target="main"
-                        hx-swap="innerHTML">Delete</button>
+                        class="btn btn-sm btn-danger">Delete</button>
             </div>
         </div>
     </div>

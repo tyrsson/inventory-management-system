@@ -15,19 +15,15 @@ declare(strict_types=1);
 namespace Webware\Acl\Admin\CommandHandler\Container;
 
 use Psr\Container\ContainerInterface;
-use Psr\EventDispatcher\EventDispatcherInterface;
 use Webware\Acl\Admin\CommandHandler\SaveRuleHandler;
-use Webware\Acl\AclInterface;
+use Webware\Acl\Repository\RuleRepository;
 
 final class SaveRuleHandlerFactory
 {
     public function __invoke(ContainerInterface $container): SaveRuleHandler
     {
-        $config = $container->get('config');
-
         return new SaveRuleHandler(
-            config:          $config[AclInterface::class] ?? [],
-            eventDispatcher: $container->get(EventDispatcherInterface::class),
+            $container->get(RuleRepository::class),
         );
     }
 }

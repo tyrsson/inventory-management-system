@@ -1,0 +1,82 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Ims\Migration;
+
+use Ims\Migration\Column\Enum;
+use PhpDb\Adapter\AdapterInterface;
+use PhpDb\Sql\Ddl\Column\Integer;
+use PhpDb\Sql\Ddl\Column\Json;
+use PhpDb\Sql\Ddl\Column\Varchar;
+use PhpDb\Sql\Ddl\Constraint\PrimaryKey;
+use PhpDb\Sql\Ddl\Constraint\UniqueKey;
+use PhpDb\Sql\Ddl\CreateTable;
+use PhpDb\Sql\Ddl\DropTable;
+use PhpDb\Sql\Literal;
+use PhpDb\Sql\Sql;
+
+final class Migration017AclRule implements MigrationInterface
+{
+    public function getStep(): int
+    {
+        return 17;
+    }
+
+    public function getDescription(): string
+    {
+        return 'Create acl_rule table';
+    }
+
+    public function up(AdapterInterface $adapter): void
+    {
+        $sql    = new Sql($adapter);
+        $create = new CreateTable('acl_rule');
+        $create->ifNotExists();
+
+        $create->addColumn(
+            (new Integer('id', nullable: false))
+                ->setOptions(['unsigned' => true, 'autoincrement' => true])
+        );
+
+        $create->addColumn(new Enum('type', ['Allow', 'Deny'], nullable: false, default: 'Allow'));
+
+        $create->addColumn(new Varchar('role_id', 50, nullable: false));
+
+        $create->addColumn(
+            (new Varchar('resource_id', 255, nullable: false))
+                ->setOptions(['comment' => 'ACL resource string, e.g. "admin.acl.rule"'])
+        );
+
+        $create->addColumn(
+            (new Json('assertions', nullable: true, default: null))
+                ->setOptions([
+                    'comment' => 'Array of assertion alias strings, null means no assertions',
+                ])
+        );
+
+        $create->addConstraint(new PrimaryKey('id'));
+        $create->addConstraint(new UniqueKey(['role_id', 'resource_id'], 'uq_rule'));
+
+        $create->setOptions([
+            'engine'          => new Literal('InnoDB'),
+            'default charset' => new Literal('utf8mb4'),
+            'collate'         => new Literal('utf8mb4_unicode_ci'),
+        ]);
+
+        $adapter->query(
+            $sql->buildSqlString($create),
+            AdapterInterface::QUERY_MODE_EXECUTE
+        );
+    }
+
+    public function down(AdapterInterface $adapter): void
+    {
+        $sql = new Sql($adapter);
+
+        $adapter->query(
+            $sql->buildSqlString((new DropTable('acl_rule'))->ifExists()),
+            AdapterInterface::QUERY_MODE_EXECUTE
+        );
+    }
+}

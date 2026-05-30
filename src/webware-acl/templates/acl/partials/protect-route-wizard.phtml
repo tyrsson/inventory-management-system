@@ -123,12 +123,13 @@ while ($queue !== []) {
             <form id="wiz-form" novalidate
                   hx-post="<?= htmlspecialchars($this->protectUrl, ENT_QUOTES) ?>"
                   hx-target="main"
-                  hx-swap="innerHTML">
+                  hx-swap="innerHTML"
+                  hx-push-url="false">
 
                 <!-- Hidden state inputs (populated by JS) -->
                 <input type="hidden" name="route_name"        id="wiz-input-route-name">
                 <input type="hidden" name="grant_mode"        id="wiz-input-grant-mode"      value="explicit">
-                <input type="hidden" name="rule_type"         id="wiz-input-rule-type"        value="allow">
+                <input type="hidden" name="rule_type"         id="wiz-input-rule-type"        value="Allow">
                 <input type="hidden" name="role_id"           id="wiz-input-role-id">
                 <input type="hidden" name="assertion_alias"   id="wiz-input-assertion-alias">
                 <input type="hidden" name="assertion_mode"    id="wiz-input-assertion-mode"   value="none">
@@ -157,16 +158,16 @@ while ($queue !== []) {
                         <div class="d-flex gap-3 mt-2">
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="rule_type_ui"
-                                       id="wiz-rule-allow" value="allow" checked>
+                                       id="wiz-rule-allow" value="Allow" checked>
                                 <label class="form-check-label small" for="wiz-rule-allow">
-                                    <span class="badge bg-success-subtle border border-success-subtle text-success-emphasis">allow</span>
+                                    <span class="badge bg-success-subtle border border-success-subtle text-success-emphasis">Allow</span>
                                 </label>
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="rule_type_ui"
-                                       id="wiz-rule-deny" value="deny">
+                                       id="wiz-rule-deny" value="Deny">
                                 <label class="form-check-label small" for="wiz-rule-deny">
-                                    <span class="badge bg-danger-subtle border border-danger-subtle text-danger-emphasis">deny</span>
+                                    <span class="badge bg-danger-subtle border border-danger-subtle text-danger-emphasis">Deny</span>
                                 </label>
                             </div>
                         </div>
