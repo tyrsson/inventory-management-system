@@ -26,8 +26,6 @@ $methodPrivMap = [
 
 $filters = $this->routeFilters ?? ['all' => 0, 'unprotected' => 0, 'protected' => 0];
 
-// URL template for rule deletion — placeholders replaced by JS at click time.
-$deleteRuleUrlTpl = $this->adminUrl('acl.manager.rule.delete', ['role_id' => '__ROLE__', 'resource_id' => '__RES__']);
 ?>
 
 <!-- Breadcrumb -->
@@ -223,7 +221,7 @@ $deleteRuleUrlTpl = $this->adminUrl('acl.manager.rule.delete', ['role_id' => '__
                                     <?php else: ?>
                                         <?php
                                             $newRuleType  = $rule['type'] === 'Allow' ? 'Deny' : 'Allow';
-                                            $toggleVals   = (string) json_encode(['role_id' => $rule['role_id'], 'route_name' => $rule['resource_id'], 'type' => $newRuleType]);
+                                            $toggleVals   = (string) json_encode(['role_id' => $rule['role_id'], 'resource_id' => $rule['resource_id'], 'type' => $newRuleType]);
                                             $toggleClass  = $rule['type'] === 'Allow'
                                                 ? 'bg-success-subtle border-success-subtle text-success-emphasis'
                                                 : 'bg-danger-subtle border-danger-subtle text-danger-emphasis';
@@ -254,13 +252,11 @@ $deleteRuleUrlTpl = $this->adminUrl('acl.manager.rule.delete', ['role_id' => '__
                                 <td class="align-middle text-end">
                                     <?php if (! $isInherited): ?>
                                         <button class="btn btn-sm btn-outline-danger py-0 px-1"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#deleteRuleModal"
-                                                data-rule-id="<?= (int) ($rule['id'] ?? 0) ?>"
-                                                data-role-id="<?= $this->escapeHtmlAttr($rule['role_id']) ?>"
-                                                data-resource-id="<?= $this->escapeHtmlAttr($rule['resource_id']) ?>"
-                                                data-privilege-id="<?= $this->escapeHtmlAttr($rule['privilege_id']) ?>"
-                                                data-rule-type="<?= $this->escapeHtmlAttr($rule['type']) ?>">
+                                                hx-get="<?= $this->escapeHtmlAttr($this->adminUrl('acl.manager.rule.delete.modal', ['role_id' => $rule['role_id'], 'resource_id' => $rule['resource_id']])) ?>"
+                                                hx-target="#sharedModalDialog"
+                                                hx-swap="innerHTML"
+                                                hx-push-url="false"
+                                                hx-on::after-request="if(event.detail.successful) bootstrap.Modal.getOrCreateInstance(document.getElementById('sharedModal')).show()">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     <?php endif; ?>
@@ -307,28 +303,3 @@ $deleteRuleUrlTpl = $this->adminUrl('acl.manager.rule.delete', ['role_id' => '__
     // Protecting a resource = creating a rule, so this now points to rule.create.
     'protectUrl'   => $this->adminUrl('acl.manager.rule.create'),
 ]) ?>
-
-<!-- ── Delete rule confirmation modal ───────────────────── -->
-<div class="modal fade" id="deleteRuleModal" tabindex="-1"
-     aria-labelledby="deleteRuleModalLabel" aria-hidden="true"
-     data-delete-url-tpl="<?= $this->escapeHtmlAttr($deleteRuleUrlTpl) ?>">
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-            <div class="modal-header py-2 border-danger">
-                <h5 class="modal-title small fw-bold text-danger" id="deleteRuleModalLabel">
-                    <i class="bi bi-trash3 me-1"></i> Delete Rule
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body small">
-                Remove <span id="deleteRuleDesc"></span>?
-                <div class="text-secondary mt-1">This cannot be undone. Add a new rule if you need to restore it.</div>
-            </div>
-            <div class="modal-footer py-2">
-                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button id="deleteRuleConfirmBtn" type="button"
-                        class="btn btn-sm btn-danger">Delete</button>
-            </div>
-        </div>
-    </div>
-</div>

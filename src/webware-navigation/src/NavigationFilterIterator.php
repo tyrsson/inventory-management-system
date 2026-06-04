@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Webware\Navigation;
 
 use ArrayIterator;
@@ -12,9 +11,9 @@ use Override;
 use Webware\Acl\AclInterface;
 use Webware\UserManager\UserInterface;
 
+use function in_array;
 use function is_array;
 use function is_string;
-use function in_array;
 
 /**
  * Filters a list<Route> to those belonging to a given navigation identifier
@@ -33,7 +32,7 @@ final class NavigationFilterIterator extends FilterIterator
     public function __construct(
         array $routes,
         private readonly string $navId,
-        private readonly UserInterface|null $user,
+        private readonly ?UserInterface $user,
         private readonly AclInterface $acl,
     ) {
         parent::__construct(new ArrayIterator($routes));

@@ -55,7 +55,7 @@ final class Migration008ProductStatus implements MigrationInterface
         );
 
         $create->addColumn(
-            new DateTime('set_at', nullable: false, default: new ArgLiteral('CURRENT_TIMESTAMP'))
+            new Datetime('set_at', nullable: false, default: new ArgLiteral('CURRENT_TIMESTAMP'))
         );
 
         $create->addConstraint(new PrimaryKey('id'));

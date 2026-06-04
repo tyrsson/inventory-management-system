@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace Webware\ConfigManagerTest;
 
 use Laminas\ConfigAggregator\ArrayProvider;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\TestCase;
 use Webware\ConfigManager\ConfigWriter;
 use Webware\ConfigManagerTestResource\FooConfigProvider;
-use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 
 use function file_exists;
-use function file_get_contents;
 use function is_dir;
 use function mkdir;
 use function rmdir;
@@ -23,8 +21,10 @@ use function unlink;
 final class ConfigWriterTest extends TestCase
 {
     public const CONFIG_FILE = __DIR__ . '/../config/test.global.php';
-    private string $dir;
+
     protected string $targetFile = FooConfigProvider::TARGET_FILE;
+
+    private string $dir;
 
     protected function setUp(): void
     {

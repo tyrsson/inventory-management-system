@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Webware\Navigation;
 
 use Webware\Navigation\Container\NavigationMiddlewareFactory;
@@ -32,7 +31,7 @@ final class ConfigProvider
     private function getViewHelpers(): array
     {
         return [
-            'aliases' => [
+            'aliases'   => [
                 'navigation' => NavigationHelper::class,
             ],
             'factories' => [

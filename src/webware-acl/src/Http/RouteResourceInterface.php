@@ -7,8 +7,4 @@ namespace Webware\Acl\Http;
 use Laminas\Permissions\Acl\Resource\ResourceInterface;
 use Webware\Acl\RoleProviderInterface;
 
-interface RouteResourceInterface extends
-    ResourceInterface,
-    RoleProviderInterface
-{
-}
+interface RouteResourceInterface extends ResourceInterface, RoleProviderInterface {}

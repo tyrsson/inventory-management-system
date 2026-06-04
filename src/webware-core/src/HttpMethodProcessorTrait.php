@@ -7,8 +7,8 @@ namespace Webware\Core;
 use DomainException;
 use Fig\Http\Message\RequestMethodInterface;
 use Override;
-use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**
@@ -21,7 +21,7 @@ trait HttpMethodProcessorTrait
     #[Override]
     public function process(
         ServerRequestInterface $request,
-        RequestHandlerInterface $handler
+        RequestHandlerInterface $handler,
     ): ResponseInterface {
         return match ($request->getMethod()) {
             RequestMethodInterface::METHOD_GET    => $this->processGet($request, $handler),
@@ -29,34 +29,34 @@ trait HttpMethodProcessorTrait
             RequestMethodInterface::METHOD_PATCH,
             RequestMethodInterface::METHOD_PUT    => $this->processPatch($request, $handler),
             RequestMethodInterface::METHOD_DELETE => $this->processDelete($request, $handler),
-            default => throw new DomainException('Unsupported HTTP method: ' . $request->getMethod()),
+            default                               => throw new DomainException('Unsupported HTTP method: ' . $request->getMethod()),
         };
     }
 
     public function processGet(
         ServerRequestInterface $request,
-        RequestHandlerInterface $handler
+        RequestHandlerInterface $handler,
     ): ResponseInterface {
         return $handler->handle($request);
     }
 
     public function processPost(
         ServerRequestInterface $request,
-        RequestHandlerInterface $handler
+        RequestHandlerInterface $handler,
     ): ResponseInterface {
         return $handler->handle($request);
     }
 
     public function processPatch(
         ServerRequestInterface $request,
-        RequestHandlerInterface $handler
+        RequestHandlerInterface $handler,
     ): ResponseInterface {
         return $handler->handle($request);
     }
 
     public function processDelete(
         ServerRequestInterface $request,
-        RequestHandlerInterface $handler
+        RequestHandlerInterface $handler,
     ): ResponseInterface {
         return $handler->handle($request);
     }

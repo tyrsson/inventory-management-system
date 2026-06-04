@@ -27,23 +27,23 @@ final class ResendVerificationHandlerFactory
     public function __invoke(ContainerInterface $container): ResendVerificationHandler
     {
         /** @var array{user: array{from_email: string, from_name: string, base_url: string}, MailerInterface::class: array{verification_email_subject: string}} $config */
-        $config      = $container->get('config');
-        $userConf    = $config['user'] ?? [];
-        $mailerConf  = $config[MailerInterface::class] ?? [];
+        $config     = $container->get('config');
+        $userConf   = $config['user']                 ?? [];
+        $mailerConf = $config[MailerInterface::class] ?? [];
+
         /** @var HelperPluginManager $helperManager */
         $helperManager = $container->get(HelperPluginManager::class);
         $userUrl       = $helperManager->get(UserUrl::class);
 
         return new ResendVerificationHandler(
-            template:            $container->get(TemplateRendererInterface::class),
-            users:               $container->get(UserRepositoryInterface::class),
-            mailer:              $container->get(MailerInterface::class),
-            fromEmail:           (string) ($userConf['from_email']                   ?? 'noreply@farmers-ims.local'),
-            fromName:            (string) ($userConf['from_name']                    ?? 'Farmers IMS'),
-            baseUrl:             (string) ($userConf['base_url']                     ?? 'http://localhost:8080'),
+            template: $container->get(TemplateRendererInterface::class),
+            users: $container->get(UserRepositoryInterface::class),
+            mailer: $container->get(MailerInterface::class),
+            fromEmail: (string) ($userConf['from_email'] ?? 'noreply@farmers-ims.local'),
+            fromName: (string) ($userConf['from_name'] ?? 'Farmers IMS'),
+            baseUrl: (string) ($userConf['base_url'] ?? 'http://localhost:8080'),
             verificationSubject: (string) ($mailerConf['verification_email_subject'] ?? 'Verify your account'),
-            loginUrl:            $userUrl('session.read'),
+            loginUrl: $userUrl('session.read'),
         );
     }
 }
-

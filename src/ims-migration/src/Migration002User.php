@@ -64,10 +64,10 @@ final class Migration002User implements MigrationInterface
         $create->addColumn(new TinyInteger('active', nullable: false, default: 0));
 
         $create->addColumn(new Varchar('verification_token', 36, nullable: true));
-        $create->addColumn(new DateTime('token_created_at', nullable: true));
+        $create->addColumn(new Datetime('token_created_at', nullable: true));
 
         $create->addColumn(
-            new DateTime('created_at', nullable: false, default: new ArgLiteral('CURRENT_TIMESTAMP'))
+            new Datetime('created_at', nullable: false, default: new ArgLiteral('CURRENT_TIMESTAMP'))
         );
 
         $create->addColumn(

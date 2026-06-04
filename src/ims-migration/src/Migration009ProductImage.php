@@ -11,9 +11,9 @@ use PhpDb\Sql\Ddl\Column\Integer;
 use PhpDb\Sql\Ddl\Column\Varchar;
 use PhpDb\Sql\Ddl\Constraint\ForeignKey;
 use PhpDb\Sql\Ddl\Constraint\PrimaryKey;
-use PhpDb\Sql\Ddl\Index\Index;
 use PhpDb\Sql\Ddl\CreateTable;
 use PhpDb\Sql\Ddl\DropTable;
+use PhpDb\Sql\Ddl\Index\Index;
 use PhpDb\Sql\Literal;
 use PhpDb\Sql\Sql;
 
@@ -56,7 +56,7 @@ final class Migration009ProductImage implements MigrationInterface
         );
 
         $create->addColumn(
-            new DateTime('uploaded_at', nullable: false, default: new ArgLiteral('CURRENT_TIMESTAMP'))
+            new Datetime('uploaded_at', nullable: false, default: new ArgLiteral('CURRENT_TIMESTAMP'))
         );
 
         $create->addConstraint(new PrimaryKey('id'));

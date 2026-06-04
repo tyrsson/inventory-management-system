@@ -18,7 +18,6 @@ use Webware\Acl\AclInterface;
 use Webware\Admin\Container\Configuration as AdminConfiguration;
 use Webware\CommandBus\CommandBusInterface;
 use Webware\UserManager\Repository\UserRepositoryInterface as UserRepositoryContract;
-use Webware\UserManager\UserInterface;
 use Webware\UserManager\View\Helper\UserAdminUrl;
 use Webware\UserManager\View\Helper\UserAdminUrlFactory;
 use Webware\UserManager\View\Helper\UserUrl;
@@ -100,11 +99,11 @@ final class ConfigProvider
     public function getDefaultConfig(): array
     {
         return [
-            Container\Configuration::ROUTE_SEGMENT_KEY         => Container\Configuration::ROUTE_SEGMENT_VALUE,
-            Container\Configuration::ROUTE_NAME_PREFIX_KEY     => Container\Configuration::ROUTE_NAME_PREFIX_VALUE,
-            Container\Configuration::ADMIN_ROUTE_SEGMENT_KEY   => Container\Configuration::ADMIN_ROUTE_SEGMENT_VALUE,
+            Container\Configuration::ROUTE_SEGMENT_KEY           => Container\Configuration::ROUTE_SEGMENT_VALUE,
+            Container\Configuration::ROUTE_NAME_PREFIX_KEY       => Container\Configuration::ROUTE_NAME_PREFIX_VALUE,
+            Container\Configuration::ADMIN_ROUTE_SEGMENT_KEY     => Container\Configuration::ADMIN_ROUTE_SEGMENT_VALUE,
             Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_KEY => Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE,
-            'login_path' => '/' . Container\Configuration::ROUTE_SEGMENT_VALUE . '/login',
+            'login_path'                                         => '/' . Container\Configuration::ROUTE_SEGMENT_VALUE . '/login',
         ];
     }
 
@@ -125,9 +124,9 @@ final class ConfigProvider
     public function getAuthenticationConfig(): array
     {
         return [
-            'redirect'                                        => '/' . Container\Configuration::ROUTE_SEGMENT_VALUE . '/login',
-            'username'                                        => 'email',
-            'password'                                        => 'password',
+            'redirect'                                       => '/' . Container\Configuration::ROUTE_SEGMENT_VALUE . '/login',
+            'username'                                       => 'email',
+            'password'                                       => 'password',
             Container\Configuration::POST_LOGIN_REDIRECT_KEY => Container\Configuration::POST_LOGIN_REDIRECT_VALUE,
         ];
     }
@@ -135,26 +134,26 @@ final class ConfigProvider
     public function getAclConfig(): array
     {
         return [
-            'roles'      => [
+            'roles'     => [
                 'Guest'  => [],
                 'Member' => ['Guest'],
             ],
-            'resources'  => [
-                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.read'                 => true,
-                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.create'               => true,
-                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'register.read'                => true,
-                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'register.create'              => true,
-                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'verify.email.read'            => true,
-                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'resend.verification.read'     => true,
-                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'resend.verification.create'   => true,
-                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'logout.read'                  => true,
-                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'account.read'                 => true,
-                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.') => true,
+            'resources' => [
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.read'                                                            => true,
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.create'                                                          => true,
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'register.read'                                                           => true,
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'register.create'                                                         => true,
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'verify.email.read'                                                       => true,
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'resend.verification.read'                                                => true,
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'resend.verification.create'                                              => true,
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'logout.read'                                                             => true,
+                Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'account.read'                                                            => true,
+                AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.')       => true,
                 AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'create'        => true,
                 AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'update'        => true,
                 AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'toggle.update' => true,
             ],
-            'allow'      => [
+            'allow'     => [
                 'Guest'         => [
                     Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.read'               => [],
                     Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.create'             => [],
@@ -168,13 +167,13 @@ final class ConfigProvider
                     Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'logout.read' => [],
                 ],
                 'Administrator' => [
-                    AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.') => [],
+                    AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . rtrim(Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE, '.')       => [],
                     AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'create'        => [],
                     AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'update'        => [],
                     AdminConfiguration::ADMIN_ROUTE_NAME_PREFIX_VALUE . Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'toggle.update' => [],
                 ],
             ],
-            'deny'       => [
+            'deny'      => [
                 'Member' => [
                     Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.read'               => [],
                     Container\Configuration::ROUTE_NAME_PREFIX_VALUE . 'session.create'             => [],

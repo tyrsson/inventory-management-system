@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Webware\Navigation\View\Helper;
 
 use Laminas\View\Helper\StatefulHelperInterface;
@@ -48,29 +47,6 @@ final class Navigation implements StatefulHelperInterface
         private readonly ?RendererInterface $sitemapRenderer = null,
     ) {}
 
-    public function setUser(UserInterface|null $user): void
-    {
-        $this->user = $user;
-    }
-
-    public function setAcl(AclInterface $acl): void
-    {
-        $this->acl = $acl;
-    }
-
-    public function setActiveRouteName(?string $name): void
-    {
-        $this->activeRouteName = $name;
-    }
-
-    #[Override]
-    public function resetState(): void
-    {
-        $this->user            = null;
-        $this->activeRouteName = null;
-        // acl is intentionally not reset — it is repopulated each request by NavigationMiddleware
-    }
-
     /**
      * Builds and returns an ACL-filtered NavigationContainer for $navId.
      *
@@ -102,7 +78,7 @@ final class Navigation implements StatefulHelperInterface
             }
         }
 
-        usort($topLevel, static fn(NavigationItem $a, NavigationItem $b): int => $a->order <=> $b->order);
+        usort($topLevel, static fn (NavigationItem $a, NavigationItem $b): int => $a->order <=> $b->order);
 
         return new NavigationContainer(
             $topLevel,
@@ -111,5 +87,28 @@ final class Navigation implements StatefulHelperInterface
             $this->breadcrumbRenderer,
             $this->sitemapRenderer,
         );
+    }
+
+    public function setUser(?UserInterface $user): void
+    {
+        $this->user = $user;
+    }
+
+    public function setAcl(AclInterface $acl): void
+    {
+        $this->acl = $acl;
+    }
+
+    public function setActiveRouteName(?string $name): void
+    {
+        $this->activeRouteName = $name;
+    }
+
+    #[Override]
+    public function resetState(): void
+    {
+        $this->user            = null;
+        $this->activeRouteName = null;
+        // acl is intentionally not reset — it is repopulated each request by NavigationMiddleware
     }
 }

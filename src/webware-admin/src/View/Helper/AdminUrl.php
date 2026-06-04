@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Webware\Admin\View\Helper;
 
 use Laminas\View\Helper\StatefulHelperInterface;
@@ -14,20 +13,14 @@ final readonly class AdminUrl implements StatefulHelperInterface
     public function __construct(
         private UrlHelper $urlHelper,
         private string $routeNamePrefix,
-    ) {
-    }
-
-    #[Override]
-    public function resetState(): void
-    {
-    }
+    ) {}
 
     public function __invoke(
         string $routeName,
         array $routeParams = [],
         array $queryParams = [],
         ?string $fragmentIdentifier = null,
-        array $options = []
+        array $options = [],
     ): string {
         return ($this->urlHelper)(
             $this->routeNamePrefix . $routeName,
@@ -37,4 +30,7 @@ final readonly class AdminUrl implements StatefulHelperInterface
             $options
         );
     }
+
+    #[Override]
+    public function resetState(): void {}
 }

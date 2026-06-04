@@ -33,7 +33,7 @@ final class RegisterWidgetEvent
     public function getIterator(): ArrayIterator
     {
         $widgets = $this->widgets;
-        usort($widgets, static fn(WidgetInterface $a, WidgetInterface $b): int => $a->order <=> $b->order);
+        usort($widgets, static fn (WidgetInterface $a, WidgetInterface $b): int => $a->order <=> $b->order);
 
         return new ArrayIterator($widgets);
     }

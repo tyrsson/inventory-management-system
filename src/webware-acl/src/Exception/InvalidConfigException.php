@@ -16,6 +16,4 @@ namespace Webware\Acl\Exception;
 
 use InvalidArgumentException;
 
-final class InvalidConfigException extends InvalidArgumentException implements ExceptionInterface
-{
-}
+final class InvalidConfigException extends InvalidArgumentException implements ExceptionInterface {}

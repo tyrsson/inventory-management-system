@@ -34,9 +34,7 @@ final class AuthorizationMiddleware implements MiddlewareInterface
         $acl = $request->getAttribute(AclInterface::class);
 
         if ($acl === null) {
-            throw new RuntimeException(
-                'AclMiddleware must be in the pipeline before AuthorizationMiddleware.'
-            );
+            throw new RuntimeException('AclMiddleware must be in the pipeline before AuthorizationMiddleware.');
         }
 
         $user          = $request->getAttribute(UserInterface::class);

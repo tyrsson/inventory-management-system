@@ -13,7 +13,7 @@ use Webware\Acl\AclInterface;
 final class AclMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private AclInterface $acl
+        private AclInterface $acl,
     ) {}
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface

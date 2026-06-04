@@ -23,7 +23,7 @@ final class ManifestDashboardWidget implements WidgetInterface
 
     public string $template   { get => 'manifest::admin-widget'; }
 
-    public int    $order      { get => 20; }
+    public int $order      { get => 20; }
 
     public function __construct(
         public readonly int $manifestCount,

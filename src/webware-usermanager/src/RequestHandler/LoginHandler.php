@@ -20,11 +20,11 @@ use Htmx\Response\Header;
 use Laminas\Diactoros\Response\EmptyResponse;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
-use Webware\UserManager\UserInterface;
 use Mezzio\Template\TemplateRendererInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Webware\UserManager\UserInterface;
 
 /**
  * Renders the login page.
@@ -48,6 +48,7 @@ final class LoginHandler implements RequestHandlerInterface
             if ($request->getAttribute(Attribute::Request->value) === true) {
                 return new EmptyResponse(200, [Header::Redirect->value => '/']);
             }
+
             return new RedirectResponse('/');
         }
 

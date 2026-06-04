@@ -15,8 +15,8 @@ final class ConfigSaveEventTest extends TestCase
     public function testCanConstructWithRequiredArgs(): void
     {
         $event = new ConfigSaveEvent(
-            target:        'SomeProvider',
-            targetFile:    'some.local.php',
+            target: 'SomeProvider',
+            targetFile: 'some.local.php',
             updatedConfig: ['key' => 'value'],
         );
 
@@ -29,8 +29,8 @@ final class ConfigSaveEventTest extends TestCase
     public function testGetTargetFileName(): void
     {
         $event = new ConfigSaveEvent(
-            target:        'SomeProvider',
-            targetFile:    '/full/path/to/some.local.php',
+            target: 'SomeProvider',
+            targetFile: '/full/path/to/some.local.php',
             updatedConfig: [],
         );
 

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Webware\Acl\Admin\RequestHandler;
 
 use Htmx\Response\Header;
@@ -11,7 +10,6 @@ use Mezzio\Template\TemplateRendererInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Webware\Acl\AclInterface;
 use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandStatus;
 

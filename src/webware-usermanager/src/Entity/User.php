@@ -42,8 +42,8 @@ final class User implements UserInterface
         public string|array $roles = [] {
             set(string|array $value) {
                 if (is_string($value)) {
-                    $decoded      = json_decode($value, true);
-                    $this->roles  = is_array($decoded) ? $decoded : [];
+                    $decoded = json_decode($value, true);
+                    $this->roles = is_array($decoded) ? $decoded : [];
                 } else {
                     $this->roles = $value;
                 }

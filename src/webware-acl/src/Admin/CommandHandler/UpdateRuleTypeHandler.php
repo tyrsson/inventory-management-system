@@ -15,14 +15,15 @@ declare(strict_types=1);
 namespace Webware\Acl\Admin\CommandHandler;
 
 use Override;
+use Throwable;
 use Webware\Acl\Admin\Command\UpdateRuleTypeCommand;
 use Webware\Acl\Repository\RoleRepository;
 use Webware\Acl\Repository\RuleRepository;
+use Webware\Acl\RuleType;
 use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandResultInterface;
 use Webware\CommandBus\Command\CommandStatus;
 use Webware\CommandBus\CommandHandlerInterface;
-use Webware\Acl\RuleType;
 use Webware\CommandBus\CommandInterface;
 
 use function assert;
@@ -58,11 +59,10 @@ final class UpdateRuleTypeHandler implements CommandHandlerInterface
                     $this->ruleRepository->save($oldType->value, $childRole, $resourceId, []);
                 }
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return new CommandResult($command, CommandStatus::Failure, $e);
         }
 
         return new CommandResult($command, CommandStatus::Success, null);
     }
 }
-

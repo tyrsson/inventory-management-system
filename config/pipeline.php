@@ -20,6 +20,7 @@ use Psr\Container\ContainerInterface;
 use Webware\Acl\Middleware\AclMiddleware;
 use Webware\Acl\Middleware\AuthorizationMiddleware;
 use Webware\Acl\Middleware\IdentityMiddleware;
+use Webware\Core\Middleware\AttachCoreServicesMiddleware;
 use Webware\Event\Middleware\EventDispatcherMiddleware;
 use Webware\Traccio\Middleware\TracyDebuggerMiddleware;
 
@@ -36,6 +37,7 @@ return function (Application $app, MiddlewareFactory $factory, ContainerInterfac
     $app->pipe(ServerUrlMiddleware::class);
     $app->pipe(SessionMiddleware::class);
     $app->pipe(IdentityMiddleware::class);
+    $app->pipe(AttachCoreServicesMiddleware::class);
     $app->pipe(MonologMiddleware::class);
     $app->pipe(DetectAjaxRequestMiddleware::class);
     $app->pipe(\App\Middleware\ImsMessengerMiddleware::class);

@@ -20,7 +20,7 @@ final readonly class RouteProvider implements RouteProviderInterface
     #[Override]
     public function registerRoutes(
         RouteCollectorInterface $routeCollector,
-        MiddlewareFactoryInterface $middlewareFactory
+        MiddlewareFactoryInterface $middlewareFactory,
     ): void {
         $routeCollector->get(
             '/' . $this->adminBasePath,

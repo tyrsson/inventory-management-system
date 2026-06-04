@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Webware\Admin\Middleware;
 
-use Webware\UserManager\UserInterface;
 use Override;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -14,6 +13,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Webware\Acl\AclInterface;
 use Webware\Admin\Event\RegisterWidgetEvent;
 use Webware\Admin\Widget\AclWidgetFilterIterator;
+use Webware\UserManager\UserInterface;
 
 /**
  * Dispatches RegisterWidgetEvent so that modules may contribute

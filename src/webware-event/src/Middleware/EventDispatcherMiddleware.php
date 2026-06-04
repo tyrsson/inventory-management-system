@@ -13,14 +13,14 @@ use Psr\Http\Server\RequestHandlerInterface;
 final readonly class EventDispatcherMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private EventDispatcherInterface $eventDispatcher
+        private EventDispatcherInterface $eventDispatcher,
     ) {}
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         return $handler->handle(
             $request->withAttribute(
-                EventDispatcherInterface::class, 
+                EventDispatcherInterface::class,
                 $this->eventDispatcher
             )
         );

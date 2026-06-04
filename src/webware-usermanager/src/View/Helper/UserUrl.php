@@ -13,20 +13,14 @@ final readonly class UserUrl implements StatefulHelperInterface
     public function __construct(
         private UrlHelper $urlHelper,
         private string $routeNamePrefix,
-    ) {
-    }
-
-    #[Override]
-    public function resetState(): void
-    {
-    }
+    ) {}
 
     public function __invoke(
         string $routeName,
         array $routeParams = [],
         array $queryParams = [],
         ?string $fragmentIdentifier = null,
-        array $options = []
+        array $options = [],
     ): string {
         return ($this->urlHelper)(
             $this->routeNamePrefix . $routeName,
@@ -36,4 +30,7 @@ final readonly class UserUrl implements StatefulHelperInterface
             $options
         );
     }
+
+    #[Override]
+    public function resetState(): void {}
 }

@@ -48,6 +48,7 @@ final class ManifestItem
         if ($this->vendorModel !== null && $this->vendorModel !== '') {
             return $this->vendorModel;
         }
+
         return 'SKU ' . $this->sku;
     }
 }

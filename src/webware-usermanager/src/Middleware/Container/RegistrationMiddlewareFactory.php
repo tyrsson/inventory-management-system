@@ -16,8 +16,8 @@ namespace Webware\UserManager\Middleware\Container;
 
 use Mezzio\Template\TemplateRendererInterface;
 use Psr\Container\ContainerInterface;
-use Webware\UserManager\Middleware\RegistrationMiddleware;
 use Webware\CommandBus\CommandBusInterface;
+use Webware\UserManager\Middleware\RegistrationMiddleware;
 
 final class RegistrationMiddlewareFactory
 {

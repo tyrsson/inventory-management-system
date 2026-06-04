@@ -18,7 +18,6 @@ use Axleus\Message\SystemMessengerInterface;
 use DateTimeImmutable;
 use Ims\Manifest\Command\UploadManifestCommand;
 use Ims\Manifest\Csv\ManifestCsvParser;
-use Webware\UserManager\UserInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UploadedFileInterface;
@@ -31,6 +30,7 @@ use Webware\CommandBus\Command\CommandStatus;
 use Webware\CommandBus\CommandBusInterface;
 use Webware\Core\HttpMethodProcessorTrait;
 use Webware\UserManager\Entity\User;
+use Webware\UserManager\UserInterface;
 
 use function count;
 use function file_exists;
@@ -55,7 +55,7 @@ final class ProcessManifestUploadMiddleware implements MiddlewareInterface
         ServerRequestInterface $request,
         RequestHandlerInterface $handler,
     ): ResponseInterface {
-        /** @var UserInterface&User $user */
+        /** @var User&UserInterface $user */
         $user = $request->getAttribute(UserInterface::class);
 
         /** @var SystemMessengerInterface|null $messenger */
@@ -66,6 +66,7 @@ final class ProcessManifestUploadMiddleware implements MiddlewareInterface
 
         if (! $file instanceof UploadedFileInterface || $file->getError() !== UPLOAD_ERR_OK) {
             $messenger?->danger('No file was uploaded or the upload failed. Please try again.');
+
             return $handler->handle($request);
         }
 
@@ -98,6 +99,7 @@ final class ProcessManifestUploadMiddleware implements MiddlewareInterface
                     'The CSV contained no importable items. '
                     . 'Check that the file is a DC truck manifest and is not empty.'
                 );
+
                 return $handler->handle($request);
             }
 

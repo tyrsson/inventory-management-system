@@ -15,9 +15,9 @@ use PhpDb\Sql\Ddl\Column\SmallInteger;
 use PhpDb\Sql\Ddl\Column\Varchar;
 use PhpDb\Sql\Ddl\Constraint\ForeignKey;
 use PhpDb\Sql\Ddl\Constraint\PrimaryKey;
-use PhpDb\Sql\Ddl\Index\Index;
 use PhpDb\Sql\Ddl\CreateTable;
 use PhpDb\Sql\Ddl\DropTable;
+use PhpDb\Sql\Ddl\Index\Index;
 use PhpDb\Sql\Literal;
 use PhpDb\Sql\Sql;
 
@@ -83,7 +83,7 @@ final class Migration007Product implements MigrationInterface
         );
 
         $create->addColumn(
-            (new DateTime('removed_at', nullable: true))
+            (new Datetime('removed_at', nullable: true))
                 ->setOptions(['comment' => 'NULL = in active inventory'])
         );
 
@@ -97,7 +97,7 @@ final class Migration007Product implements MigrationInterface
         );
 
         $create->addColumn(
-            new DateTime('created_at', nullable: false, default: new ArgLiteral('CURRENT_TIMESTAMP'))
+            new Datetime('created_at', nullable: false, default: new ArgLiteral('CURRENT_TIMESTAMP'))
         );
 
         $create->addColumn(

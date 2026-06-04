@@ -2,20 +2,21 @@
 
 declare(strict_types=1);
 
-
 namespace Webware\Acl\Admin\Middleware;
 
+use Fig\Http\Message\RequestMethodInterface as HttpMethod;
+use Laminas\Permissions\Acl\Acl;
 use Mezzio\Router\RouteCollectorInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Webware\Acl\AclInterface;
-use Webware\Acl\RuleType;
 use Webware\Acl\AssertionManager;
 use Webware\Acl\Entity\Role;
 use Webware\Acl\PrivilegeInterface;
 use Webware\Acl\Repository\RuleRepository;
+use Webware\Acl\RuleType;
 
 use function array_flip;
 use function array_keys;
@@ -49,11 +50,12 @@ final readonly class BuildAccessControlMiddleware implements MiddlewareInterface
     public function __construct(
         private RuleRepository $ruleRepository,
         private RouteCollectorInterface $routeCollector,
-        private AssertionManager $assertionManager
+        private AssertionManager $assertionManager,
     ) {}
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
+        /** @var Acl&AclInterface $acl */
         $acl      = $request->getAttribute(AclInterface::class);
         $allRules = $this->ruleRepository->fetchAll();
 
@@ -82,14 +84,25 @@ final readonly class BuildAccessControlMiddleware implements MiddlewareInterface
                 continue;
             }
 
-            $methods = $route->getAllowedMethods() ?? ['GET'];
+            $methods = $route->getAllowedMethods() ?? [HttpMethod::METHOD_GET];
 
             if (! $acl->hasResource($name)) {
                 $unprotectedRoutes[$name] = $methods;
+
                 continue;
             }
 
-            $inheritedFrom   = $acl->getResourceParentId($name);
+            $inheritedFrom = null;
+            foreach (array_keys($configAllow + $configDeny) as $roleId) {
+                $ruleResources = array_keys(($configAllow[$roleId] ?? []) + ($configDeny[$roleId] ?? []));
+                foreach ($ruleResources as $ruleResource) {
+                    if ($acl->hasResource($ruleResource) && $acl->inheritsResource($name, $ruleResource)) {
+                        $inheritedFrom = $ruleResource;
+
+                        break 2;
+                    }
+                }
+            }
             $lookupName      = $inheritedFrom ?? $name;
             $rules           = [];
             $rolesOnResource = [];
@@ -99,8 +112,8 @@ final readonly class BuildAccessControlMiddleware implements MiddlewareInterface
             foreach ($configAllow as $roleId => $allowedRoutes) {
                 $normalized = $this->normalizeRouteList($allowedRoutes);
                 if (isset($normalized[$lookupName])) {
-                    $assertions      = array_values(array_unique($normalized[$lookupName]));
-                    $rules[]         = [
+                    $assertions = array_values(array_unique($normalized[$lookupName]));
+                    $rules[]    = [
                         'id'             => ++$syntheticId,
                         'role_id'        => $roleId,
                         'resource_id'    => $name,
@@ -120,7 +133,7 @@ final readonly class BuildAccessControlMiddleware implements MiddlewareInterface
             foreach ($configDeny as $roleId => $deniedRoutes) {
                 $normalized = $this->normalizeRouteList($deniedRoutes);
                 if (isset($normalized[$lookupName])) {
-                    $rules[]         = [
+                    $rules[] = [
                         'id'             => ++$syntheticId,
                         'role_id'        => $roleId,
                         'resource_id'    => $name,
@@ -135,12 +148,13 @@ final readonly class BuildAccessControlMiddleware implements MiddlewareInterface
             }
 
             $derivedPrivileges = array_values(array_unique(array_map(
-                static fn(string $m): string => PrivilegeInterface::METHOD_PRIVILEGE_MAP[$m] ?? PrivilegeInterface::READ,
+                static fn (string $m): string => PrivilegeInterface::METHOD_PRIVILEGE_MAP[$m] ?? PrivilegeInterface::READ,
                 $methods,
             )));
 
             if ($rules === []) {
                 $unprotectedRoutes[$name] = $methods;
+
                 continue;
             }
 
@@ -198,9 +212,9 @@ final readonly class BuildAccessControlMiddleware implements MiddlewareInterface
                 'unprotected' => $unprotectedCount,
                 'protected'   => $protectedCount,
             ],
-            'roles'       => $roles,
-            'roleParents' => $roleParents,
-            'assertions'  => $assertionOptions,
+            'roles'             => $roles,
+            'roleParents'       => $roleParents,
+            'assertions'        => $assertionOptions,
         ];
 
         return $handler->handle($request->withAttribute(self::class, $viewModel));
@@ -213,7 +227,7 @@ final readonly class BuildAccessControlMiddleware implements MiddlewareInterface
      *   Flat:        [0 => 'route.name', 1 => 'route.other']
      *   Associative: ['route.name' => ['AssertionFQCN'], ...]
      *
-     * @param  array<int|string, string|string[]> $list
+     * @param array<int|string, string|string[]> $list
      * @return array<string, string[]>
      */
     private function normalizeRouteList(array $list): array
@@ -223,9 +237,10 @@ final readonly class BuildAccessControlMiddleware implements MiddlewareInterface
             if (is_int($key)) {
                 $result[$value] = [];
             } else {
-                $result[$key] = $value;
+                $result[$key] = $value ?? [];
             }
         }
+
         return $result;
     }
 }

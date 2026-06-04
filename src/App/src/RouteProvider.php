@@ -20,6 +20,7 @@ use App\RequestHandler\PingHandler;
 use Mezzio\MiddlewareFactoryInterface;
 use Mezzio\Router\RouteCollectorInterface;
 use Mezzio\Router\RouteProviderInterface;
+
 final class RouteProvider implements RouteProviderInterface
 {
     public function registerRoutes(

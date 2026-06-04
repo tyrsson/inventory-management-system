@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Webware\Acl\Admin\CommandHandler;
 
 use Override;
+use Throwable;
 use Webware\Acl\Admin\Command\DeleteRoleCommand;
 use Webware\Acl\Repository\RoleRepository;
 use Webware\CommandBus\Command\CommandResult;
@@ -47,7 +48,7 @@ final class DeleteRoleHandler implements CommandHandlerInterface
 
         try {
             $this->roleRepository->delete($roleId);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return new CommandResult($command, CommandStatus::Failure, $e);
         }
 

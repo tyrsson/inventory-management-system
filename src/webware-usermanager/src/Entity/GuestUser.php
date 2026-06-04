@@ -30,9 +30,10 @@ use Webware\UserManager\UserInterface;
 final readonly class GuestUser implements UserInterface
 {
     public const string GUEST_ROLE = 'Guest';
+
     /**
-     * @param string   $identity The user's identity string (email or 'guest').
-     * @param string[] $roles    Role strings; defaults to [self::GUEST_ROLE] if empty.
+     * @param string $identity The user's identity string (email or 'guest').
+     * @param string[] $roles Role strings; defaults to [self::GUEST_ROLE] if empty.
      * @param array<string, mixed> $details Arbitrary details from the session.
      */
     public function __construct(

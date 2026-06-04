@@ -30,7 +30,7 @@ final class Enum extends Column
         array $values,
         bool $nullable = false,
         string|int|float|bool|Literal|null $default = null,
-        array $options = []
+        array $options = [],
     ) {
         $this->values = $values;
 

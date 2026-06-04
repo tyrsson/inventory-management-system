@@ -20,10 +20,10 @@ use PhpDb\Sql\Insert as BaseInsert;
  */
 final class Insert extends BaseInsert
 {
-    /** @var string[]|array[] */
+    /** @var array[]|string[] */
     protected array $specifications = [
-        self::SPECIFICATION_INSERT =>
-            'INSERT INTO %1$s (%2$s) VALUES (%3$s)'
+        self::SPECIFICATION_INSERT
+                                   => 'INSERT INTO %1$s (%2$s) VALUES (%3$s)'
             . ' ON DUPLICATE KEY UPDATE'
             . ' payload = VALUES(payload)'
             . ', expires_at = VALUES(expires_at)'

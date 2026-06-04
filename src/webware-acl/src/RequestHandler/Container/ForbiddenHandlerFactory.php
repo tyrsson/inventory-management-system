@@ -33,11 +33,11 @@ final class ForbiddenHandlerFactory
     public function __invoke(ContainerInterface $container): ForbiddenHandler
     {
         $config = $container->get('config');
-        $acl    = $config[AclInterface::class] ?? [];
+        $acl    = $config[AclInterface::class]  ?? [];
         $user   = $config[UserInterface::class] ?? [];
 
         return new ForbiddenHandler(
-            loginPath:         (string) ($user['login_path']          ?? '/login'),
+            loginPath: (string) ($user['login_path'] ?? '/login'),
             forbiddenRedirect: ($acl['forbidden_redirect'] ?? '/') === '' ? null : ($acl['forbidden_redirect'] ?? '/'),
             forbiddenTemplate: ($acl['forbidden_template'] ?? null) ?: null,
         );

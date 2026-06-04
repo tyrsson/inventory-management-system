@@ -16,13 +16,10 @@ namespace Webware\Acl\Exception;
 
 use RuntimeException as SplRuntimeException;
 
-
-use function sprintf;
-
 final class RuntimeException extends SplRuntimeException implements ExceptionInterface
 {
     public static function forAclAddResource(
-        ?ExceptionInterface $previous = null
+        ?ExceptionInterface $previous = null,
     ): self {
         return new self(
             'Direct resource registration is not supported; resources are derived from the acl_rule table.',

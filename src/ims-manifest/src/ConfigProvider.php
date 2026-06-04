@@ -45,16 +45,16 @@ final readonly class ConfigProvider
                 Repository\ManifestRepositoryInterface::class => Repository\ManifestRepository::class,
             ],
             'factories' => [
-                Repository\ManifestRepository::class                                              => Repository\ManifestRepositoryFactory::class,
-                RequestHandler\ManifestListHandler::class                                         => RequestHandler\Container\ManifestListHandlerFactory::class,
-                RequestHandler\ManifestDetailHandler::class                                       => RequestHandler\Container\ManifestDetailHandlerFactory::class,
-                RequestHandler\ManifestUploadHandler::class                                       => RequestHandler\Container\ManifestUploadHandlerFactory::class,
-                Middleware\ProcessManifestUploadMiddleware::class                                  => Middleware\Container\ProcessManifestUploadMiddlewareFactory::class,
-                Csv\ManifestCsvParser::class                                                      => Csv\ManifestCsvParserFactory::class,
-                RouteProvider::class                                                               => Container\RouteProviderFactory::class,
-                Listener\RegisterManifestWidgetListener::class                                    => Container\RegisterManifestWidgetListenerFactory::class,
-                CommandHandler\UploadManifestHandler::class                                       => CommandHandler\Container\UploadManifestHandlerFactory::class,
-                ManifestUrl::class                                                                 => ManifestUrlFactory::class,
+                Repository\ManifestRepository::class              => Repository\ManifestRepositoryFactory::class,
+                RequestHandler\ManifestListHandler::class         => RequestHandler\Container\ManifestListHandlerFactory::class,
+                RequestHandler\ManifestDetailHandler::class       => RequestHandler\Container\ManifestDetailHandlerFactory::class,
+                RequestHandler\ManifestUploadHandler::class       => RequestHandler\Container\ManifestUploadHandlerFactory::class,
+                Middleware\ProcessManifestUploadMiddleware::class => Middleware\Container\ProcessManifestUploadMiddlewareFactory::class,
+                Csv\ManifestCsvParser::class                      => Csv\ManifestCsvParserFactory::class,
+                RouteProvider::class                              => Container\RouteProviderFactory::class,
+                Listener\RegisterManifestWidgetListener::class    => Container\RegisterManifestWidgetListenerFactory::class,
+                CommandHandler\UploadManifestHandler::class       => CommandHandler\Container\UploadManifestHandlerFactory::class,
+                ManifestUrl::class                                => ManifestUrlFactory::class,
             ],
         ];
     }
@@ -106,7 +106,7 @@ final readonly class ConfigProvider
                 // TODO: 'admin.manifest' is a legacy non-route resource ID used by ManifestDashboardWidget.
                 // Replace with a proper admin route name (e.g. ims.manifest.admin.manager) once the
                 // manifest module is refactored to follow the manager route pattern.
-                'admin.manifest' => true,
+                'admin.manifest'                                        => true,
             ],
             'allow'     => [],
             // Allow rules are managed via the admin UI (acl.global.php).

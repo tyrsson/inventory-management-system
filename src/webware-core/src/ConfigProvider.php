@@ -28,7 +28,9 @@ final class ConfigProvider
         return [
             'aliases'    => [],
             'invokables' => [],
-            'factories'  => [],
+            'factories'  => [
+                Middleware\AttachCoreServicesMiddleware::class => Container\AttachCoreServicesMiddlewareFactory::class,
+            ],
         ];
     }
 }

@@ -38,7 +38,7 @@ final class RuleRepository
                 'type'        => $row['type'],
                 'role_id'     => $row['role_id'],
                 'resource_id' => $row['resource_id'],
-                'assertions'  => json_decode($row['assertions'], true) ?? [],
+                'assertions'  => $row['assertions'] === null ? null : json_decode($row['assertions'], true),
             ];
         }
 
@@ -97,8 +97,12 @@ final class RuleRepository
      *
      * @param string[] $assertions
      */
-    public function save(string $type, string $roleId, string $resourceId, array|null $assertions): bool
+    public function save(string $type, string $roleId, string $resourceId, ?array $assertions): bool
     {
+        if ($assertions === [] || $assertions === [0 => '']) {
+            $assertions = null;
+        }
+
         $sql    = $this->gateway->getSql();
         $exists = $sql->select()
             ->columns(['id'])
@@ -144,6 +148,7 @@ final class RuleRepository
             ->set(['type' => $newType])
             ->where(['role_id' => $roleId, 'resource_id' => $resourceId]);
         $result = $sql->prepareStatementForSqlObject($update)->execute();
+
         return $result->getAffectedRows() > 0;
     }
 
@@ -155,6 +160,7 @@ final class RuleRepository
         $sql    = $this->gateway->getSql();
         $delete = $sql->delete()->where(['role_id' => $roleId, 'resource_id' => $resourceId]);
         $result = $sql->prepareStatementForSqlObject($delete)->execute();
+
         return $result->getAffectedRows() > 0;
     }
 }

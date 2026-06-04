@@ -28,6 +28,7 @@ final class ConfigSaveListener
             $configWriter->writeConfig($event->targetFile);
         } catch (FileWriterException $e) {
             $event->stopPropagation();
+
             throw $e;
         }
 

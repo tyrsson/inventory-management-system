@@ -14,12 +14,12 @@ declare(strict_types=1);
 
 namespace Webware\UserManager\Container;
 
-use Psr\Container\ContainerInterface;
-use Webware\UserManager\UserInterface;
 use DateTimeImmutable;
+use Psr\Container\ContainerInterface;
 use Webmozart\Assert\Assert;
 use Webware\UserManager\Entity\GuestUser;
 use Webware\UserManager\Entity\User;
+use Webware\UserManager\UserInterface;
 
 /**
  * DI factory for the UserInterface::class callable service.
@@ -44,20 +44,20 @@ final class UserFactory
 
             if (isset($details['id'], $details['store_id'], $details['first_name'])) {
                 return new User(
-                    id:                $details['id'],
-                    storeId:           $details['store_id'],
-                    firstName:         $details['first_name'],
-                    lastName:          $details['last_name'],
-                    email:             $identity,
-                    passwordHash:      $details['password_hash'],
-                    active:            $details['active'],
-                    createdAt:         new DateTimeImmutable($details['created_at']),
+                    id: $details['id'],
+                    storeId: $details['store_id'],
+                    firstName: $details['first_name'],
+                    lastName: $details['last_name'],
+                    email: $identity,
+                    passwordHash: $details['password_hash'],
+                    active: $details['active'],
+                    createdAt: new DateTimeImmutable($details['created_at']),
                     verificationToken: $details['verification_token'] ?? null,
-                    tokenCreatedAt:    isset($details['token_created_at'])
+                    tokenCreatedAt: isset($details['token_created_at'])
                         ? new DateTimeImmutable($details['token_created_at'])
                         : null,
-                    roles:             $roles,
-                    details:           $details,
+                    roles: $roles,
+                    details: $details,
                 );
             }
 

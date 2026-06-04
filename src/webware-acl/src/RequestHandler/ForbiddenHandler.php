@@ -13,7 +13,7 @@ use Webware\UserManager\UserInterface;
 final readonly class ForbiddenHandler implements ForbiddenHandlerInterface
 {
     public function __construct(
-        private string  $loginPath         = '/login',
+        private string $loginPath = '/login',
         private ?string $forbiddenRedirect = '/',
         private ?string $forbiddenTemplate = null,
     ) {}

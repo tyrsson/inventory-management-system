@@ -14,19 +14,20 @@ declare(strict_types=1);
 
 namespace Webware\UserManager\CommandHandler;
 
+use DateTimeImmutable;
 use Override;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Ramsey\Uuid\Uuid;
 use Throwable;
-use Webware\UserManager\Command\SaveUserCommand;
-use Webware\UserManager\Event\SendVerificationEmailEvent;
-use Webware\UserManager\Middleware\RegistrationMiddleware;
-use Webware\UserManager\Repository\UserRepositoryInterface;
 use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandResultInterface;
 use Webware\CommandBus\Command\CommandStatus;
 use Webware\CommandBus\CommandHandlerInterface;
 use Webware\CommandBus\CommandInterface;
+use Webware\UserManager\Command\SaveUserCommand;
+use Webware\UserManager\Event\SendVerificationEmailEvent;
+use Webware\UserManager\Middleware\RegistrationMiddleware;
+use Webware\UserManager\Repository\UserRepositoryInterface;
 
 use function json_encode;
 use function password_hash;
@@ -46,7 +47,7 @@ final class SaveUserHandler implements CommandHandlerInterface
         try {
             $roleId = $this->users->findRoleIdByName(RegistrationMiddleware::DEFAULT_ROLE);
             $token  = Uuid::uuid7()->toString();
-            $now   = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
+            $now    = (new DateTimeImmutable())->format('Y-m-d H:i:s');
 
             $id = $this->users->insert([
                 'store_id'           => $command->storeId,

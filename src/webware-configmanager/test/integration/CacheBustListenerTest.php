@@ -9,10 +9,10 @@ use PHPUnit\Framework\TestCase;
 use Webware\ConfigManager\Event\ConfigBustCacheEvent;
 use Webware\ConfigManager\Listener\CacheBustListener;
 
+use function file_exists;
 use function file_put_contents;
 use function sys_get_temp_dir;
 use function unlink;
-use function file_exists;
 
 #[CoversClass(CacheBustListener::class)]
 final class CacheBustListenerTest extends TestCase

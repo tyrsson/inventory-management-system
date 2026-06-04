@@ -15,7 +15,7 @@ final class DashboardMiddlewareFactory
     {
         return new DashboardMiddleware(
             dispatcher: $container->get(EventDispatcherInterface::class),
-            acl:        $container->get(AclInterface::class),
+            acl: $container->get(AclInterface::class),
         );
     }
 }

@@ -13,25 +13,6 @@ use Webware\Admin\Widget\WidgetInterface;
 #[CoversClass(RegisterWidgetEvent::class)]
 final class RegisterWidgetEventTest extends TestCase
 {
-    private function makeWidget(int $order, string $resourceId = 'admin.test'): WidgetInterface
-    {
-        return new class ($order, $resourceId) implements WidgetInterface {
-            public string $title    { get => 'Test'; }
-            public string $template { get => 'test::widget'; }
-            public string $privilege { get => 'read'; }
-
-            public function __construct(
-                public int    $order,
-                public string $resourceId,
-            ) {}
-
-            public function getResourceId(): string
-            {
-                return $this->resourceId;
-            }
-        };
-    }
-
     #[Test]
     public function getIteratorReturnsSortedByOrder(): void
     {
@@ -42,7 +23,7 @@ final class RegisterWidgetEventTest extends TestCase
 
         $widgets = iterator_to_array($event->getIterator(), false);
 
-        self::assertSame([10, 20, 30], array_map(fn($w) => $w->order, $widgets));
+        self::assertSame([10, 20, 30], array_map(fn ($w) => $w->order, $widgets));
     }
 
     #[Test]
@@ -65,5 +46,26 @@ final class RegisterWidgetEventTest extends TestCase
         self::assertNotSame($a, $b);
         self::assertCount(1, $a);
         self::assertCount(1, $b);
+    }
+
+    private function makeWidget(int $order, string $resourceId = 'admin.test'): WidgetInterface
+    {
+        return new class($order, $resourceId) implements WidgetInterface {
+            public string $title    { get => 'Test'; }
+
+            public string $template { get => 'test::widget'; }
+
+            public string $privilege { get => 'read'; }
+
+            public function __construct(
+                public int $order,
+                public string $resourceId,
+            ) {}
+
+            public function getResourceId(): string
+            {
+                return $this->resourceId;
+            }
+        };
     }
 }

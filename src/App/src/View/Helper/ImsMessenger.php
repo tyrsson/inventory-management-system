@@ -6,7 +6,6 @@ namespace App\View\Helper;
 
 use Axleus\Message\MessageLevel;
 use Axleus\Message\SystemMessenger;
-use Axleus\Message\SystemMessengerInterface;
 use Laminas\View\Helper\StatefulHelperInterface;
 
 use function sprintf;
@@ -24,22 +23,6 @@ final class ImsMessenger implements StatefulHelperInterface
 
     private ?SystemMessenger $messenger = null;
 
-    public function setMessenger(SystemMessenger $messenger): void
-    {
-        $this->messenger = $messenger;
-    }
-
-    public function getMessenger(): ?SystemMessenger
-    {
-        return $this->messenger;
-    }
-
-    public function resetState(): void
-    {
-        $this->messenger?->clearMessages();
-        $this->messenger = null;
-    }
-
     public function __invoke(): string
     {
         if ($this->messenger === null || ! $this->messenger->hasMessages()) {
@@ -55,5 +38,21 @@ final class ImsMessenger implements StatefulHelperInterface
         }
 
         return '<div class="toast-container position-fixed bottom-0 end-0 p-4">' . $toasts . '</div>';
+    }
+
+    public function setMessenger(SystemMessenger $messenger): void
+    {
+        $this->messenger = $messenger;
+    }
+
+    public function getMessenger(): ?SystemMessenger
+    {
+        return $this->messenger;
+    }
+
+    public function resetState(): void
+    {
+        $this->messenger?->clearMessages();
+        $this->messenger = null;
     }
 }

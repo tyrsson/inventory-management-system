@@ -64,6 +64,10 @@ $this->inlineScript()
             <?= $this->body ?>
         </main>
         <div id="systemMessage" class="toast-container position-fixed bottom-0 end-0 p-4" aria-live="polite" aria-atomic="false"></div>
+        <!-- ── Persistent shared modal shell (outside <main> — never torn by HTMX swaps) ── -->
+        <div class="modal fade" id="sharedModal" tabindex="-1" aria-hidden="true">
+            <div id="sharedModalDialog"></div>
+        </div>
         <?= $this->inlineScript() ?>
     </body>
 </html>

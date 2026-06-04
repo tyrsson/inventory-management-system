@@ -14,7 +14,6 @@ declare(strict_types=1);
 
 namespace Webware\UserManager\Middleware;
 
-use Axleus\Message\MessageLevel;
 use Axleus\Message\SystemMessengerInterface;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Mezzio\Template\TemplateRendererInterface;
@@ -23,9 +22,9 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Webware\UserManager\Command\SaveUserCommand;
 use Webware\CommandBus\Command\CommandStatus;
 use Webware\CommandBus\CommandBusInterface;
+use Webware\UserManager\Command\SaveUserCommand;
 
 final class RegistrationMiddleware implements MiddlewareInterface
 {
@@ -61,10 +60,10 @@ final class RegistrationMiddleware implements MiddlewareInterface
 
         $command = new SaveUserCommand(
             firstName: (string) $body['firstName'],
-            lastName:  (string) $body['lastName'],
-            email:     (string) $body['email'],
-            password:  (string) $body['password'],
-            storeId:   (int)    $body['storeId'],
+            lastName: (string) $body['lastName'],
+            email: (string) $body['email'],
+            password: (string) $body['password'],
+            storeId: (int) $body['storeId'],
         );
 
         $result = $this->commandBus->handle($command);

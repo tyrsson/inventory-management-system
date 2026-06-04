@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Ims\Store\User;
 
 use Ims\Store\Acl\StoreProprietaryInterface;
@@ -14,7 +13,4 @@ use Webware\UserManager\UserInterface;
  * free of any ims-store dependency while allowing the StoreOwnedResourceAssertion
  * to compare store ownership on both the role and resource sides.
  */
-interface StoreUserInterface extends
-    StoreProprietaryInterface,
-    UserInterface
-{}
+interface StoreUserInterface extends StoreProprietaryInterface, UserInterface {}

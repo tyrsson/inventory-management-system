@@ -12,6 +12,7 @@ final readonly class AssertionManagerFactory
     public function __invoke(ContainerInterface $container): AssertionManager
     {
         $config = Configuration::getAssertionManagerConfig($container, self::class);
-        return new AssertionManager($container,$config);
+
+        return new AssertionManager($container, $config);
     }
 }

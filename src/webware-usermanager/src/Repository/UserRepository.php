@@ -17,13 +17,12 @@ namespace Webware\UserManager\Repository;
 use Axleus\Log\Event\LogEvent;
 use Axleus\Log\LogChannel;
 use DateTimeImmutable;
-use Webware\UserManager\UserInterface;
 use Monolog\Level;
 use PhpDb\Adapter\AdapterInterface;
-use PhpDb\Sql\Sql;
 use PhpDb\TableGateway\TableGateway;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Webware\UserManager\Entity\User;
+use Webware\UserManager\UserInterface;
 
 use function password_verify;
 

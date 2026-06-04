@@ -19,7 +19,7 @@ use Webware\UserManager\Event\SendVerificationEmailEvent;
 
 final class SendVerificationEmailListener
 {
-        public function __construct(
+    public function __construct(
         private readonly MailerInterface $mailer,
         private readonly string $fromEmail,
         private readonly string $fromName,

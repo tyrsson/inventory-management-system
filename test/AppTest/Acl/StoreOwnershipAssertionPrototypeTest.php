@@ -17,7 +17,6 @@ namespace AppTest\Acl;
 use Laminas\Permissions\Acl\Acl;
 use Laminas\Permissions\Acl\Assertion\AssertionAggregate;
 use Laminas\Permissions\Acl\Assertion\AssertionInterface;
-use Webware\Acl\Assertion\OwnershipAssertion;
 use Laminas\Permissions\Acl\ProprietaryInterface;
 use Laminas\Permissions\Acl\Resource\GenericResource;
 use Laminas\Permissions\Acl\Resource\ResourceInterface;
@@ -26,6 +25,7 @@ use Laminas\Permissions\Acl\Role\RoleInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Webware\Acl\Assertion\OwnershipAssertion;
 
 /**
  * Prototype integration test — verifies that Laminas ACL + AssertionAggregate
@@ -65,10 +65,12 @@ final class StoreOwnershipAssertionPrototypeTest extends TestCase
 
     // ── User profile resources ───────────────────────────────────────────────
     private ResourceInterface&ProprietaryInterface $ownProfile;
+
     private ResourceInterface&ProprietaryInterface $otherProfile;
 
     // ── Manifest resources ───────────────────────────────────────────────────
     private ResourceInterface&ProprietaryInterface $ownManifest;
+
     private ResourceInterface&ProprietaryInterface $foreignManifest;
 
     protected function setUp(): void
@@ -88,16 +90,21 @@ final class StoreOwnershipAssertionPrototypeTest extends TestCase
         // ── Member user: userId=1, storeId=42 ────────────────────────────────
         // getOwnerId() returns userId (PK) — used for profile ownership.
         // getDetail('store_id') returns storeId — used for store-scope assertion.
-        $this->memberUser = new class (1, 42) implements RoleInterface, ProprietaryInterface
-        {
+        $this->memberUser = new class(1, 42) implements RoleInterface, ProprietaryInterface {
             public function __construct(
                 private readonly int $userId,
                 private readonly int $storeId,
             ) {}
 
-            public function getRoleId(): string { return 'member'; }
+            public function getRoleId(): string
+            {
+                return 'member';
+            }
 
-            public function getOwnerId(): int { return $this->userId; }
+            public function getOwnerId(): int
+            {
+                return $this->userId;
+            }
 
             public function getDetail(string $name, mixed $default = null): mixed
             {
@@ -109,16 +116,21 @@ final class StoreOwnershipAssertionPrototypeTest extends TestCase
         };
 
         // ── Other user: userId=2, storeId=99 ─────────────────────────────────
-        $this->otherUser = new class (2, 99) implements RoleInterface, ProprietaryInterface
-        {
+        $this->otherUser = new class(2, 99) implements RoleInterface, ProprietaryInterface {
             public function __construct(
                 private readonly int $userId,
                 private readonly int $storeId,
             ) {}
 
-            public function getRoleId(): string { return 'member'; }
+            public function getRoleId(): string
+            {
+                return 'member';
+            }
 
-            public function getOwnerId(): int { return $this->userId; }
+            public function getOwnerId(): int
+            {
+                return $this->userId;
+            }
 
             public function getDetail(string $name, mixed $default = null): mixed
             {
@@ -130,43 +142,78 @@ final class StoreOwnershipAssertionPrototypeTest extends TestCase
         };
 
         // ── Own profile: owned by userId=1 ───────────────────────────────────
-        $this->ownProfile = new class (1) implements ResourceInterface, ProprietaryInterface
-        {
+        $this->ownProfile = new class(1) implements ResourceInterface, ProprietaryInterface {
             public function __construct(private readonly int $ownerId) {}
-            public function getResourceId(): string { return 'user.profile'; }
-            public function getOwnerId(): int { return $this->ownerId; }
+
+            public function getResourceId(): string
+            {
+                return 'user.profile';
+            }
+
+            public function getOwnerId(): int
+            {
+                return $this->ownerId;
+            }
         };
 
         // ── Other user's profile: owned by userId=2 ──────────────────────────
-        $this->otherProfile = new class (2) implements ResourceInterface, ProprietaryInterface
-        {
+        $this->otherProfile = new class(2) implements ResourceInterface, ProprietaryInterface {
             public function __construct(private readonly int $ownerId) {}
-            public function getResourceId(): string { return 'user.profile'; }
-            public function getOwnerId(): int { return $this->ownerId; }
+
+            public function getResourceId(): string
+            {
+                return 'user.profile';
+            }
+
+            public function getOwnerId(): int
+            {
+                return $this->ownerId;
+            }
         };
 
         // ── Own manifest: owned by storeId=42 ────────────────────────────────
-        $this->ownManifest = new class (42) implements ResourceInterface, ProprietaryInterface
-        {
+        $this->ownManifest = new class(42) implements ResourceInterface, ProprietaryInterface {
             public function __construct(private readonly int $storeId) {}
-            public function getResourceId(): string { return 'store.manifest'; }
-            public function getOwnerId(): int { return $this->storeId; }
+
+            public function getResourceId(): string
+            {
+                return 'store.manifest';
+            }
+
+            public function getOwnerId(): int
+            {
+                return $this->storeId;
+            }
         };
 
         // ── Foreign manifest: owned by storeId=99 ────────────────────────────
-        $this->foreignManifest = new class (99) implements ResourceInterface, ProprietaryInterface
-        {
+        $this->foreignManifest = new class(99) implements ResourceInterface, ProprietaryInterface {
             public function __construct(private readonly int $storeId) {}
-            public function getResourceId(): string { return 'store.manifest'; }
-            public function getOwnerId(): int { return $this->storeId; }
+
+            public function getResourceId(): string
+            {
+                return 'store.manifest';
+            }
+
+            public function getOwnerId(): int
+            {
+                return $this->storeId;
+            }
         };
 
         // ── Warehouse user: roleId='Warehouse', storeId=42 ───────────────────
-        $this->warehouseUser = new class (42) implements RoleInterface, ProprietaryInterface
-        {
+        $this->warehouseUser = new class(42) implements RoleInterface, ProprietaryInterface {
             public function __construct(private readonly int $storeId) {}
-            public function getRoleId(): string { return 'Warehouse'; }
-            public function getOwnerId(): int { return $this->storeId; }
+
+            public function getRoleId(): string
+            {
+                return 'Warehouse';
+            }
+
+            public function getOwnerId(): int
+            {
+                return $this->storeId;
+            }
 
             public function getDetail(string $name, mixed $default = null): mixed
             {
@@ -178,11 +225,18 @@ final class StoreOwnershipAssertionPrototypeTest extends TestCase
         };
 
         // ── Warehouse Supervisor user: roleId='Warehouse Supervisor', storeId=42
-        $this->warehouseSupervisorUser = new class (42) implements RoleInterface, ProprietaryInterface
-        {
+        $this->warehouseSupervisorUser = new class(42) implements RoleInterface, ProprietaryInterface {
             public function __construct(private readonly int $storeId) {}
-            public function getRoleId(): string { return 'Warehouse Supervisor'; }
-            public function getOwnerId(): int { return $this->storeId; }
+
+            public function getRoleId(): string
+            {
+                return 'Warehouse Supervisor';
+            }
+
+            public function getOwnerId(): int
+            {
+                return $this->storeId;
+            }
 
             public function getDetail(string $name, mixed $default = null): mixed
             {
@@ -194,11 +248,18 @@ final class StoreOwnershipAssertionPrototypeTest extends TestCase
         };
 
         // ── Warehouse Supervisor user: foreign store (storeId=99) ─────────────
-        $this->warehouseSupervisorForeignUser = new class (99) implements RoleInterface, ProprietaryInterface
-        {
+        $this->warehouseSupervisorForeignUser = new class(99) implements RoleInterface, ProprietaryInterface {
             public function __construct(private readonly int $storeId) {}
-            public function getRoleId(): string { return 'Warehouse Supervisor'; }
-            public function getOwnerId(): int { return $this->storeId; }
+
+            public function getRoleId(): string
+            {
+                return 'Warehouse Supervisor';
+            }
+
+            public function getOwnerId(): int
+            {
+                return $this->storeId;
+            }
 
             public function getDetail(string $name, mixed $default = null): mixed
             {
@@ -211,11 +272,18 @@ final class StoreOwnershipAssertionPrototypeTest extends TestCase
 
         // ── Administrator user: roleId='Administrator', storeId=99 (foreign) ─
         // Expected to bypass assertion via explicit unrestricted allow.
-        $this->adminUser = new class (99) implements RoleInterface, ProprietaryInterface
-        {
+        $this->adminUser = new class(99) implements RoleInterface, ProprietaryInterface {
             public function __construct(private readonly int $storeId) {}
-            public function getRoleId(): string { return 'Administrator'; }
-            public function getOwnerId(): int { return $this->storeId; }
+
+            public function getRoleId(): string
+            {
+                return 'Administrator';
+            }
+
+            public function getOwnerId(): int
+            {
+                return $this->storeId;
+            }
 
             public function getDetail(string $name, mixed $default = null): mixed
             {
@@ -225,50 +293,6 @@ final class StoreOwnershipAssertionPrototypeTest extends TestCase
                 };
             }
         };
-    }
-
-    /**
-     * Profile ownership: Webware\Acl\Assertion\OwnershipAssertion — fail-closed.
-     * Denies if either side lacks ProprietaryInterface or resource owner is null.
-     */
-    private function buildProfileOwnershipAssertion(): OwnershipAssertion
-    {
-        return new OwnershipAssertion();
-    }
-
-    /**
-     * Store ownership: compares user's store_id (via getDetail) against resource's storeId (getOwnerId).
-     * This will become StoreOwnershipAssertion in ims-store.
-     */
-    private function buildStoreOwnershipAssertion(): AssertionInterface
-    {
-        return new class implements AssertionInterface
-        {
-            public function assert(
-                Acl $acl,
-                ?RoleInterface $role = null,
-                ?ResourceInterface $resource = null,
-                $privilege = null,
-            ): bool {
-                if (! $resource instanceof ProprietaryInterface) {
-                    return false;
-                }
-
-                if (! method_exists($role, 'getDetail')) {
-                    return false;
-                }
-
-                return (int) $role->getDetail('store_id') === (int) $resource->getOwnerId();
-            }
-        };
-    }
-
-    private function buildAggregate(AssertionInterface $assertion): AssertionAggregate
-    {
-        $aggregate = new AssertionAggregate();
-        $aggregate->addAssertion($assertion);
-
-        return $aggregate;
     }
 
     // ── Profile ownership tests ───────────────────────────────────────────────
@@ -413,5 +437,48 @@ final class StoreOwnershipAssertionPrototypeTest extends TestCase
             $this->acl->isAllowed($this->adminUser, $this->ownManifest, 'save'),
             'Administrator with explicit unrestricted allow must bypass inherited assertion',
         );
+    }
+
+    /**
+     * Profile ownership: Webware\Acl\Assertion\OwnershipAssertion — fail-closed.
+     * Denies if either side lacks ProprietaryInterface or resource owner is null.
+     */
+    private function buildProfileOwnershipAssertion(): OwnershipAssertion
+    {
+        return new OwnershipAssertion();
+    }
+
+    /**
+     * Store ownership: compares user's store_id (via getDetail) against resource's storeId (getOwnerId).
+     * This will become StoreOwnershipAssertion in ims-store.
+     */
+    private function buildStoreOwnershipAssertion(): AssertionInterface
+    {
+        return new class() implements AssertionInterface {
+            public function assert(
+                Acl $acl,
+                ?RoleInterface $role = null,
+                ?ResourceInterface $resource = null,
+                $privilege = null,
+            ): bool {
+                if (! $resource instanceof ProprietaryInterface) {
+                    return false;
+                }
+
+                if (! method_exists($role, 'getDetail')) {
+                    return false;
+                }
+
+                return (int) $role->getDetail('store_id') === (int) $resource->getOwnerId();
+            }
+        };
+    }
+
+    private function buildAggregate(AssertionInterface $assertion): AssertionAggregate
+    {
+        $aggregate = new AssertionAggregate();
+        $aggregate->addAssertion($assertion);
+
+        return $aggregate;
     }
 }

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Webware\Navigation\Middleware;
 
 use Mezzio\Router\RouteResult;

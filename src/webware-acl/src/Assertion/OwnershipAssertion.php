@@ -35,7 +35,7 @@ use Override;
  */
 final class OwnershipAssertion implements AssertionInterface
 {
-    public function __invoke(): static 
+    public function __invoke(): static
     {
         return new self();
     }

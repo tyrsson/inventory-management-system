@@ -29,10 +29,9 @@ interface EventInterface
     public function getParam(string $name, mixed $default = null): mixed;
 
     public function setParams(array $params): void;
-    
+
     /**
      * @return array<array-key, mixed>
      */
     public function getParams(): array;
-
 }
