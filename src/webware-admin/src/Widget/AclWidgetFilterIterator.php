@@ -24,7 +24,7 @@ final class AclWidgetFilterIterator extends FilterIterator
     public function __construct(
         Iterator $iterator,
         private readonly AclInterface&Acl $acl,
-        private readonly UserInterface|null $user,
+        private readonly ?UserInterface $user,
     ) {
         parent::__construct($iterator);
     }
@@ -36,7 +36,7 @@ final class AclWidgetFilterIterator extends FilterIterator
         if (! $widget instanceof WidgetInterface) {
             return false;
         }
-        $check = $this->acl->isAllowed($this->user, $widget->resourceId, $widget->privilege);
-        return $check;
+
+        return $this->acl->isAllowed($this->user, $widget->resourceId, $widget->privilege);
     }
 }

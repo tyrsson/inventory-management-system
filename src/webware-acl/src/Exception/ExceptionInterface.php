@@ -14,6 +14,4 @@ declare(strict_types=1);
 
 namespace Webware\Acl\Exception;
 
-interface ExceptionInterface
-{
-}
+interface ExceptionInterface {}

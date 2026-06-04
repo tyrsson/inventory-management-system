@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Webware\Acl\Admin\CommandHandler;
 
 use Override;
+use Throwable;
 use Webware\Acl\Admin\Command\SaveRuleCommand;
 use Webware\Acl\Repository\RuleRepository;
 use Webware\CommandBus\Command\CommandResult;
@@ -43,7 +44,7 @@ final class SaveRuleHandler implements CommandHandlerInterface
                 $command->resourceId,
                 $command->assertions,
             );
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return new CommandResult($command, CommandStatus::Failure, $e);
         }
 

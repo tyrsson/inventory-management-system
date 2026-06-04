@@ -2,13 +2,12 @@
 
 declare(strict_types=1);
 
-
 namespace Webware\Acl\Admin\RequestHandler\Container;
 
 use Mezzio\Template\TemplateRendererInterface;
 use Psr\Container\ContainerInterface;
-use Webware\Acl\Admin\RequestHandler\ResourceListHandler;
 use Webware\Acl\AclInterface;
+use Webware\Acl\Admin\RequestHandler\ResourceListHandler;
 
 final class ResourceListHandlerFactory
 {

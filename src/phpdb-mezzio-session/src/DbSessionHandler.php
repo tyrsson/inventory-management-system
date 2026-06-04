@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-
 namespace PhpDb\Session;
 
+use Override;
 use PhpDb\Adapter\AdapterInterface;
 use PhpDb\Session\Sql\Insert;
 use PhpDb\Sql\Delete;
@@ -24,19 +24,19 @@ final class DbSessionHandler implements SessionHandlerInterface
         $this->sql = new Sql($adapter, 'session');
     }
 
-    #[\Override]
+    #[Override]
     public function open(string $savePath, string $name): bool
     {
         return true;
     }
 
-    #[\Override]
+    #[Override]
     public function close(): bool
     {
         return true;
     }
 
-    #[\Override]
+    #[Override]
     public function read(string $id): string|false
     {
         $select = $this->sql->select()
@@ -50,7 +50,7 @@ final class DbSessionHandler implements SessionHandlerInterface
         return is_array($row) ? $row['payload'] : false;
     }
 
-    #[\Override]
+    #[Override]
     public function write(string $id, string $data): bool
     {
         $maxLifetime = (int) ini_get('session.gc_maxlifetime');
@@ -70,7 +70,7 @@ final class DbSessionHandler implements SessionHandlerInterface
         return true;
     }
 
-    #[\Override]
+    #[Override]
     public function destroy(string $id): bool
     {
         /** @var Delete $delete */
@@ -81,7 +81,7 @@ final class DbSessionHandler implements SessionHandlerInterface
         return true;
     }
 
-    #[\Override]
+    #[Override]
     public function gc(int $maxLifetime): int|false
     {
         $cutoff = date('Y-m-d H:i:s');

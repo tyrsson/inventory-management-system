@@ -17,6 +17,9 @@ $cacheConfig = [
 ];
 
 $aggregator = new ConfigAggregator([
+    \Laminas\InputFilter\ConfigProvider::class,
+    \Laminas\Validator\ConfigProvider::class,
+    \Laminas\Filter\ConfigProvider::class,
     \Axleus\Message\ConfigProvider::class,
     \Mezzio\Session\ConfigProvider::class,
     \PhpDb\Session\ConfigProvider::class,
@@ -44,6 +47,7 @@ $aggregator = new ConfigAggregator([
             return [];
         },
     // Module config
+    Webware\Core\ConfigProvider::class,
     Webware\ConfigManager\ConfigProvider::class,
     Webware\Event\ConfigProvider::class,
     Webware\UserManager\ConfigProvider::class,

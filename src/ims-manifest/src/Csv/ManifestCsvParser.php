@@ -47,10 +47,9 @@ final class ManifestCsvParser
     /**
      * Parse a DC truck manifest CSV file.
      *
-     * @param string                  $filePath             Absolute path to the uploaded CSV.
-     * @param DateTimeImmutable|null  $receivedDateOverride When provided, overrides the date
-     *                                                      derived from the consignment string.
-     *
+     * @param string $filePath Absolute path to the uploaded CSV.
+     * @param DateTimeImmutable|null $receivedDateOverride When provided, overrides the date
+     *                                                     derived from the consignment string.
      * @throws RuntimeException when the file cannot be read or the consignment header is missing.
      */
     public function parse(string $filePath, ?DateTimeImmutable $receivedDateOverride = null): ParsedManifest
@@ -95,12 +94,14 @@ final class ManifestCsvParser
             if ($rowIndex === 1) {
                 // "Consignment:  207-0427, Sort Order:  Sku ID"
                 $this->parseConsignmentRow($row, $storeId, $reference, $receivedDate);
+
                 continue;
             }
 
             // First non-blank non-consignment row is the header row
             if ($headers === null) {
                 $headers = $row;
+
                 continue;
             }
 
@@ -115,10 +116,7 @@ final class ManifestCsvParser
         }
 
         if ($storeId === 0 || $reference === '') {
-            throw new RuntimeException(
-                'Could not parse consignment header from CSV. '
-                . 'Expected a row matching "Consignment:  {store}-{MMDD}".'
-            );
+            throw new RuntimeException('Could not parse consignment header from CSV. Expected a row matching "Consignment:  {store}-{MMDD}".');
         }
 
         $date = $receivedDateOverride ?? $receivedDate ?? new DateTimeImmutable();
@@ -131,7 +129,7 @@ final class ManifestCsvParser
      *
      * Format: "Consignment:  207-0427"  →  store=207, ref="207-0427", date=current-year/04/27
      *
-     * @param string[]                $row
+     * @param string[] $row
      */
     private function parseConsignmentRow(
         array $row,
@@ -166,7 +164,7 @@ final class ManifestCsvParser
      * Rows where TagID is empty are customer allocation footnotes — skip them.
      *
      * @param array<string, string> $data
-     * @param ParsedManifestItem[]  $items
+     * @param ParsedManifestItem[] $items
      */
     private function parseDataRow(array $data, array &$items): void
     {
@@ -177,24 +175,24 @@ final class ManifestCsvParser
             return;
         }
 
-        $sku     = (int) trim($data['SkuID']        ?? '0');
-        $vsn     = trim($data['vsn1']               ?? '');
-        $specs   = trim($data['SkuDescription']     ?? '');
-        $caseQty = max(1, (int) trim($data['Qty']   ?? '1'));
-        $majCode = trim($data['MajorCode']           ?? '');
-        $vendor  = trim($data['VendorName']          ?? '');
+        $sku     = (int) trim($data['SkuID'] ?? '0');
+        $vsn     = trim($data['vsn1'] ?? '');
+        $specs   = trim($data['SkuDescription'] ?? '');
+        $caseQty = max(1, (int) trim($data['Qty'] ?? '1'));
+        $majCode = trim($data['MajorCode'] ?? '');
+        $vendor  = trim($data['VendorName'] ?? '');
 
         if ($sku === 0) {
             return; // malformed row without a valid SKU
         }
 
         $items[] = new ParsedManifestItem(
-            aoNumber:   $aoNumber,
-            sku:        $sku,
-            vsn:        $vsn,
-            specs:      $specs,
-            caseQty:    $caseQty,
-            majorCode:  $majCode,
+            aoNumber: $aoNumber,
+            sku: $sku,
+            vsn: $vsn,
+            specs: $specs,
+            caseQty: $caseQty,
+            majorCode: $majCode,
             vendorName: $vendor,
         );
     }

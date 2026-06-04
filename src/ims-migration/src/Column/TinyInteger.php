@@ -11,6 +11,5 @@ use PhpDb\Sql\Ddl\Column\Integer;
  */
 final class TinyInteger extends Integer
 {
-    /** @var string */
     protected string $type = 'TINYINT';
 }

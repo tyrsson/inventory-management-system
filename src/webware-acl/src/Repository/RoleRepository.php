@@ -37,7 +37,7 @@ final class RoleRepository
 
         $roles = [];
         foreach ($sql->prepareStatementForSqlObject($select)->execute() as $row) {
-            $parents          = json_decode($row['parent_id'], true) ?? [];
+            $parents                = json_decode($row['parent_id'], true) ?? [];
             $roles[$row['role_id']] = $parents;
         }
 
@@ -63,7 +63,7 @@ final class RoleRepository
         while ($pending !== [] && $pass++ < $maxPasses) {
             foreach ($pending as $roleId => $parents) {
                 if (array_diff_key(array_fill_keys($parents, true), $added) === []) {
-                    $parentRoles = $parents ? array_map(static fn($p) => new GenericRole($p), $parents) : null;
+                    $parentRoles = $parents ? array_map(static fn ($p) => new GenericRole($p), $parents) : null;
                     $registry->add(new GenericRole($roleId), $parentRoles);
                     $added[$roleId] = true;
                     unset($pending[$roleId]);
@@ -98,7 +98,7 @@ final class RoleRepository
      *
      * @param string[] $parents
      */
-    public function save(string $roleId, array|null $parents): void
+    public function save(string $roleId, ?array $parents): void
     {
         $sql    = $this->gateway->getSql();
         $exists = $sql->select()

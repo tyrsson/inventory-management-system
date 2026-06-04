@@ -21,24 +21,11 @@ use Webware\CommandBus\CommandInterface;
 #[CoversClass(CommandHandlerMiddleware::class)]
 final class CommandHandlerMiddlewareTest extends TestCase
 {
-    private function makeMiddleware(
-        CommandHandlerResolverInterface $resolver,
-        AclInterface $acl,
-    ): CommandHandlerMiddleware {
-        return new CommandHandlerMiddleware($resolver, $acl);
-    }
-
-    /** Satisfies the MiddlewareInterface $handler parameter; never called by terminal middleware. */
-    private function unusedHandler(): CommandHandlerInterface
-    {
-        return $this->createStub(CommandHandlerInterface::class);
-    }
-
     #[Test]
     public function nonAuthorizableCommandPassesThroughWithoutAclCheck(): void
     {
-        $command         = $this->createStub(CommandInterface::class);
-        $expectedResult  = $this->createStub(CommandResultInterface::class);
+        $command        = $this->createStub(CommandInterface::class);
+        $expectedResult = $this->createStub(CommandResultInterface::class);
 
         $innerHandler = $this->createMock(CommandHandlerInterface::class);
         $innerHandler->expects($this->once())
@@ -119,5 +106,18 @@ final class CommandHandlerMiddlewareTest extends TestCase
         self::assertSame(CommandStatus::Forbidden, $result->getStatus());
         self::assertSame($command, $result->getCommand());
         self::assertNull($result->getResult());
+    }
+
+    private function makeMiddleware(
+        CommandHandlerResolverInterface $resolver,
+        AclInterface $acl,
+    ): CommandHandlerMiddleware {
+        return new CommandHandlerMiddleware($resolver, $acl);
+    }
+
+    /** Satisfies the MiddlewareInterface $handler parameter; never called by terminal middleware. */
+    private function unusedHandler(): CommandHandlerInterface
+    {
+        return $this->createStub(CommandHandlerInterface::class);
     }
 }

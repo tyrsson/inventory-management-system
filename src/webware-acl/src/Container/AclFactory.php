@@ -17,7 +17,7 @@ namespace Webware\Acl\Container;
 use Mezzio\Router\RouteCollectorInterface;
 use Psr\Container\ContainerInterface;
 use Webware\Acl\Acl;
-use Webware\Acl\AssertionManager;
+use Webware\Acl\Assertion\AssertionAggregateFactory;
 use Webware\Acl\Repository\RoleRepository;
 use Webware\Acl\Repository\RuleRepository;
 
@@ -28,7 +28,7 @@ final readonly class AclFactory
         return new Acl(
             $container->get(RoleRepository::class),
             $container->get(RuleRepository::class),
-            $container->get(AssertionManager::class),
+            $container->get(AssertionAggregateFactory::class),
             $container->get(RouteCollectorInterface::class),
         );
     }

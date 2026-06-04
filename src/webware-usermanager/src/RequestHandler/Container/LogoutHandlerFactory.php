@@ -25,7 +25,7 @@ final class LogoutHandlerFactory
     {
         /** @var HelperPluginManager $helperManager */
         $helperManager = $container->get(HelperPluginManager::class);
-        $userUrl = $helperManager->get(UserUrl::class);
+        $userUrl       = $helperManager->get(UserUrl::class);
 
         return new LogoutHandler(
             loginUrl: $userUrl('session.read'),

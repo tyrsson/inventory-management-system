@@ -23,15 +23,6 @@ use Webware\CommandBus\MiddlewarePipe;
 #[CoversClass(CommandHandlerMiddleware::class)]
 final class CommandHandlerMiddlewareIntegrationTest extends TestCase
 {
-    private function buildBus(
-        CommandHandlerResolverInterface $resolver,
-        AclInterface $acl,
-    ): CommandBus {
-        $pipe = new MiddlewarePipe();
-        $pipe->pipe(new CommandHandlerMiddleware($resolver, $acl));
-        return new CommandBus($pipe);
-    }
-
     #[Test]
     public function allowedAuthorizableCommandDispatchesThroughPipeline(): void
     {
@@ -112,5 +103,15 @@ final class CommandHandlerMiddlewareIntegrationTest extends TestCase
         $result = $this->buildBus($resolver, $acl)->handle($command);
 
         self::assertSame($expectedResult, $result);
+    }
+
+    private function buildBus(
+        CommandHandlerResolverInterface $resolver,
+        AclInterface $acl,
+    ): CommandBus {
+        $pipe = new MiddlewarePipe();
+        $pipe->pipe(new CommandHandlerMiddleware($resolver, $acl));
+
+        return new CommandBus($pipe);
     }
 }

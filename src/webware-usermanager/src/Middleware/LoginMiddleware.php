@@ -43,7 +43,7 @@ final class LoginMiddleware implements MiddlewareInterface
         }
 
         $params   = $request->getParsedBody();
-        $email    = $params['email'] ?? null;
+        $email    = $params['email']    ?? null;
         $password = $params['password'] ?? null;
 
         if ($email === null || $password === null) {
@@ -56,6 +56,7 @@ final class LoginMiddleware implements MiddlewareInterface
             $this->logger->info('Failed login attempt', ['email' => $email]);
             $messenger = $request->getAttribute(SystemMessengerInterface::class);
             $messenger?->error('Invalid email or password.');
+
             return $handler->handle($request);
         }
 

@@ -13,7 +13,7 @@ final readonly class UserUrlFactory
     public function __invoke(ContainerInterface $container): UserUrl
     {
         return new UserUrl(
-            urlHelper:       $container->get(UrlHelper::class),
+            urlHelper: $container->get(UrlHelper::class),
             routeNamePrefix: Configuration::getRouteNamePrefix($container, self::class),
         );
     }

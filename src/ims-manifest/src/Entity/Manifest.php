@@ -25,10 +25,10 @@ use function count;
 final class Manifest implements ResourceInterface, ProprietaryInterface
 {
     /**
-     * @param ManifestItem[] $items      Full item list — populated by findById() only.
-     * @param int            $itemCount  Line count from aggregate query (findAll).
-     * @param int            $pieceCount Piece count from aggregate query (findAll).
-     * @param int            $damagedCount Damaged line count from aggregate query.
+     * @param ManifestItem[] $items Full item list — populated by findById() only.
+     * @param int $itemCount Line count from aggregate query (findAll).
+     * @param int $pieceCount Piece count from aggregate query (findAll).
+     * @param int $damagedCount Damaged line count from aggregate query.
      */
     public function __construct(
         public readonly int $id,
@@ -64,8 +64,10 @@ final class Manifest implements ResourceInterface, ProprietaryInterface
             foreach ($this->items as $item) {
                 $pieces += $item->caseQty;
             }
+
             return $pieces;
         }
+
         return $this->pieceCount;
     }
 
@@ -82,8 +84,10 @@ final class Manifest implements ResourceInterface, ProprietaryInterface
                     $count++;
                 }
             }
+
             return $count;
         }
+
         return $this->damagedCount;
     }
 
@@ -95,13 +99,13 @@ final class Manifest implements ResourceInterface, ProprietaryInterface
     /** @return ManifestItem[] */
     public function damagedItems(): array
     {
-        return array_values(array_filter($this->items, static fn(ManifestItem $i): bool => $i->isDamaged));
+        return array_values(array_filter($this->items, static fn (ManifestItem $i): bool => $i->isDamaged));
     }
 
     /** @return ManifestItem[] */
     public function cleanItems(): array
     {
-        return array_values(array_filter($this->items, static fn(ManifestItem $i): bool => ! $i->isDamaged));
+        return array_values(array_filter($this->items, static fn (ManifestItem $i): bool => ! $i->isDamaged));
     }
 
     public function getResourceId(): string

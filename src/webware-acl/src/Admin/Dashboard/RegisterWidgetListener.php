@@ -2,15 +2,9 @@
 
 declare(strict_types=1);
 
-
 namespace Webware\Acl\Admin\Dashboard;
 
-use Webware\Acl\AclInterface;
 use Webware\Admin\Event\RegisterWidgetEvent;
-
-use function array_map;
-use function array_sum;
-use function count;
 
 /**
  * Contributes the ACL Management widget to the admin dashboard.
@@ -29,12 +23,12 @@ final class RegisterWidgetListener
     {
         // @todo Derive counts from $this->config once config shape is finalised
         $event->registerWidget(new Widget(
-            resourceId:     $this->resourceId,
-            roleCount:      0,
-            resourceCount:  0,
-            ruleCount:      0,
+            resourceId: $this->resourceId,
+            roleCount: 0,
+            resourceCount: 0,
+            ruleCount: 0,
             assertionCount: 0,
-            aclVersion:     0,
+            aclVersion: 0,
         ));
     }
 }

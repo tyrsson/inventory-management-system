@@ -67,10 +67,10 @@ class ConfigProvider
     {
         return [
             'factories'  => [
-                CommandLoggingMiddleware::class         => CommandLoggingMiddlewareFactory::class,
+                CommandLoggingMiddleware::class          => CommandLoggingMiddlewareFactory::class,
                 Middleware\ImsMessengerMiddleware::class => Middleware\ImsMessengerMiddlewareFactory::class,
-                RequestHandler\DashboardHandler::class  => RequestHandler\Container\DashboardHandlerFactory::class,
-                RouteProvider::class                    => Container\RouteProviderFactory::class,
+                RequestHandler\DashboardHandler::class   => RequestHandler\Container\DashboardHandlerFactory::class,
+                RouteProvider::class                     => Container\RouteProviderFactory::class,
             ],
             'invokables' => [
                 RequestHandler\PingHandler::class => RequestHandler\PingHandler::class,

@@ -24,7 +24,7 @@ final class ManifestDetailHandlerFactory
     public function __invoke(ContainerInterface $container): ManifestDetailHandler
     {
         return new ManifestDetailHandler(
-            template:  $container->get(TemplateRendererInterface::class),
+            template: $container->get(TemplateRendererInterface::class),
             manifests: $container->get(ManifestRepositoryInterface::class),
         );
     }

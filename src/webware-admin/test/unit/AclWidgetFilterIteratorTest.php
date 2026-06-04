@@ -15,25 +15,6 @@ use Webware\Admin\Widget\WidgetInterface;
 #[CoversClass(AclWidgetFilterIterator::class)]
 final class AclWidgetFilterIteratorTest extends TestCase
 {
-    private function makeWidget(string $resourceId, string $privilege): WidgetInterface
-    {
-        return new class ($resourceId, $privilege) implements WidgetInterface {
-            public string $title     { get => 'Test'; }
-            public string $template  { get => 'test::widget'; }
-            public int    $order     { get => 0; }
-
-            public function __construct(
-                public string $resourceId,
-                public string $privilege,
-            ) {}
-
-            public function getResourceId(): string
-            {
-                return $this->resourceId;
-            }
-        };
-    }
-
     #[Test]
     public function itAcceptsWidgetWhenAclAllows(): void
     {
@@ -77,7 +58,7 @@ final class AclWidgetFilterIteratorTest extends TestCase
         $acl = $this->createStub(AclInterface::class);
         $acl->method('isAllowed')->willReturnMap([
             [['Administrator'], 'admin.dashboard', 'read', true],
-            [['Administrator'], 'admin.acl',       'read', false],
+            [['Administrator'], 'admin.acl', 'read', false],
         ]);
 
         $iterator = new AclWidgetFilterIterator(
@@ -102,5 +83,26 @@ final class AclWidgetFilterIteratorTest extends TestCase
         $iterator = new AclWidgetFilterIterator($inner, $acl, [AclInterface::DEVELOPER_ROLE_ID]);
 
         self::assertCount(0, iterator_to_array($iterator));
+    }
+
+    private function makeWidget(string $resourceId, string $privilege): WidgetInterface
+    {
+        return new class($resourceId, $privilege) implements WidgetInterface {
+            public string $title     { get => 'Test'; }
+
+            public string $template  { get => 'test::widget'; }
+
+            public int $order     { get => 0; }
+
+            public function __construct(
+                public string $resourceId,
+                public string $privilege,
+            ) {}
+
+            public function getResourceId(): string
+            {
+                return $this->resourceId;
+            }
+        };
     }
 }

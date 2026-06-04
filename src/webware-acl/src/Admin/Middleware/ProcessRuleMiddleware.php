@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Webware\Acl\Admin\Middleware;
 
 use Axleus\Message\SystemMessengerInterface;
+use Laminas\InputFilter;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -22,6 +23,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Webware\Acl\Admin\Command\DeleteRuleCommand;
 use Webware\Acl\Admin\Command\SaveRuleCommand;
 use Webware\Acl\Admin\Command\UpdateRuleTypeCommand;
+use Webware\Acl\InputFilter\RuleDataFilter;
 use Webware\Acl\RuleType;
 use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandStatus;
@@ -30,41 +32,46 @@ use Webware\Core\HttpMethodProcessorTrait;
 
 use function is_array;
 
-final class ProcessRuleMiddleware implements MiddlewareInterface
+final readonly class ProcessRuleMiddleware implements MiddlewareInterface
 {
     use HttpMethodProcessorTrait;
 
-    public function __construct(private readonly CommandBusInterface $commandBus)
-    {
-    }
+    public function __construct(
+        private CommandBusInterface $commandBus,
+    ) {}
 
     public function processPost(
         ServerRequestInterface $request,
-        RequestHandlerInterface $handler
+        RequestHandlerInterface $handler,
     ): ResponseInterface {
-        $parsed     = $request->getParsedBody();
-        $body       = is_array($parsed) ? $parsed : [];
-        $roleId     = $body['role_id']    ?? '';
-        $resourceId = $body['route_name'] ?? '';
-        $type       = $body['rule_type']  ?? RuleType::Allow->value;
-        $assertions = null;
+        /** @var SystemMessengerInterface|null $messenger */
+        $messenger     = $request->getAttribute(SystemMessengerInterface::class);
+        $filterManager = $request->getAttribute(InputFilter\InputFilterPluginManager::class);
+        $filter        = $filterManager->get(RuleDataFilter::class);
+        $filter->setValidationGroup([
+            'role_id',
+            'resource_id',
+            'type',
+            'assertions',
+        ]);
+        $filter->setData($request->getParsedBody());
 
-        if (isset($body['assertion_alias']) && $body['assertion_alias'] !== '') {
-            $assertions = [$body['assertion_alias']];
+        if (! $filter->isValid()) {
+            $messenger?->warning($filter->getMessages());
+
+            return $handler->handle($request);
         }
 
-        /** @var SystemMessengerInterface|null $messenger */
-        $messenger = $request->getAttribute(SystemMessengerInterface::class);
+        $filteredData = $filter->getValues();
 
-        $result = new CommandResult(new SaveRuleCommand('', '', RuleType::Allow->value), CommandStatus::Failure, null);
+        $result = $this->commandBus->handle(
+            new SaveRuleCommand(...$filteredData)
+        );
 
-        if ($roleId !== '' && $resourceId !== '' && RuleType::tryFrom($type) !== null) {
-            $result = $this->commandBus->handle(new SaveRuleCommand($roleId, $resourceId, $type, $assertions));
-            if ($result->getStatus() === CommandStatus::Success) {
-                $messenger?->success('Rule saved.');
-            } else {
-                $messenger?->warning('Rule could not be saved. Please try again.');
-            }
+        if ($result->getStatus() === CommandStatus::Success) {
+            $messenger?->success('Rule saved.');
+        } else {
+            $messenger?->warning('Rule could not be saved. Please try again.');
         }
 
         return $handler->handle($request->withAttribute(CommandResult::class, $result));
@@ -72,7 +79,7 @@ final class ProcessRuleMiddleware implements MiddlewareInterface
 
     public function processPatch(
         ServerRequestInterface $request,
-        RequestHandlerInterface $handler
+        RequestHandlerInterface $handler,
     ): ResponseInterface {
         $parsed     = $request->getParsedBody();
         $body       = is_array($parsed) ? $parsed : [];
@@ -82,8 +89,6 @@ final class ProcessRuleMiddleware implements MiddlewareInterface
 
         /** @var SystemMessengerInterface|null $messenger */
         $messenger = $request->getAttribute(SystemMessengerInterface::class);
-
-        $result = new CommandResult(new UpdateRuleTypeCommand('', '', RuleType::Allow->value), CommandStatus::Failure, null);
 
         if ($roleId !== '' && $resourceId !== '' && RuleType::tryFrom($type) !== null) {
             $result = $this->commandBus->handle(new UpdateRuleTypeCommand($roleId, $resourceId, $type));
@@ -99,23 +104,19 @@ final class ProcessRuleMiddleware implements MiddlewareInterface
 
     public function processDelete(
         ServerRequestInterface $request,
-        RequestHandlerInterface $handler
+        RequestHandlerInterface $handler,
     ): ResponseInterface {
-        $roleId     = $request->getAttribute('role_id')     ?? '';
-        $resourceId = $request->getAttribute('resource_id') ?? '';
+        $roleId     = $request->getAttribute('role_id');
+        $resourceId = $request->getAttribute('resource_id');
 
         /** @var SystemMessengerInterface|null $messenger */
         $messenger = $request->getAttribute(SystemMessengerInterface::class);
 
-        $result = new CommandResult(new DeleteRuleCommand('', ''), CommandStatus::Failure, null);
-
-        if ($roleId !== '' && $resourceId !== '') {
-            $result = $this->commandBus->handle(new DeleteRuleCommand($roleId, $resourceId));
-            if ($result->getStatus() === CommandStatus::Success) {
-                $messenger?->success('Rule deleted.');
-            } else {
-                $messenger?->warning('Rule could not be deleted. Please try again.');
-            }
+        $result = $this->commandBus->handle(new DeleteRuleCommand($roleId, $resourceId));
+        if ($result->getStatus() === CommandStatus::Success) {
+            $messenger?->success('Rule deleted.');
+        } else {
+            $messenger?->warning('Rule could not be deleted. Please try again.');
         }
 
         return $handler->handle($request->withAttribute(CommandResult::class, $result));

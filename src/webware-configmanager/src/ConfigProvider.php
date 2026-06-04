@@ -27,8 +27,8 @@ final class ConfigProvider
             'aliases'    => [],
             'delegators' => [],
             'factories'  => [
-                ConfigSaveListener::class  => ConfigSaveListenerFactory::class,
-                CacheBustListener::class   => CacheBustListenerFactory::class,
+                ConfigSaveListener::class => ConfigSaveListenerFactory::class,
+                CacheBustListener::class  => CacheBustListenerFactory::class,
             ],
         ];
     }

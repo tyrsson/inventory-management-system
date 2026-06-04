@@ -62,7 +62,7 @@ final class Migration004SkuCatalogue implements MigrationInterface
         // the column is created with DEFAULT CURRENT_TIMESTAMP only.
         // @todo: raise upstream feature request for ON UPDATE support.
         $create->addColumn(
-            new DateTime('updated_at', nullable: false, default: new ArgLiteral('CURRENT_TIMESTAMP'))
+            new Datetime('updated_at', nullable: false, default: new ArgLiteral('CURRENT_TIMESTAMP'))
         );
 
         $create->addColumn(

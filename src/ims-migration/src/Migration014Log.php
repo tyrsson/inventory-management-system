@@ -11,9 +11,9 @@ use PhpDb\Sql\Ddl\Column\Json;
 use PhpDb\Sql\Ddl\Column\Text;
 use PhpDb\Sql\Ddl\Column\Varchar;
 use PhpDb\Sql\Ddl\Constraint\PrimaryKey;
-use PhpDb\Sql\Ddl\Index\Index;
 use PhpDb\Sql\Ddl\CreateTable;
 use PhpDb\Sql\Ddl\DropTable;
+use PhpDb\Sql\Ddl\Index\Index;
 use PhpDb\Sql\Literal;
 use PhpDb\Sql\Sql;
 

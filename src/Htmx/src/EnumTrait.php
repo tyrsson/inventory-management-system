@@ -14,6 +14,9 @@ declare(strict_types=1);
 
 namespace Htmx;
 
+use BackedEnum;
+use ValueError;
+
 /**
  * Utility methods for backed enums.
  *
@@ -24,11 +27,11 @@ namespace Htmx;
  */
 trait EnumTrait
 {
-    /** @return list<\BackedEnum> */
+    /** @return list<BackedEnum> */
     abstract public static function cases(): array;
 
     /** Return the case whose name matches $name, or null if not found. */
-    public static function tryFromName(string $name): static|null
+    public static function tryFromName(string $name): ?static
     {
         foreach (static::cases() as $case) {
             if ($case->name === $name) {
@@ -42,13 +45,12 @@ trait EnumTrait
     /** Return the case whose name matches $name, or throw \ValueError if not found. */
     public static function fromName(string $name): static
     {
-        return static::tryFromName($name) ?? throw new \ValueError(
-            '"' . $name . '" is not a valid name for enum "' . static::class . '"'
-        );
+        return static::tryFromName($name) ?? throw new ValueError('"' . $name . '" is not a valid name for enum "' . static::class . '"');
     }
 
     /**
      * Return an array of all case names.
+     *
      * @return list<string>
      */
     public static function names(): array
@@ -58,6 +60,7 @@ trait EnumTrait
 
     /**
      * Return an array of all case values.
+     *
      * @return list<string>
      */
     public static function values(): array
@@ -68,8 +71,8 @@ trait EnumTrait
     /**
      * Return an associative array of case values to names, or names to treated values.
      *
-     * @param bool                 $normalize      When true, keys are names and values are (optionally treated) values.
-     * @param string|callable|null $valueTreatment A callable or function name applied to each value when $normalize is true.
+     * @param bool $normalize When true, keys are names and values are (optionally treated) values.
+     * @param callable|string|null $valueTreatment A callable or function name applied to each value when $normalize is true.
      * @return array<string, string>
      */
     public static function toArray(bool $normalize = false, string|callable|null $valueTreatment = null): array

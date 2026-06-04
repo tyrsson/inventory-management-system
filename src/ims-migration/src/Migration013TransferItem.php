@@ -55,7 +55,7 @@ final class Migration013TransferItem implements MigrationInterface
         );
 
         $create->addColumn(
-            new DateTime('confirmed_at', nullable: false, default: new ArgLiteral('CURRENT_TIMESTAMP'))
+            new Datetime('confirmed_at', nullable: false, default: new ArgLiteral('CURRENT_TIMESTAMP'))
         );
 
         $create->addConstraint(new PrimaryKey('id'));

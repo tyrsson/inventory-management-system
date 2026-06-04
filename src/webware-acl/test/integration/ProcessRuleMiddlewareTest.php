@@ -23,19 +23,6 @@ use Webware\CommandBus\CommandBusInterface;
 #[CoversClass(ProcessRuleMiddleware::class)]
 final class ProcessRuleMiddlewareTest extends TestCase
 {
-    private function capturingHandler(): RequestHandlerInterface
-    {
-        return new class implements RequestHandlerInterface {
-            public ?ServerRequestInterface $received = null;
-
-            public function handle(ServerRequestInterface $request): ResponseInterface
-            {
-                $this->received = $request;
-                return new EmptyResponse();
-            }
-        };
-    }
-
     #[Test]
     public function postWithValidBodyDispatchesSaveRuleCommandAndSetsSuccess(): void
     {
@@ -43,7 +30,7 @@ final class ProcessRuleMiddlewareTest extends TestCase
         $bus->expects($this->once())
             ->method('handle')
             ->with($this->isInstanceOf(SaveRuleCommand::class))
-            ->willReturnCallback(fn($cmd) => new CommandResult($cmd, CommandStatus::Success, null));
+            ->willReturnCallback(fn ($cmd) => new CommandResult($cmd, CommandStatus::Success, null));
 
         $messenger = $this->createStub(SystemMessengerInterface::class);
 
@@ -84,7 +71,7 @@ final class ProcessRuleMiddlewareTest extends TestCase
         $bus->expects($this->once())
             ->method('handle')
             ->with($this->isInstanceOf(UpdateRuleTypeCommand::class))
-            ->willReturnCallback(fn($cmd) => new CommandResult($cmd, CommandStatus::Success, null));
+            ->willReturnCallback(fn ($cmd) => new CommandResult($cmd, CommandStatus::Success, null));
 
         $messenger = $this->createStub(SystemMessengerInterface::class);
 
@@ -100,5 +87,19 @@ final class ProcessRuleMiddlewareTest extends TestCase
         $result = $handler->received?->getAttribute(CommandResult::class);
         self::assertInstanceOf(CommandResult::class, $result);
         self::assertSame(CommandStatus::Success, $result->getStatus());
+    }
+
+    private function capturingHandler(): RequestHandlerInterface
+    {
+        return new class() implements RequestHandlerInterface {
+            public ?ServerRequestInterface $received = null;
+
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                $this->received = $request;
+
+                return new EmptyResponse();
+            }
+        };
     }
 }

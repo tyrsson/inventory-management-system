@@ -22,9 +22,9 @@ final readonly class SaveRuleCommand implements NamedCommandInterface
     use NamedCommandTrait;
 
     public function __construct(
-        public string      $roleId,
-        public string      $resourceId,
-        public string      $type,
-        public array|null  $assertions = null,
+        public string $roleId,
+        public string $resourceId,
+        public string $type,
+        public ?array $assertions = null,
     ) {}
 }

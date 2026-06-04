@@ -50,6 +50,7 @@ final class ListenerProviderAggregateFactory
                     } elseif (is_callable($listener)) {
                         $attachableProvider->listen($eventType, $listener);
                     }
+
                     continue;
                 }
 
@@ -68,6 +69,7 @@ final class ListenerProviderAggregateFactory
                     } else {
                         $attachableProvider->listen($eventType, $resolvedListener);
                     }
+
                     continue;
                 }
             }

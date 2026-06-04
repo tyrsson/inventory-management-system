@@ -28,13 +28,14 @@ final class VerifyEmailHandlerFactory
         /** @var array{user: array{verification_token_ttl: int}} $config */
         $config   = $container->get('config');
         $tokenTtl = (int) ($config['user']['verification_token_ttl'] ?? 86400);
+
         /** @var HelperPluginManager $helperManager */
         $helperManager = $container->get(HelperPluginManager::class);
         $userUrl       = $helperManager->get(UserUrl::class);
 
         return new VerifyEmailHandler(
             template: $container->get(TemplateRendererInterface::class),
-            users:    $container->get(UserRepositoryInterface::class),
+            users: $container->get(UserRepositoryInterface::class),
             tokenTtl: $tokenTtl,
             loginUrl: $userUrl('session.read'),
         );

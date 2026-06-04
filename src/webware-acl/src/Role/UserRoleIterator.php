@@ -13,6 +13,7 @@ use Webware\UserManager\UserInterface;
 final class UserRoleIterator implements Iterator
 {
     private array $roles;
+
     private int $position = 0;
 
     public function __construct(private readonly UserInterface $user)

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Webware\Navigation;
 
 use Mezzio\Router\Route;
@@ -42,13 +41,13 @@ final class NavigationItem
     public static function fromRouteOptions(Route $route, array $options): self
     {
         return new self(
-            route:  $route,
-            label:  (string) ($options['label'] ?? $route->getName()),
-            icon:   (string) ($options['icon']   ?? ''),
+            route: $route,
+            label: (string) ($options['label'] ?? $route->getName()),
+            icon: (string) ($options['icon'] ?? ''),
             parent: isset($options['parent']) && is_string($options['parent'])
                         ? $options['parent']
                         : null,
-            order:  (int) ($options['order'] ?? 0),
+            order: (int) ($options['order'] ?? 0),
         );
     }
 

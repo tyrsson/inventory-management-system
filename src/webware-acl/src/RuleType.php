@@ -23,7 +23,7 @@ enum RuleType: string
 
     public function toAclConstant(): string
     {
-        return match($this) {
+        return match ($this) {
             self::Allow => LaminasAcl::TYPE_ALLOW,
             self::Deny  => LaminasAcl::TYPE_DENY,
         };

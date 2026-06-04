@@ -9,8 +9,8 @@ use Webware\UserManager\UserInterface;
 
 interface AclInterface
 {
-    public final const string DEVELOPER_ROLE_ID = 'Developer';
-    
+    final public const string DEVELOPER_ROLE_ID = 'Developer';
+
     /**
      * Returns all roles keyed by role ID with their parent role IDs.
      *
@@ -22,7 +22,6 @@ interface AclInterface
      * Returns the resource ID of the direct parent of $resourceId, or null if it has none.
      */
     public function getResourceParentId(string $resourceId): ?string;
-
 
     /**
      * Checks whether the authenticated user may access the matched route resource.
@@ -42,7 +41,7 @@ interface AclInterface
      * FAIL CLOSED — routes not registered as ACL resources are always denied.
      */
     public function isAllowedRoute(
-        UserInterface|null $user,
+        ?UserInterface $user,
         ResourceInterface $resource,
     ): bool;
 }

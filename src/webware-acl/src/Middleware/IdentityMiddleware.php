@@ -15,12 +15,12 @@ declare(strict_types=1);
 namespace Webware\Acl\Middleware;
 
 use Mezzio\Session\RetrieveSession;
-use Webware\UserManager\UserInterface;
 use Override;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Webware\UserManager\UserInterface;
 
 use function is_array;
 
@@ -57,7 +57,7 @@ final class IdentityMiddleware implements MiddlewareInterface
         if (is_array($userInfo) && isset($userInfo['username'])) {
             $user = ($this->userFactory)(
                 $userInfo['username'],
-                $userInfo['roles'] ?? [],
+                $userInfo['roles']   ?? [],
                 $userInfo['details'] ?? [],
             );
         } else {

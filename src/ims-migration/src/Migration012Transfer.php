@@ -16,9 +16,9 @@ use PhpDb\Sql\Ddl\Column\Varchar;
 use PhpDb\Sql\Ddl\Constraint\ForeignKey;
 use PhpDb\Sql\Ddl\Constraint\PrimaryKey;
 use PhpDb\Sql\Ddl\Constraint\UniqueKey;
-use PhpDb\Sql\Ddl\Index\Index;
 use PhpDb\Sql\Ddl\CreateTable;
 use PhpDb\Sql\Ddl\DropTable;
+use PhpDb\Sql\Ddl\Index\Index;
 use PhpDb\Sql\Literal;
 use PhpDb\Sql\Sql;
 
@@ -71,7 +71,7 @@ final class Migration012Transfer implements MigrationInterface
                 ->setOptions(['unsigned' => true])
         );
 
-        $create->addColumn(new DateTime('completed_at', nullable: true));
+        $create->addColumn(new Datetime('completed_at', nullable: true));
 
         $create->addColumn(
             (new Integer('created_by', nullable: false))
@@ -79,7 +79,7 @@ final class Migration012Transfer implements MigrationInterface
         );
 
         $create->addColumn(
-            new DateTime('created_at', nullable: false, default: new ArgLiteral('CURRENT_TIMESTAMP'))
+            new Datetime('created_at', nullable: false, default: new ArgLiteral('CURRENT_TIMESTAMP'))
         );
 
         $create->addColumn(

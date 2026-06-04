@@ -22,6 +22,4 @@ namespace Webware\Acl\Exception;
  * unauthorised user to initiate the command, this exception indicates
  * intentional probing and should be logged at critical level.
  */
-final class AccessDeniedException extends RuntimeException
-{
-}
+final class AccessDeniedException extends RuntimeException {}

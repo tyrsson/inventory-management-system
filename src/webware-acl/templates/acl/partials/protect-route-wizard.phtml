@@ -121,18 +121,18 @@ while ($queue !== []) {
 
             <!-- Form wraps all steps -->
             <form id="wiz-form" novalidate
+                  hx-boost="false"
                   hx-post="<?= htmlspecialchars($this->protectUrl, ENT_QUOTES) ?>"
                   hx-target="main"
                   hx-swap="innerHTML"
                   hx-push-url="false">
 
                 <!-- Hidden state inputs (populated by JS) -->
-                <input type="hidden" name="route_name"        id="wiz-input-route-name">
-                <input type="hidden" name="grant_mode"        id="wiz-input-grant-mode"      value="explicit">
-                <input type="hidden" name="rule_type"         id="wiz-input-rule-type"        value="Allow">
-                <input type="hidden" name="role_id"           id="wiz-input-role-id">
-                <input type="hidden" name="assertion_alias"   id="wiz-input-assertion-alias">
-                <input type="hidden" name="assertion_mode"    id="wiz-input-assertion-mode"   value="none">
+                <input type="hidden" name="resourceId"  id="wiz-input-route-name">
+                <input type="hidden" name="grantMode"   id="wiz-input-grant-mode"  value="explicit">
+                <input type="hidden" name="type"         id="wiz-input-rule-type"   value="Allow">
+                <input type="hidden" name="roleId"       id="wiz-input-role-id">
+                <div id="wiz-assertion-inputs"></div>
 
                 <div class="modal-body py-3">
 
@@ -234,18 +234,7 @@ while ($queue !== []) {
                             </div>
                             <?php endforeach; ?>
                         </div>
-                        <div class="d-flex gap-3 mt-3 d-none" id="wiz-assertion-mode-wrap">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="assertion_mode_ui"
-                                       id="wiz-assert-must" value="must" checked>
-                                <label class="form-check-label small" for="wiz-assert-must">Must pass</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="assertion_mode_ui"
-                                       id="wiz-assert-may" value="may">
-                                <label class="form-check-label small" for="wiz-assert-may">May pass</label>
-                            </div>
-                        </div>
+
                     </div>
 
                     <!-- ── Step 5: Review ─────────────────────────── -->

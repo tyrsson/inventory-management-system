@@ -200,4 +200,3 @@ final readonly class RouteProvider implements RouteProviderInterface
         );
     }
 }
-

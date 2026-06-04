@@ -23,8 +23,6 @@ use PhpDb\Adapter\AdapterInterface;
 use PhpDb\Sql\Expression;
 use PhpDb\Sql\Sql;
 
-use function sprintf;
-
 final class ManifestRepository implements ManifestRepositoryInterface
 {
     public function __construct(
@@ -58,6 +56,7 @@ final class ManifestRepository implements ManifestRepositoryInterface
         foreach ($result as $row) {
             $manifests[] = $this->hydrateManifest($row);
         }
+
         return $manifests;
     }
 
@@ -67,6 +66,7 @@ final class ManifestRepository implements ManifestRepositoryInterface
         $sql    = new Sql($this->adapter, 'manifest');
         $select = $sql->select()->columns(['total' => new Expression('COUNT(*)')]);
         $row    = $sql->prepareStatementForSqlObject($select)->execute()->current();
+
         return (int) ($row['total'] ?? 0);
     }
 
@@ -95,6 +95,7 @@ final class ManifestRepository implements ManifestRepositoryInterface
         $sql    = new Sql($this->adapter, 'manifest');
         $insert = $sql->insert()->values($data);
         $sql->prepareStatementForSqlObject($insert)->execute();
+
         return (int) $this->adapter->getDriver()->getLastGeneratedValue();
     }
 
@@ -168,6 +169,7 @@ final class ManifestRepository implements ManifestRepositoryInterface
 
         $insert = $sql->insert()->values(['code' => $code, 'description' => $code]);
         $sql->prepareStatementForSqlObject($insert)->execute();
+
         return (int) $this->adapter->getDriver()->getLastGeneratedValue();
     }
 
@@ -187,9 +189,9 @@ final class ManifestRepository implements ManifestRepositoryInterface
         $row    = $sql->prepareStatementForSqlObject($select)->execute()->current();
 
         $data = [
-            'description'  => $description,
-            'vendor'       => $vendor,
-            'vendor_model' => $vendorModel,
+            'description'   => $description,
+            'vendor'        => $vendor,
+            'vendor_model'  => $vendorModel,
             'major_code_id' => $majorCodeId,
         ];
 
@@ -223,6 +225,7 @@ final class ManifestRepository implements ManifestRepositoryInterface
         foreach ($result as $row) {
             $items[] = $this->hydrateManifestItem($row);
         }
+
         return $items;
     }
 
@@ -230,16 +233,16 @@ final class ManifestRepository implements ManifestRepositoryInterface
     private function hydrateManifest(array $row, array $items = []): Manifest
     {
         return new Manifest(
-            id:           (int) $row['id'],
-            storeId:      (int) $row['store_id'],
-            reference:    ($row['reference'] !== null && $row['reference'] !== '') ? (string) $row['reference'] : null,
+            id: (int) $row['id'],
+            storeId: (int) $row['store_id'],
+            reference: ($row['reference'] !== null && $row['reference'] !== '') ? (string) $row['reference'] : null,
             receivedDate: new DateTimeImmutable((string) $row['received_date']),
-            createdBy:    (int) $row['created_by'],
-            createdAt:    new DateTimeImmutable((string) $row['created_at']),
-            csvPath:      ($row['csv_path'] ?? null) !== null ? (string) $row['csv_path'] : null,
-            items:        $items,
-            itemCount:    (int) ($row['item_count'] ?? 0),
-            pieceCount:   (int) ($row['piece_count'] ?? 0),
+            createdBy: (int) $row['created_by'],
+            createdAt: new DateTimeImmutable((string) $row['created_at']),
+            csvPath: ($row['csv_path'] ?? null) !== null ? (string) $row['csv_path'] : null,
+            items: $items,
+            itemCount: (int) ($row['item_count'] ?? 0),
+            pieceCount: (int) ($row['piece_count'] ?? 0),
             damagedCount: (int) ($row['damaged_count'] ?? 0),
         );
     }
@@ -248,20 +251,20 @@ final class ManifestRepository implements ManifestRepositoryInterface
     private function hydrateManifestItem(array $row): ManifestItem
     {
         return new ManifestItem(
-            id:             (int) $row['id'],
-            manifestId:     (int) $row['manifest_id'],
-            aoNumber:       (string) $row['ao_number'],
-            sku:            (int) $row['sku'],
-            vsn:            (string) $row['vsn'],
-            specs:          (string) $row['specs'],
-            caseQty:        (int) $row['case_qty'],
-            isDamaged:      (bool) $row['is_damaged'],
-            notes:          ($row['notes'] ?? null) !== null ? (string) $row['notes'] : null,
-            scannedBy:      (int) $row['scanned_by'],
-            scannedAt:      new DateTimeImmutable((string) $row['scanned_at']),
+            id: (int) $row['id'],
+            manifestId: (int) $row['manifest_id'],
+            aoNumber: (string) $row['ao_number'],
+            sku: (int) $row['sku'],
+            vsn: (string) $row['vsn'],
+            specs: (string) $row['specs'],
+            caseQty: (int) $row['case_qty'],
+            isDamaged: (bool) $row['is_damaged'],
+            notes: ($row['notes'] ?? null) !== null ? (string) $row['notes'] : null,
+            scannedBy: (int) $row['scanned_by'],
+            scannedAt: new DateTimeImmutable((string) $row['scanned_at']),
             skuDescription: ($row['sku_description'] ?? null) !== null ? (string) $row['sku_description'] : null,
-            vendor:         ($row['vendor'] ?? null) !== null ? (string) $row['vendor'] : null,
-            vendorModel:    ($row['vendor_model'] ?? null) !== null ? (string) $row['vendor_model'] : null,
+            vendor: ($row['vendor'] ?? null)                  !== null ? (string) $row['vendor'] : null,
+            vendorModel: ($row['vendor_model'] ?? null)       !== null ? (string) $row['vendor_model'] : null,
         );
     }
 }

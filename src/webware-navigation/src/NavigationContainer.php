@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Webware\Navigation;
 
 use ArrayIterator;
@@ -130,10 +129,10 @@ final class NavigationContainer implements IteratorAggregate
 
     private function renderMenuItemInline(NavigationItem $item): string
     {
-        $active   = $this->isActive($item) ? ' active' : '';
-        $icon     = $item->icon !== '' ? sprintf('<i class="bi %s me-2"></i>', $this->e($item->icon)) : '';
-        $path     = $item->route->getPath();
-        $label    = $this->e($item->label);
+        $active = $this->isActive($item) ? ' active' : '';
+        $icon   = $item->icon !== '' ? sprintf('<i class="bi %s me-2"></i>', $this->e($item->icon)) : '';
+        $path   = $item->route->getPath();
+        $label  = $this->e($item->label);
 
         $html = sprintf(
             '<li class="nav-item"><a class="nav-link%s" href="%s">%s%s</a>',
@@ -163,8 +162,8 @@ final class NavigationContainer implements IteratorAggregate
             return '';
         }
 
-        $html  = '<nav aria-label="breadcrumb"><ol class="breadcrumb">';
-        $last  = array_key_last($trail);
+        $html = '<nav aria-label="breadcrumb"><ol class="breadcrumb">';
+        $last = array_key_last($trail);
 
         foreach ($trail as $index => $item) {
             if ($index === $last) {

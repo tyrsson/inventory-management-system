@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Ims\Store\Acl;
 
 use Laminas\Permissions\Acl\Resource\ResourceInterface;
@@ -21,7 +20,4 @@ use Laminas\Permissions\Acl\Resource\ResourceInterface;
  * Do NOT remove — actively used by ims-manifest and any future store-scoped
  * command/entity that participates in ACL checks.
  */
-interface StoreOwnedResourceInterface extends
-    ResourceInterface,
-    StoreProprietaryInterface
-{}
+interface StoreOwnedResourceInterface extends ResourceInterface, StoreProprietaryInterface {}

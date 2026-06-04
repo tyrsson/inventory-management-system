@@ -11,7 +11,8 @@ use Psr\EventDispatcher\ListenerProviderInterface;
 
 final class ConfigProvider
 {
-    public const LISTENER_KEY          = 'listeners';
+    public const LISTENER_KEY = 'listeners';
+
     public const LISTENER_PROVIDER_KEY = 'listener_providers';
 
     public function __invoke(): array
@@ -24,12 +25,12 @@ final class ConfigProvider
     public function getDependencies(): array
     {
         return [
-            'aliases' => [
+            'aliases'   => [
                 EventDispatcherInterface::class  => EventDispatcher::class,
                 ListenerProviderInterface::class => ListenerProviderAggregate::class,
             ],
             'factories' => [
-                ListenerProviderAggregate::class           => Container\ListenerProviderAggregateFactory::class,
+                ListenerProviderAggregate::class            => Container\ListenerProviderAggregateFactory::class,
                 Middleware\EventDispatcherMiddleware::class => Middleware\EventDispatcherMiddlewareFactory::class,
             ],
         ];

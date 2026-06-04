@@ -8,10 +8,7 @@ use Laminas\Permissions\Acl\ProprietaryInterface;
 use Laminas\Permissions\Acl\Resource\ResourceInterface;
 use Laminas\Permissions\Acl\Role\RoleInterface;
 
-interface UserInterface extends
-    RoleInterface,
-    ResourceInterface,
-    ProprietaryInterface
+interface UserInterface extends RoleInterface, ResourceInterface, ProprietaryInterface
 {
     /**
      * Get the unique user identity (id, username, email address …)
@@ -27,9 +24,6 @@ interface UserInterface extends
 
     /**
      * Get a detail $name if present, $default otherwise.
-     *
-     * @param mixed $default
-     * @return mixed
      */
     public function getDetail(string $name, mixed $default = null): mixed;
 

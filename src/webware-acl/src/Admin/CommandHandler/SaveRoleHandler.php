@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Webware\Acl\Admin\CommandHandler;
 
 use Override;
+use Throwable;
 use Webware\Acl\Admin\Command\SaveRoleCommand;
 use Webware\Acl\Repository\RoleRepository;
 use Webware\CommandBus\Command\CommandResult;
@@ -46,7 +47,7 @@ final class SaveRoleHandler implements CommandHandlerInterface
 
         try {
             $this->roleRepository->save($command->roleId, $parents);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return new CommandResult($command, CommandStatus::Failure, $e);
         }
 

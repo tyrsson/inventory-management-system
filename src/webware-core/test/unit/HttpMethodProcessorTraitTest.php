@@ -24,7 +24,7 @@ final class HttpMethodProcessorTraitTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->middleware = new class implements MiddlewareInterface {
+        $this->middleware = new class() implements MiddlewareInterface {
             use HttpMethodProcessorTrait;
 
             /** @var string[] */
@@ -32,33 +32,37 @@ final class HttpMethodProcessorTraitTest extends TestCase
 
             public function processGet(
                 ServerRequestInterface $request,
-                RequestHandlerInterface $handler
+                RequestHandlerInterface $handler,
             ): ResponseInterface {
                 $this->called[] = 'GET';
+
                 return $handler->handle($request);
             }
 
             public function processPost(
                 ServerRequestInterface $request,
-                RequestHandlerInterface $handler
+                RequestHandlerInterface $handler,
             ): ResponseInterface {
                 $this->called[] = 'POST';
+
                 return $handler->handle($request);
             }
 
             public function processPatch(
                 ServerRequestInterface $request,
-                RequestHandlerInterface $handler
+                RequestHandlerInterface $handler,
             ): ResponseInterface {
                 $this->called[] = 'PATCH';
+
                 return $handler->handle($request);
             }
 
             public function processDelete(
                 ServerRequestInterface $request,
-                RequestHandlerInterface $handler
+                RequestHandlerInterface $handler,
             ): ResponseInterface {
                 $this->called[] = 'DELETE';
+
                 return $handler->handle($request);
             }
         };
@@ -68,10 +72,10 @@ final class HttpMethodProcessorTraitTest extends TestCase
     public static function verbProvider(): array
     {
         return [
-            'GET dispatches to processGet'     => ['GET',    'GET'],
-            'POST dispatches to processPost'   => ['POST',   'POST'],
-            'PATCH dispatches to processPatch' => ['PATCH',  'PATCH'],
-            'PUT dispatches to processPatch'   => ['PUT',    'PATCH'],
+            'GET dispatches to processGet'       => ['GET', 'GET'],
+            'POST dispatches to processPost'     => ['POST', 'POST'],
+            'PATCH dispatches to processPatch'   => ['PATCH', 'PATCH'],
+            'PUT dispatches to processPatch'     => ['PUT', 'PATCH'],
             'DELETE dispatches to processDelete' => ['DELETE', 'DELETE'],
         ];
     }
@@ -104,7 +108,7 @@ final class HttpMethodProcessorTraitTest extends TestCase
     #[Test]
     public function defaultPassThroughCallsHandler(): void
     {
-        $middleware = new class implements MiddlewareInterface {
+        $middleware = new class() implements MiddlewareInterface {
             use HttpMethodProcessorTrait;
         };
 

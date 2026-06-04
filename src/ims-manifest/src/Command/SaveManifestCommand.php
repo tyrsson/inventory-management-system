@@ -11,10 +11,7 @@ use Webware\Acl\RoleProviderInterface;
 use Webware\CommandBus\CommandInterface;
 use Webware\UserManager\UserInterface;
 
-final class SaveManifestCommand implements
-    CommandInterface,
-    RoleProviderInterface,
-    StoreOwnedResourceInterface
+final class SaveManifestCommand implements CommandInterface, RoleProviderInterface, StoreOwnedResourceInterface
 {
     public function __construct(
         public readonly string $resourceId,

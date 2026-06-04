@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Webware\Acl\Admin\Dashboard;
 
 use Override;
@@ -22,7 +21,7 @@ final class Widget implements WidgetInterface
 
     public string $template   { get => 'acl::admin-widget'; }
 
-    public int    $order      { get => 10; }
+    public int $order      { get => 10; }
 
     public function __construct(
         public readonly string $resourceId,

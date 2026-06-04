@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Webware\Acl\Admin\RequestHandler;
 
 use Laminas\Diactoros\Response\HtmlResponse;

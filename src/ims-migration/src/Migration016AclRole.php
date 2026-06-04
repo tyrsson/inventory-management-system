@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Ims\Migration;
 
 use PhpDb\Adapter\AdapterInterface;
-use PhpDb\Sql\Argument\Literal as ArgLiteral;
 use PhpDb\Sql\Ddl\Column\Integer;
 use PhpDb\Sql\Ddl\Column\Json;
 use PhpDb\Sql\Ddl\Column\Varchar;

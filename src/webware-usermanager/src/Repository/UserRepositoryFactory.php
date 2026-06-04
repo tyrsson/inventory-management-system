@@ -30,7 +30,7 @@ final class UserRepositoryFactory
     public function __invoke(ContainerInterface $container): UserRepository
     {
         return new UserRepository(
-            adapter:    $container->get(AdapterInterface::class),
+            adapter: $container->get(AdapterInterface::class),
             dispatcher: $container->get(EventDispatcherInterface::class),
         );
     }

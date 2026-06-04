@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace PhpDb\Session;
 
 use Mezzio\Session\InitializePersistenceIdInterface;
@@ -13,6 +12,7 @@ use Mezzio\Session\SessionCookiePersistenceInterface;
 use Mezzio\Session\SessionIdentifierAwareInterface;
 use Mezzio\Session\SessionInterface;
 use Mezzio\Session\SessionPersistenceInterface;
+use Override;
 use PhpDb\Adapter\AdapterInterface;
 use PhpDb\Session\Sql\Insert;
 use PhpDb\Sql\Sql;
@@ -44,9 +44,7 @@ use const FILTER_VALIDATE_BOOLEAN;
  * in session data must implement __serialize()/__unserialize() for correct
  * round-tripping.
  */
-final class PhpDbSessionPersistence implements
-    InitializePersistenceIdInterface,
-    SessionPersistenceInterface
+final class PhpDbSessionPersistence implements InitializePersistenceIdInterface, SessionPersistenceInterface
 {
     use CacheHeadersGeneratorTrait;
     use SessionCookieAwareTrait;
@@ -101,7 +99,7 @@ final class PhpDbSessionPersistence implements
         return $instance;
     }
 
-    #[\Override]
+    #[Override]
     public function initializeSessionFromRequest(ServerRequestInterface $request): SessionInterface
     {
         $id = $this->getSessionCookieValueFromRequest($request);
@@ -129,7 +127,7 @@ final class PhpDbSessionPersistence implements
         return new Session($data !== false ? $data : [], $id);
     }
 
-    #[\Override]
+    #[Override]
     public function persistSession(SessionInterface $session, ResponseInterface $response): ResponseInterface
     {
         // Retrieve the session ID — uses SessionIdentifierAwareInterface (1.x);
@@ -176,12 +174,11 @@ final class PhpDbSessionPersistence implements
         )->execute();
 
         $response = $this->addSessionCookieHeaderToResponse($response, $id, $session);
-        $response = $this->addCacheHeadersToResponse($response);
 
-        return $response;
+        return $this->addCacheHeadersToResponse($response);
     }
 
-    #[\Override]
+    #[Override]
     public function initializeId(SessionInterface $session): SessionInterface
     {
         $id = $session instanceof SessionIdentifierAwareInterface

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Ims\Migration;
 
-use Ims\Migration\Column\TinyInteger;
 use PhpDb\Adapter\AdapterInterface;
 use PhpDb\Sql\Ddl\Column\Char;
 use PhpDb\Sql\Ddl\Column\Json;
@@ -62,9 +61,9 @@ final class Migration001Store implements MigrationInterface
         $create->addConstraint(new PrimaryKey('store_number'));
 
         $create->setOptions([
-            'engine'         => new Literal('InnoDB'),
+            'engine'          => new Literal('InnoDB'),
             'default charset' => new Literal('utf8mb4'),
-            'collate'        => new Literal('utf8mb4_unicode_ci'),
+            'collate'         => new Literal('utf8mb4_unicode_ci'),
         ]);
 
         $adapter->query(

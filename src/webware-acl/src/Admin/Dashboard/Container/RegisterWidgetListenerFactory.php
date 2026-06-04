@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-
 namespace Webware\Acl\Admin\Dashboard\Container;
 
 use Psr\Container\ContainerInterface;
-use Webware\Acl\Admin\Dashboard\RegisterWidgetListener;
 use Webware\Acl\AclInterface;
+use Webware\Acl\Admin\Dashboard\RegisterWidgetListener;
 use Webware\Acl\Container\Configuration;
 use Webware\Admin\Container\Configuration as AdminConfiguration;
 

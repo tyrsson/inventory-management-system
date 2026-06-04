@@ -37,7 +37,7 @@ final class ConfigProvider
     public function getAssertionManagerConfig(): array
     {
         return [
-            'aliases' => [
+            'aliases'   => [
                 'Store Owned Resource' => Acl\StoreOwnedResourceAssertion::class,
             ],
             'factories' => [
@@ -46,4 +46,3 @@ final class ConfigProvider
         ];
     }
 }
-

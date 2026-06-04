@@ -23,24 +23,6 @@ use Webware\CommandBus\CommandBusInterface;
 #[CoversClass(ProcessRoleMiddleware::class)]
 final class ProcessRoleMiddlewareTest extends TestCase
 {
-    private function capturingHandler(): RequestHandlerInterface
-    {
-        return new class implements RequestHandlerInterface {
-            public ?ServerRequestInterface $received = null;
-
-            public function handle(ServerRequestInterface $request): ResponseInterface
-            {
-                $this->received = $request;
-                return new EmptyResponse();
-            }
-        };
-    }
-
-    private function successResult(SaveRoleCommand|DeleteRoleCommand $cmd): CommandResult
-    {
-        return new CommandResult($cmd, CommandStatus::Success, null);
-    }
-
     #[Test]
     public function postWithValidBodyDispatchesSaveRoleCommandAndSetsSuccess(): void
     {
@@ -48,7 +30,7 @@ final class ProcessRoleMiddlewareTest extends TestCase
         $bus->expects($this->once())
             ->method('handle')
             ->with($this->isInstanceOf(SaveRoleCommand::class))
-            ->willReturnCallback(fn($cmd) => $this->successResult($cmd));
+            ->willReturnCallback(fn ($cmd) => $this->successResult($cmd));
 
         $messenger = $this->createStub(SystemMessengerInterface::class);
 
@@ -106,7 +88,7 @@ final class ProcessRoleMiddlewareTest extends TestCase
         $bus->expects($this->once())
             ->method('handle')
             ->with($this->isInstanceOf(SaveRoleCommand::class))
-            ->willReturnCallback(fn($cmd) => $this->successResult($cmd));
+            ->willReturnCallback(fn ($cmd) => $this->successResult($cmd));
 
         $request = (new ServerRequest([], [], '/', 'PATCH'))
             ->withParsedBody(['role_id' => 'Shift Lead', 'parent_pk' => '2']);
@@ -118,5 +100,24 @@ final class ProcessRoleMiddlewareTest extends TestCase
         $result = $handler->received?->getAttribute(CommandResult::class);
         self::assertInstanceOf(CommandResult::class, $result);
         self::assertSame(CommandStatus::Success, $result->getStatus());
+    }
+
+    private function capturingHandler(): RequestHandlerInterface
+    {
+        return new class() implements RequestHandlerInterface {
+            public ?ServerRequestInterface $received = null;
+
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                $this->received = $request;
+
+                return new EmptyResponse();
+            }
+        };
+    }
+
+    private function successResult(SaveRoleCommand|DeleteRoleCommand $cmd): CommandResult
+    {
+        return new CommandResult($cmd, CommandStatus::Success, null);
     }
 }

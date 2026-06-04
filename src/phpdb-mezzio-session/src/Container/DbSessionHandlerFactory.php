@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace PhpDb\Session\Container;
 
 use PhpDb\Adapter\AdapterInterface;

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Webware\Admin;
 
 use Webware\Acl\AclInterface;
@@ -11,7 +10,6 @@ use Webware\Admin\Container\DashboardMiddlewareFactory;
 use Webware\Admin\Container\RouteProviderFactory;
 use Webware\Admin\Middleware\DashboardMiddleware;
 use Webware\Admin\RequestHandler\DashboardHandler;
-use Webware\Admin\RouteProvider;
 use Webware\Admin\View\Helper\AdminUrl;
 use Webware\Admin\View\Helper\AdminUrlFactory;
 
@@ -33,9 +31,9 @@ final readonly class ConfigProvider
     {
         return [
             'factories' => [
-                DashboardHandler::class               => DashboardHandlerFactory::class,
-                DashboardMiddleware::class            => DashboardMiddlewareFactory::class,
-                RouteProvider::class                  => RouteProviderFactory::class,
+                DashboardHandler::class    => DashboardHandlerFactory::class,
+                DashboardMiddleware::class => DashboardMiddlewareFactory::class,
+                RouteProvider::class       => RouteProviderFactory::class,
             ],
         ];
     }
@@ -81,13 +79,13 @@ final readonly class ConfigProvider
     public function getAclConfig(): array
     {
         return [
-            'roles' => [
+            'roles'     => [
                 'Administrator' => ['Member'],
             ],
             'resources' => [
                 Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'dashboard.read' => true,
             ],
-            'allow' => [
+            'allow'     => [
                 'Administrator' => [
                     Container\Configuration::ADMIN_ROUTE_NAME_PREFIX_VALUE . 'dashboard.read' => [],
                 ],

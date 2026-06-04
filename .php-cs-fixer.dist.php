@@ -17,16 +17,16 @@ $composerData = json_decode(
 return (new Config())
     ->registerCustomRuleSets([
         new Webware1x0Set(),
-        new WebwareCopyRight(
-            packageName: $composerData['name'],
-            authorName: $composerData['authors'][0]['name'],
-            authorEmail: $composerData['authors'][0]['email'],
-        ),
+        // new WebwareCopyRight(
+        //     packageName: $composerData['name'],
+        //     authorName: $composerData['authors'][0]['name'],
+        //     authorEmail: $composerData['authors'][0]['email'],
+        // ),
     ])
     ->setParallelConfig(ParallelConfigFactory::detect()) // @TODO 4.0 no need to call this manually
     ->setRiskyAllowed(true)
     ->setRules([
-        '@Webware/copyright-header'    => true,
+        //'@Webware/copyright-header'    => true,
         '@Webware/coding-standard-1.0' => true,
     ])
     // 💡 by default, Fixer looks for `*.php` files excluding `./vendor/` - here, you can groom this config

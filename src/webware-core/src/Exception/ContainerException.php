@@ -9,15 +9,13 @@ use RuntimeException;
 
 use function sprintf;
 
-final class ContainerException extends RuntimeException implements
-    ExceptionInterface,
-    ContainerExceptionInterface
+final class ContainerException extends RuntimeException implements ExceptionInterface, ContainerExceptionInterface
 {
     public static function forMissingConfigKey(string $key, string $currentFactory): static
     {
         return new self(
             sprintf(
-                'Missing required config key: %s in factory: %s', 
+                'Missing required config key: %s in factory: %s',
                 $key,
                 $currentFactory
             )
@@ -50,7 +48,7 @@ final class ContainerException extends RuntimeException implements
         string $key,
         string $expectedType,
         string $receivedType,
-        string $currentFactory
+        string $currentFactory,
     ): static {
         return new self(
             sprintf(

@@ -38,6 +38,7 @@ final class AssertionManager extends AbstractSingleInstancePluginManager
         foreach ($this->registeredAliases as $alias) {
             $options[] = ['label' => $alias, 'value' => $alias];
         }
+
         return $options;
     }
 }

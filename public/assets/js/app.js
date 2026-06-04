@@ -229,35 +229,6 @@
         htmx.process(delBtn);
       }
     }
-
-    // Rule delete confirm modal
-    if (e.target.id === 'deleteRuleModal') {
-      var roleId     = trigger.dataset.roleId     || '';
-      var resId      = trigger.dataset.resourceId || '';
-      var privId     = trigger.dataset.privilegeId || '';
-      var ruleType   = trigger.dataset.ruleType   || '';
-      var descEl     = document.getElementById('deleteRuleDesc');
-      var confirmBtn = document.getElementById('deleteRuleConfirmBtn');
-      if (descEl) descEl.innerHTML = '<strong>' + ruleType + '</strong> for <code>' + roleId + '</code> &#x2192; <code>' + resId + '</code> / <code>' + privId + '</code>';
-      if (confirmBtn) {
-        var urlTpl    = e.target.dataset.deleteUrlTpl || '';
-        var deleteUrl = urlTpl
-          .replace('__ROLE__', encodeURIComponent(roleId))
-          .replace('__RES__',  encodeURIComponent(resId));
-        var modalEl   = e.target;
-        // Replace onclick each open — no handler accumulation, no htmx.process()
-        confirmBtn.onclick = function () {
-          var bsModal = bootstrap.Modal.getInstance(modalEl);
-          // Fire DELETE only after modal is fully hidden (animation done, backdrop gone)
-          // This avoids the race where HTMX swaps <main> while Bootstrap is still closing.
-          modalEl.addEventListener('hidden.bs.modal', function handler() {
-            modalEl.removeEventListener('hidden.bs.modal', handler);
-            htmx.ajax('DELETE', deleteUrl, { target: 'main', swap: 'innerHTML' });
-          }, { once: true });
-          if (bsModal) bsModal.hide();
-        };
-      }
-    }
   });
 
   // ── Bootstrap modal cleanup after HTMX swaps ────────────────────────────
@@ -296,6 +267,16 @@
   });
 
   document.addEventListener('htmx:afterSwap', cleanModalBackdrop);
+
+  // ── Shared modal shell cleanup ───────────────────────────────────────────
+  // Empty #sharedModalDialog after the modal fully closes so stale content
+  // never lingers in the DOM between invocations.
+  var sharedModalEl = document.getElementById('sharedModal');
+  if (sharedModalEl) {
+    sharedModalEl.addEventListener('hidden.bs.modal', function () {
+      document.getElementById('sharedModalDialog').innerHTML = '';
+    });
+  }
 
   // ── Status toggle buttons (damage-detail page) ───────────────────────────
   // Selecting a status makes that button active and deselects the others.
@@ -354,8 +335,7 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
         ruleType:       'Allow',
         roleId:         '',
         selectedPrivs:  [],
-        assertionAlias: '',
-        assertionMode:  'none',
+        assertionAliases: [],
     };
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -403,8 +383,7 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
         _state.ruleType      = 'Allow';
         _state.roleId        = '';
         _state.selectedPrivs = [];
-        _state.assertionAlias = '';
-        _state.assertionMode  = 'none';
+        _state.assertionAliases = [];
 
         // Route context in header
         var routeDisplay = document.getElementById('wiz-route-display');
@@ -434,13 +413,12 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
             }).join('');
         }
         _state.selectedPrivs = _state.privs.slice();
-        _syncPrivilegeInputs();
 
         // Reset radios
         var allowRadio = document.getElementById('wiz-rule-allow');
         if (allowRadio) allowRadio.checked = true;
         var noneAssert = document.querySelector('[data-assertion="none"]');
-        if (noneAssert) _selectAssertion(noneAssert);
+        if (noneAssert) _toggleAssertion(noneAssert);
 
         // Reset grant cards
         document.querySelectorAll('.ims-acl-grant-card').forEach(function (c) { c.classList.remove('selected'); });
@@ -518,34 +496,55 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
         });
     }
 
-    // ── Privileges (step 3 — auto-selected, display-only) ───────────────────
-
-    function _syncPrivilegeInputs() {
-        // Remove existing privilege[] inputs
-        document.querySelectorAll('input[name="privileges[]"]').forEach(function (el) { el.remove(); });
-        var form = document.getElementById('wiz-form');
-        if (!form) return;
-        _state.selectedPrivs.forEach(function (p) {
-            var inp = document.createElement('input');
-            inp.type  = 'hidden';
-            inp.name  = 'privileges[]';
-            inp.value = p;
-            form.appendChild(inp);
-        });
-    }
 
     // ── Assertion (step 4) ───────────────────────────────────────────────────
 
-    function _selectAssertion(el) {
-        document.querySelectorAll('.ims-acl-assertion-card').forEach(function (c) { c.classList.remove('selected'); });
-        el.classList.add('selected');
+    function _syncAssertionInputs() {
+        var container = document.getElementById('wiz-assertion-inputs');
+        if (!container) return;
+        container.innerHTML = '';
+        if (_state.assertionAliases.length === 1) {
+            var input = document.createElement('input');
+            input.type  = 'hidden';
+            input.name  = 'assertions';
+            input.value = _state.assertionAliases[0];
+            container.appendChild(input);
+        } else if (_state.assertionAliases.length > 1) {
+            _state.assertionAliases.forEach(function (alias) {
+                var input = document.createElement('input');
+                input.type  = 'hidden';
+                input.name  = 'assertions[]';
+                input.value = alias;
+                container.appendChild(input);
+            });
+        }
+        // Empty array: no inputs sent
+    }
+
+    function _toggleAssertion(el) {
         var isNone = el.dataset.assertion === 'none';
-        _state.assertionAlias = isNone ? '' : (el.dataset.assertionAlias || '');
-        _state.assertionMode  = isNone ? 'none' : 'must';
-        document.getElementById('wiz-input-assertion-alias').value = _state.assertionAlias;
-        document.getElementById('wiz-input-assertion-mode').value  = _state.assertionMode;
-        var modeWrap = document.getElementById('wiz-assertion-mode-wrap');
-        if (modeWrap) modeWrap.classList.toggle('d-none', isNone);
+        if (isNone) {
+            document.querySelectorAll('.ims-acl-assertion-card').forEach(function (c) { c.classList.remove('selected'); });
+            el.classList.add('selected');
+            _state.assertionAliases = [];
+        } else {
+            var alias = el.dataset.assertionAlias || '';
+            var idx   = _state.assertionAliases.indexOf(alias);
+            if (idx !== -1) {
+                _state.assertionAliases.splice(idx, 1);
+                el.classList.remove('selected');
+                if (_state.assertionAliases.length === 0) {
+                    var noneCard = document.querySelector('[data-assertion="none"]');
+                    if (noneCard) noneCard.classList.add('selected');
+                }
+            } else {
+                var noneCard = document.querySelector('[data-assertion="none"]');
+                if (noneCard) noneCard.classList.remove('selected');
+                _state.assertionAliases.push(alias);
+                el.classList.add('selected');
+            }
+        }
+        _syncAssertionInputs();
     }
 
     // ── Review (step 5) ──────────────────────────────────────────────────────
@@ -577,9 +576,9 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
 
         var assertRow = document.getElementById('wiz-review-assert-row');
         var assertEl  = document.getElementById('wiz-review-assertion');
-        if (_state.assertionAlias) {
+        if (_state.assertionAliases.length > 0) {
             if (assertRow) assertRow.classList.remove('d-none');
-            if (assertEl)  assertEl.textContent = _state.assertionAlias + ' [' + _state.assertionMode + ']';
+            if (assertEl)  assertEl.textContent = _state.assertionAliases.join(', ');
         } else {
             if (assertRow) assertRow.classList.add('d-none');
         }
@@ -590,7 +589,7 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
     function _canAdvance() {
         if (_state.step === 1) return !!document.querySelector('.ims-acl-grant-card.selected');
         if (_state.step === 2) return !!_state.roleId;
-        return true; // steps 3, 4 and 5 are always advanceable
+        return true;
     }
 
     // ── Route list filter ────────────────────────────────────────────────────
@@ -676,7 +675,7 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
             // Step 4 — assertion card
             var assertCard = e.target.closest('.ims-acl-assertion-card');
             if (assertCard && modal.contains(assertCard)) {
-                _selectAssertion(assertCard);
+                _toggleAssertion(assertCard);
                 return;
             }
 
@@ -710,18 +709,13 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
 
         // Rule type / assertion radio changes
         document.addEventListener('change', function (e) {
-            // Rule type radio
-            if (e.target.name === 'rule_type_ui') {
+            // Rule type radio (UI-only — no name attr, drives hidden type input)
+            if (e.target.id === 'wiz-rule-allow' || e.target.id === 'wiz-rule-deny') {
                 _state.ruleType = e.target.value;
                 document.getElementById('wiz-input-rule-type').value = _state.ruleType;
                 return;
             }
-            // Assertion mode radio
-            if (e.target.name === 'assertion_mode_ui') {
-                _state.assertionMode = e.target.value;
-                document.getElementById('wiz-input-assertion-mode').value = _state.assertionMode;
-                return;
-            }
+            // Assertion mode radio removed — all assertions must pass
         });
 
         // Keyboard support for grant/role/priv/assertion cards
@@ -730,7 +724,7 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
             var t = e.target;
             if (t.matches('[data-acl-step-grant]') && modal.contains(t)) { e.preventDefault(); _selectGrant(t); }
             if (t.matches('.ims-acl-role-item')    && modal.contains(t)) { e.preventDefault(); _selectRole(t); }
-            if (t.matches('.ims-acl-assertion-card') && modal.contains(t)) { e.preventDefault(); _selectAssertion(t); }
+            if (t.matches('.ims-acl-assertion-card') && modal.contains(t)) { e.preventDefault(); _toggleAssertion(t); }
         });
     }
 
