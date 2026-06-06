@@ -16,7 +16,6 @@ use Webware\Acl\Repository\RuleRepository;
 use Webware\Acl\Role\UserRoleIterator;
 use Webware\UserManager\UserInterface;
 
-use function array_flip;
 use function is_array;
 use function sort;
 use function strrpos;
@@ -135,32 +134,36 @@ final class Acl extends LaminasAcl implements AclInterface
             return;
         }
 
+        $allRules = $this->ruleRepository->fetchAll();
+
+        // Build explicit parent map from DB data
+        $explicitParents = [];
+        foreach ($allRules as $rule) {
+            if ($rule['parentResourceId'] !== null) {
+                $explicitParents[$rule['resourceId']] = $rule['parentResourceId'];
+            }
+        }
+
         $resourceIds = $this->ruleRepository->fetchDistinctResourceIds();
         sort($resourceIds);
-        $known = array_flip($resourceIds);
 
         foreach ($resourceIds as $resourceId) {
             if ($this->hasResource($resourceId)) {
                 continue;
             }
-            $parent  = null;
-            $lastDot = strrpos($resourceId, '.');
-            if ($lastDot !== false) {
-                $candidate = substr($resourceId, 0, $lastDot);
-                if (isset($known[$candidate])) {
-                    $parent = $candidate;
-                }
-            }
+            // Use explicit parentResourceId from DB — no fallback by design.
+            // A missing parent here indicates inconsistent DB state and should surface, not be masked.
+            $parent = $explicitParents[$resourceId] ?? null;
             parent::addResource($resourceId, $parent);
         }
 
-        foreach ($this->ruleRepository->fetchAll() as $rule) {
+        foreach ($allRules as $rule) {
             $type = RuleType::from($rule['type'])->toAclConstant();
             $this->setRule(
                 self::OP_ADD,
                 $type,
-                $rule['role_id'],
-                $rule['resource_id'],
+                $rule['roleId'],
+                $rule['resourceId'],
                 null,
                 ($this->factory)($rule['assertions'])
             );

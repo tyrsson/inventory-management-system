@@ -331,7 +331,6 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
         routeName:      '',
         methods:        [],
         privs:          [],
-        grantMode:      'explicit',
         ruleType:       'Allow',
         roleId:         '',
         selectedPrivs:  [],
@@ -379,7 +378,6 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
         _state.routeName     = btn.dataset.routeName     || '';
         _state.methods       = JSON.parse(btn.dataset.methods || '[]');
         _state.privs         = JSON.parse(btn.dataset.privs   || '[]');
-        _state.grantMode     = 'explicit';
         _state.ruleType      = 'Allow';
         _state.roleId        = '';
         _state.selectedPrivs = [];
@@ -414,9 +412,7 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
         }
         _state.selectedPrivs = _state.privs.slice();
 
-        // Reset radios
-        var allowRadio = document.getElementById('wiz-rule-allow');
-        if (allowRadio) allowRadio.checked = true;
+        // Reset assertion cards
         var noneAssert = document.querySelector('[data-assertion="none"]');
         if (noneAssert) _toggleAssertion(noneAssert);
 
@@ -439,7 +435,6 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
 
         // Hidden inputs
         document.getElementById('wiz-input-route-name').value = _state.routeName;
-        document.getElementById('wiz-input-grant-mode').value = 'explicit';
         document.getElementById('wiz-input-rule-type').value  = 'Allow';
 
         _showStep(1);
@@ -450,8 +445,8 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
     function _selectGrant(el) {
         document.querySelectorAll('.ims-acl-grant-card').forEach(function (c) { c.classList.remove('selected'); });
         el.classList.add('selected');
-        _state.grantMode = el.dataset.aclStepGrant || 'explicit';
-        document.getElementById('wiz-input-grant-mode').value = _state.grantMode;
+        _state.ruleType = el.dataset.aclStepGrant || 'Allow';
+        document.getElementById('wiz-input-rule-type').value = _state.ruleType;
     }
 
     // ── Role tree (step 2) ───────────────────────────────────────────────────
@@ -475,16 +470,7 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
         _state.roleId = el.dataset.roleId || '';
         document.getElementById('wiz-input-role-id').value = _state.roleId;
 
-        // Propagation preview for inherited mode
-        var children = (_getRoleChildren()[_state.roleId] || []);
-        var propAlert    = document.getElementById('wiz-propagation-alert');
-        var propChildren = document.getElementById('wiz-propagation-children');
-        if (_state.grantMode === 'inherited' && children.length > 0) {
-            if (propAlert)    propAlert.classList.remove('d-none');
-            if (propChildren) propChildren.textContent = children.join(', ');
-        } else {
-            if (propAlert) propAlert.classList.add('d-none');
-        }
+
     }
 
     function _filterRoleTree(query) {
@@ -555,7 +541,6 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
             if (el) el.textContent = val;
         };
         set('wiz-review-route',  _state.routeName);
-        set('wiz-review-grant',  _state.grantMode);
         set('wiz-review-role',   _state.roleId || '(none selected)');
 
         var typeEl = document.getElementById('wiz-review-type');
@@ -708,15 +693,7 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
         });
 
         // Rule type / assertion radio changes
-        document.addEventListener('change', function (e) {
-            // Rule type radio (UI-only — no name attr, drives hidden type input)
-            if (e.target.id === 'wiz-rule-allow' || e.target.id === 'wiz-rule-deny') {
-                _state.ruleType = e.target.value;
-                document.getElementById('wiz-input-rule-type').value = _state.ruleType;
-                return;
-            }
-            // Assertion mode radio removed — all assertions must pass
-        });
+
 
         // Keyboard support for grant/role/priv/assertion cards
         document.addEventListener('keydown', function (e) {

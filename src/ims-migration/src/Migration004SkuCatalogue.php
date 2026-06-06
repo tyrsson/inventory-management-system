@@ -51,10 +51,10 @@ final class Migration004SkuCatalogue implements MigrationInterface
                 ->setOptions(['comment' => 'DC vendor abbreviation (e.g. EMBY)'])
         );
 
-        $create->addColumn(new Varchar('vendor_model', 50, nullable: false, default: ''));
+        $create->addColumn(new Varchar('vendorModel', 50, nullable: false, default: ''));
 
         $create->addColumn(
-            (new SmallInteger('major_code_id', nullable: true))
+            (new SmallInteger('majorCodeId', nullable: true))
                 ->setOptions(['unsigned' => true])
         );
 
@@ -71,7 +71,7 @@ final class Migration004SkuCatalogue implements MigrationInterface
         );
 
         $create->addConstraint(new PrimaryKey('sku'));
-        $create->addConstraint(new ForeignKey('fk_sku_major_code', 'major_code_id', 'major_code', 'id'));
+        $create->addConstraint(new ForeignKey('fk_sku_major_code', 'majorCodeId', 'major_code', 'id'));
 
         $create->setOptions([
             'engine'          => new Literal('InnoDB'),

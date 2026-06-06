@@ -40,13 +40,8 @@ final class UpdateRuleTypeHandler implements CommandHandlerInterface
     {
         assert($command instanceof UpdateRuleTypeCommand);
 
-        $roleId     = $command->roleId;
-        $resourceId = $command->resourceId;
-        $newType    = RuleType::from($command->newType);
-        $oldType    = $newType === RuleType::Allow ? RuleType::Deny : RuleType::Allow;
-
         try {
-            $updated = $this->ruleRepository->updateType($roleId, $resourceId, $newType->value);
+            $updated = $this->ruleRepository->updateType($command->roleId, $command->resourceId, $command->type);
 
             if (! $updated) {
                 return new CommandResult($command, CommandStatus::Failure, null);
@@ -54,9 +49,9 @@ final class UpdateRuleTypeHandler implements CommandHandlerInterface
 
             // Cascade: children with no explicit rule inherit the parent rule type.
             // Add an explicit old-type rule for each such child so they keep their access.
-            foreach ($this->roleRepository->fetchDirectChildren($roleId) as $childRole) {
-                if ($this->ruleRepository->findByRoleAndResource($childRole, $resourceId) === null) {
-                    $this->ruleRepository->save($oldType->value, $childRole, $resourceId, []);
+            foreach ($this->roleRepository->fetchDirectChildren($command->roleId) as $childRole) {
+                if ($this->ruleRepository->findByRoleAndResource($childRole, $command->resourceId) === null) {
+                    $this->ruleRepository->save($command->type, $childRole, $command->resourceId, []);
                 }
             }
         } catch (Throwable $e) {

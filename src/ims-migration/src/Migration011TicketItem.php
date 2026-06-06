@@ -40,17 +40,17 @@ final class Migration011TicketItem implements MigrationInterface
         );
 
         $create->addColumn(
-            (new Integer('ticket_id', nullable: false))
+            (new Integer('ticketId', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
         $create->addColumn(
-            (new Integer('product_id', nullable: false))
+            (new Integer('productId', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
         $create->addColumn(
-            (new Integer('confirmed_by', nullable: false))
+            (new Integer('confirmedBy', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
@@ -59,10 +59,10 @@ final class Migration011TicketItem implements MigrationInterface
         );
 
         $create->addConstraint(new PrimaryKey('id'));
-        $create->addConstraint(new UniqueKey(['ticket_id', 'product_id'], 'uq_ticket_item'));
-        $create->addConstraint(new ForeignKey('fk_ti_ticket', 'ticket_id', 'ticket', 'id'));
-        $create->addConstraint(new ForeignKey('fk_ti_product', 'product_id', 'product', 'id'));
-        $create->addConstraint(new ForeignKey('fk_ti_confirmed_by', 'confirmed_by', 'user', 'id'));
+        $create->addConstraint(new UniqueKey(['ticketId', 'productId'], 'uq_ticket_item'));
+        $create->addConstraint(new ForeignKey('fk_ti_ticket', 'ticketId', 'ticket', 'id'));
+        $create->addConstraint(new ForeignKey('fk_ti_product', 'productId', 'product', 'id'));
+        $create->addConstraint(new ForeignKey('fk_ti_confirmed_by', 'confirmedBy', 'user', 'id'));
 
         $create->setOptions([
             'engine'          => new Literal('InnoDB'),

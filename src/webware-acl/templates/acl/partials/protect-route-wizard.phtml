@@ -128,47 +128,30 @@ while ($queue !== []) {
                   hx-push-url="false">
 
                 <!-- Hidden state inputs (populated by JS) -->
-                <input type="hidden" name="resourceId"  id="wiz-input-route-name">
-                <input type="hidden" name="grantMode"   id="wiz-input-grant-mode"  value="explicit">
-                <input type="hidden" name="type"         id="wiz-input-rule-type"   value="Allow">
-                <input type="hidden" name="roleId"       id="wiz-input-role-id">
+                <input type="hidden" name="resourceId" id="wiz-input-route-name">
+                <input type="hidden" name="type"        id="wiz-input-rule-type"  value="Allow">
+                <input type="hidden" name="roleId"      id="wiz-input-role-id">
                 <div id="wiz-assertion-inputs"></div>
 
                 <div class="modal-body py-3">
 
                     <!-- ── Step 1: Grant type ─────────────────────── -->
                     <div class="wiz-step-panel" id="wiz-panel-1">
-                        <p class="text-secondary small mb-3">Choose how access is granted and whether to allow or deny it.</p>
-                        <div class="row g-3 mb-3">
+                        <p class="text-secondary small mb-3">Choose whether to Allow or Deny access to this route (resource).</p>
+                        <div class="row g-3">
                             <div class="col-6">
-                                <div class="ims-acl-grant-card" data-acl-step-grant="explicit" tabindex="0">
-                                    <div class="ims-acl-grant-icon"><i class="bi bi-person-check fs-4"></i></div>
-                                    <div class="fw-semibold small">Explicit</div>
-                                    <div class="text-secondary" style="font-size:.78rem;">Rule applies directly to the selected role only.</div>
+                                <div class="ims-acl-grant-card ims-acl-grant-allow" data-acl-step-grant="Allow" tabindex="0">
+                                    <div class="ims-acl-grant-icon"><i class="bi bi-shield-check fs-4 text-success"></i></div>
+                                    <div class="fw-semibold small text-success">Allow</div>
+                                    <div class="text-secondary" style="font-size:.78rem;">Permit access to the selected role.</div>
                                 </div>
                             </div>
                             <div class="col-6">
-                                <div class="ims-acl-grant-card" data-acl-step-grant="inherited" tabindex="0">
-                                    <div class="ims-acl-grant-icon"><i class="bi bi-diagram-3 fs-4"></i></div>
-                                    <div class="fw-semibold small">Inherited</div>
-                                    <div class="text-secondary" style="font-size:.78rem;">Rule also applies to all child roles.</div>
+                                <div class="ims-acl-grant-card ims-acl-grant-deny" data-acl-step-grant="Deny" tabindex="0">
+                                    <div class="ims-acl-grant-icon"><i class="bi bi-shield-x fs-4 text-danger"></i></div>
+                                    <div class="fw-semibold small text-danger">Deny</div>
+                                    <div class="text-secondary" style="font-size:.78rem;">Explicitly deny access to the selected role.</div>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="d-flex gap-3 mt-2">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="rule_type_ui"
-                                       id="wiz-rule-allow" value="Allow" checked>
-                                <label class="form-check-label small" for="wiz-rule-allow">
-                                    <span class="badge bg-success-subtle border border-success-subtle text-success-emphasis">Allow</span>
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="rule_type_ui"
-                                       id="wiz-rule-deny" value="Deny">
-                                <label class="form-check-label small" for="wiz-rule-deny">
-                                    <span class="badge bg-danger-subtle border border-danger-subtle text-danger-emphasis">Deny</span>
-                                </label>
                             </div>
                         </div>
                     </div>
@@ -244,10 +227,6 @@ while ($queue !== []) {
                             <li class="list-group-item d-flex align-items-start gap-3 px-0 py-2 ims-acl-summary-item">
                                 <span class="ims-acl-summary-label">Route</span>
                                 <span id="wiz-review-route" class="fw-semibold small font-monospace"></span>
-                            </li>
-                            <li class="list-group-item d-flex align-items-start gap-3 px-0 py-2 ims-acl-summary-item">
-                                <span class="ims-acl-summary-label">Grant mode</span>
-                                <span id="wiz-review-grant" class="small"></span>
                             </li>
                             <li class="list-group-item d-flex align-items-start gap-3 px-0 py-2 ims-acl-summary-item">
                                 <span class="ims-acl-summary-label">Rule type</span>

@@ -8,6 +8,7 @@ use Laminas\Permissions\Acl\Role\GenericRole;
 use Laminas\Permissions\Acl\Role\Registry;
 use PhpDb\Adapter\AdapterInterface;
 use PhpDb\TableGateway\TableGateway;
+use Webware\Acl\Schema;
 
 use function array_diff_key;
 use function array_fill_keys;
@@ -21,7 +22,7 @@ final class RoleRepository
 
     public function __construct(AdapterInterface $adapter)
     {
-        $this->gateway = new TableGateway('acl_role', $adapter);
+        $this->gateway = new TableGateway(Schema::Roles->value, $adapter);
     }
 
     /**
@@ -33,12 +34,12 @@ final class RoleRepository
     public function fetchAll(): array
     {
         $sql    = $this->gateway->getSql();
-        $select = $sql->select()->columns(['role_id', 'parent_id']);
+        $select = $sql->select()->columns(['roleId', 'parentId']);
 
         $roles = [];
         foreach ($sql->prepareStatementForSqlObject($select)->execute() as $row) {
-            $parents                = json_decode($row['parent_id'], true) ?? [];
-            $roles[$row['role_id']] = $parents;
+            $parents               = json_decode($row['parentId'], true) ?? [];
+            $roles[$row['roleId']] = $parents;
         }
 
         return $roles;
@@ -47,11 +48,11 @@ final class RoleRepository
     public function fetchAclRoleRegistry(): Registry
     {
         $sql    = $this->gateway->getSql();
-        $select = $sql->select()->columns(['role_id', 'parent_id']);
+        $select = $sql->select()->columns(['roleId', 'parentId']);
 
         $roles = [];
         foreach ($sql->prepareStatementForSqlObject($select)->execute() as $row) {
-            $roles[$row['role_id']] = json_decode($row['parent_id'], true) ?? [];
+            $roles[$row['roleId']] = json_decode($row['parentId'], true) ?? [];
         }
 
         $registry  = new Registry();
@@ -82,12 +83,12 @@ final class RoleRepository
     public function fetchDirectChildren(string $roleId): array
     {
         $sql    = $this->gateway->getSql();
-        $select = $sql->select()->columns(['role_id']);
-        $select->where->expression('JSON_CONTAINS(parent_id, JSON_QUOTE(?))', [$roleId]);
+        $select = $sql->select()->columns(['roleId']);
+        $select->where->expression('JSON_CONTAINS(parentId, JSON_QUOTE(?))', [$roleId]);
 
         $children = [];
         foreach ($sql->prepareStatementForSqlObject($select)->execute() as $row) {
-            $children[] = $row['role_id'];
+            $children[] = $row['roleId'];
         }
 
         return $children;
@@ -103,14 +104,14 @@ final class RoleRepository
         $sql    = $this->gateway->getSql();
         $exists = $sql->select()
             ->columns(['id'])
-            ->where(['role_id' => $roleId])
+            ->where(['roleId' => $roleId])
             ->limit(1);
 
         $row = $sql->prepareStatementForSqlObject($exists)->execute()->current();
 
         $data = [
-            'role_id'   => $roleId,
-            'parent_id' => json_encode($parents),
+            'roleId'   => $roleId,
+            'parentId' => json_encode($parents),
         ];
 
         if ($row === null) {
@@ -118,8 +119,8 @@ final class RoleRepository
             $sql->prepareStatementForSqlObject($insert)->execute();
         } else {
             $update = $sql->update()
-                ->set(['parent_id' => $data['parent_id']])
-                ->where(['role_id' => $roleId]);
+                ->set(['parentId' => $data['parentId']])
+                ->where(['roleId' => $roleId]);
             $sql->prepareStatementForSqlObject($update)->execute();
         }
     }
@@ -127,7 +128,7 @@ final class RoleRepository
     public function delete(string $roleId): void
     {
         $sql    = $this->gateway->getSql();
-        $delete = $sql->delete()->where(['role_id' => $roleId]);
+        $delete = $sql->delete()->where(['roleId' => $roleId]);
         $sql->prepareStatementForSqlObject($delete)->execute();
     }
 }

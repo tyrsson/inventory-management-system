@@ -680,6 +680,16 @@
 .ims-acl-grant-card { border: 2px solid var(--bs-border-color); border-radius: 8px; padding: 14px 16px; cursor: pointer; transition: border-color 0.15s, background 0.15s; height: 100%; }
 .ims-acl-grant-card:hover { border-color: var(--bs-secondary-color); }
 .ims-acl-grant-card.selected { border-color: var(--bs-primary); background: rgba(var(--bs-primary-rgb), 0.07); }
+.ims-acl-grant-allow { background: rgba(25, 135, 84, 0.04); }
+.ims-acl-grant-allow:hover { border-color: var(--bs-success); background: rgba(25, 135, 84, 0.08); }
+.ims-acl-grant-allow.selected { border-color: var(--bs-success); background: rgba(25, 135, 84, 0.12); color: #fff; }
+.ims-acl-grant-allow.selected .text-secondary { color: rgba(255,255,255,0.75) !important; }
+.ims-acl-grant-allow.selected .text-success { color: #fff !important; }
+.ims-acl-grant-deny { background: rgba(220, 53, 69, 0.04); }
+.ims-acl-grant-deny:hover { border-color: var(--bs-danger); background: rgba(220, 53, 69, 0.08); }
+.ims-acl-grant-deny.selected { border-color: var(--bs-danger); background: rgba(220, 53, 69, 0.12); color: #fff; }
+.ims-acl-grant-deny.selected .text-secondary { color: rgba(255,255,255,0.75) !important; }
+.ims-acl-grant-deny.selected .text-danger { color: #fff !important; }
 .ims-acl-grant-icon { font-size: 1.4rem; margin-bottom: 6px; }
 
 /* Role hierarchy tree */

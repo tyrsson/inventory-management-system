@@ -41,7 +41,7 @@ final class Migration009ProductImage implements MigrationInterface
         );
 
         $create->addColumn(
-            (new Integer('product_id', nullable: false))
+            (new Integer('productId', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
@@ -51,7 +51,7 @@ final class Migration009ProductImage implements MigrationInterface
         );
 
         $create->addColumn(
-            (new Integer('uploaded_by', nullable: false))
+            (new Integer('uploadedBy', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
@@ -60,9 +60,9 @@ final class Migration009ProductImage implements MigrationInterface
         );
 
         $create->addConstraint(new PrimaryKey('id'));
-        $create->addConstraint(new Index('product_id', 'idx_pi_product'));
-        $create->addConstraint(new ForeignKey('fk_pi_product', 'product_id', 'product', 'id'));
-        $create->addConstraint(new ForeignKey('fk_pi_uploaded_by', 'uploaded_by', 'user', 'id'));
+        $create->addConstraint(new Index('productId', 'idx_pi_product'));
+        $create->addConstraint(new ForeignKey('fk_pi_product', 'productId', 'product', 'id'));
+        $create->addConstraint(new ForeignKey('fk_pi_uploaded_by', 'uploadedBy', 'user', 'id'));
 
         $create->setOptions([
             'engine'          => new Literal('InnoDB'),

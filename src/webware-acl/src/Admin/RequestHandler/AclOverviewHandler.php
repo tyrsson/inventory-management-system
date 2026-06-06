@@ -9,7 +9,7 @@ use Mezzio\Template\TemplateRendererInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Webware\Acl\Admin\Middleware\BuildAccessControlMiddleware;
+use Webware\Acl\Admin\Middleware\OverviewMiddleware;
 use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandStatus;
 
@@ -29,7 +29,7 @@ final class AclOverviewHandler implements RequestHandlerInterface
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         /** @var array<string, mixed> $viewModel */
-        $viewModel = $request->getAttribute(BuildAccessControlMiddleware::class, []);
+        $viewModel = $request->getAttribute(OverviewMiddleware::class, []);
 
         $response = new HtmlResponse($this->template->render('acl::admin-acl', $viewModel));
 

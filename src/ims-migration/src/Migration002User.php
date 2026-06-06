@@ -46,25 +46,25 @@ final class Migration002User implements MigrationInterface
         );
 
         $create->addColumn(
-            (new SmallInteger('store_id', nullable: false))
+            (new SmallInteger('storeId', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
-        $create->addColumn(new Json('role_id', nullable: false));
+        $create->addColumn(new Json('roleId', nullable: false));
 
-        $create->addColumn(new Varchar('first_name', 75));
-        $create->addColumn(new Varchar('last_name', 75));
+        $create->addColumn(new Varchar('firstName', 75));
+        $create->addColumn(new Varchar('lastName', 75));
         $create->addColumn(new Varchar('email', 255));
 
         $create->addColumn(
-            (new Varchar('password_hash', 255))
+            (new Varchar('passwordHash', 255))
                 ->setOptions(['comment' => 'bcrypt hash; never store plain text'])
         );
 
         $create->addColumn(new TinyInteger('active', nullable: false, default: 0));
 
-        $create->addColumn(new Varchar('verification_token', 36, nullable: true));
-        $create->addColumn(new Datetime('token_created_at', nullable: true));
+        $create->addColumn(new Varchar('verificationToken', 36, nullable: true));
+        $create->addColumn(new Datetime('tokenCreatedAt', nullable: true));
 
         $create->addColumn(
             new Datetime('created_at', nullable: false, default: new ArgLiteral('CURRENT_TIMESTAMP'))
@@ -77,7 +77,7 @@ final class Migration002User implements MigrationInterface
 
         $create->addConstraint(new PrimaryKey('id'));
         $create->addConstraint(new UniqueKey('email', 'uq_user_email'));
-        $create->addConstraint(new ForeignKey('fk_user_store', 'store_id', 'store', 'store_number'));
+        $create->addConstraint(new ForeignKey('fk_user_store', 'storeId', 'store', 'store_number'));
 
         $create->setOptions([
             'engine'          => new Literal('InnoDB'),

@@ -38,15 +38,15 @@ final class Migration016AclRole implements MigrationInterface
                 ->setOptions(['unsigned' => true, 'autoincrement' => true])
         );
 
-        $create->addColumn(new Varchar('role_id', 50, nullable: false));
+        $create->addColumn(new Varchar('roleId', 50, nullable: false));
 
         $create->addColumn(
-            (new Json('parent_id', nullable: true, default: null))
-                ->setOptions(['comment' => 'Array of parent role_id strings, e.g. ["Guest","Member"]'])
+            (new Json('parentId', nullable: true, default: null))
+                ->setOptions(['comment' => 'Array of parent roleId strings, e.g. ["Guest","Member"]'])
         );
 
         $create->addConstraint(new PrimaryKey('id'));
-        $create->addConstraint(new UniqueKey('role_id', 'uq_role_id'));
+        $create->addConstraint(new UniqueKey('roleId', 'uq_role_id'));
 
         $create->setOptions([
             'engine'          => new Literal('InnoDB'),

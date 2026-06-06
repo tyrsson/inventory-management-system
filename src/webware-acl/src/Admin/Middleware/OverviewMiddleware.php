@@ -45,7 +45,7 @@ use function is_int;
  *   roles              array<int, \Webware\Acl\Entity\Role>
  *   roleParents        array<int, int[]>                                         childPk → parentPks
  */
-final readonly class BuildAccessControlMiddleware implements MiddlewareInterface
+final readonly class OverviewMiddleware implements MiddlewareInterface
 {
     public function __construct(
         private RuleRepository $ruleRepository,
@@ -59,13 +59,17 @@ final readonly class BuildAccessControlMiddleware implements MiddlewareInterface
         $acl      = $request->getAttribute(AclInterface::class);
         $allRules = $this->ruleRepository->fetchAll();
 
-        $configAllow = [];
-        $configDeny  = [];
+        $configAllow      = [];
+        $configDeny       = [];
+        $parentResourceMap = [];
         foreach ($allRules as $rule) {
             if (RuleType::from($rule['type']) === RuleType::Allow) {
-                $configAllow[$rule['role_id']][$rule['resource_id']] = $rule['assertions'];
+                $configAllow[$rule['roleId']][$rule['resourceId']] = $rule['assertions'];
             } else {
-                $configDeny[$rule['role_id']][$rule['resource_id']] = [];
+                $configDeny[$rule['roleId']][$rule['resourceId']] = [];
+            }
+            if ($rule['parentResourceId'] !== null) {
+                $parentResourceMap[$rule['resourceId']] = $rule['parentResourceId'];
             }
         }
 
@@ -92,18 +96,8 @@ final readonly class BuildAccessControlMiddleware implements MiddlewareInterface
                 continue;
             }
 
-            $inheritedFrom = null;
-            foreach (array_keys($configAllow + $configDeny) as $roleId) {
-                $ruleResources = array_keys(($configAllow[$roleId] ?? []) + ($configDeny[$roleId] ?? []));
-                foreach ($ruleResources as $ruleResource) {
-                    if ($acl->hasResource($ruleResource) && $acl->inheritsResource($name, $ruleResource)) {
-                        $inheritedFrom = $ruleResource;
-
-                        break 2;
-                    }
-                }
-            }
-            $lookupName      = $inheritedFrom ?? $name;
+            $inheritedFrom = $parentResourceMap[$name] ?? null;
+            $lookupName    = $inheritedFrom ?? $name;
             $rules           = [];
             $rolesOnResource = [];
             $syntheticId     = 0;
@@ -115,8 +109,8 @@ final readonly class BuildAccessControlMiddleware implements MiddlewareInterface
                     $assertions = array_values(array_unique($normalized[$lookupName]));
                     $rules[]    = [
                         'id'             => ++$syntheticId,
-                        'role_id'        => $roleId,
-                        'resource_id'    => $name,
+                        'roleId'         => $roleId,
+                        'resourceId'     => $name,
                         'privilege_id'   => '',
                         'type'           => RuleType::Allow->value,
                         'assertions'     => $assertions,
@@ -135,8 +129,8 @@ final readonly class BuildAccessControlMiddleware implements MiddlewareInterface
                 if (isset($normalized[$lookupName])) {
                     $rules[] = [
                         'id'             => ++$syntheticId,
-                        'role_id'        => $roleId,
-                        'resource_id'    => $name,
+                        'roleId'         => $roleId,
+                        'resourceId'     => $name,
                         'privilege_id'   => '',
                         'type'           => RuleType::Deny->value,
                         'assertions'     => [],

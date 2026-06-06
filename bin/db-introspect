@@ -1,0 +1,132 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Database introspection tool.
+ *
+ * Uses PhpDb\Mysql\Metadata\Source to inspect the live database schema.
+ *
+ * Usage (from project root):
+ *   php bin/db-introspect                        # list all tables
+ *   php bin/db-introspect <table>                # columns for a table
+ *   php bin/db-introspect <table> constraints    # constraints for a table
+ *   php bin/db-introspect <table> all            # columns + constraints
+ *   php bin/db-introspect <table> read           # SELECT * FROM <table>
+ *   php bin/db-introspect <table> read <limit>   # SELECT * FROM <table> LIMIT n
+ */
+
+use PhpDb\Adapter\AdapterInterface;
+use PhpDb\Mysql\Metadata\Source;
+
+chdir(dirname(__DIR__));
+
+require 'vendor/autoload.php';
+
+$container = require 'config/container.php';
+
+/** @var AdapterInterface $adapter */
+$adapter  = $container->get(AdapterInterface::class);
+$metadata = new Source($adapter);
+
+$table  = $argv[1] ?? null;
+$mode   = $argv[2] ?? 'columns';
+$limit  = isset($argv[3]) ? (int) $argv[3] : 50;
+
+// ── No table arg → list all tables ──────────────────────────────────────────
+if ($table === null) {
+    $tables = $metadata->getTableNames();
+    echo "\nTables in database:\n";
+    echo str_repeat('-', 40) . "\n";
+    foreach ($tables as $name) {
+        echo "  $name\n";
+    }
+    echo "\n";
+    exit(0);
+}
+
+// ── Columns ──────────────────────────────────────────────────────────────────
+if ($mode === 'columns' || $mode === 'all') {
+    $columns = $metadata->getColumns($table);
+    echo "\nColumns: $table\n";
+    echo str_repeat('-', 60) . "\n";
+    printf("  %-30s %-15s %-8s %-8s %s\n", 'Name', 'Type', 'Nullable', 'Default', 'Extra');
+    echo str_repeat('-', 60) . "\n";
+    foreach ($columns as $col) {
+        $name     = $col->getName();
+        $type     = $col->getDataType();
+        $nullable = $col->getIsNullable() ? 'YES' : 'NO';
+        $default  = $col->getColumnDefault() ?? 'NULL';
+        $extra    = '';
+        if (method_exists($col, 'getErratas')) {
+            $erratas = $col->getErratas();
+            if (isset($erratas['permitted_values'])) {
+                $extra = 'enum(' . implode(',', $erratas['permitted_values']) . ')';
+            }
+        }
+        printf("  %-30s %-15s %-8s %-8s %s\n", $name, $type, $nullable, $default, $extra);
+    }
+    echo "\n";
+}
+
+// ── Constraints ──────────────────────────────────────────────────────────────
+if ($mode === 'constraints' || $mode === 'all') {
+    $constraints = $metadata->getConstraints($table);
+    echo "\nConstraints: $table\n";
+    echo str_repeat('-', 60) . "\n";
+    foreach ($constraints as $constraint) {
+        $type    = $constraint->getType();
+        $name    = $constraint->getName();
+        $columns = implode(', ', $constraint->getColumns());
+        echo "  [$type] $name  columns: ($columns)\n";
+        if ($constraint->isForeignKey()) {
+            $refTable   = $constraint->getReferencedTableName();
+            $refColumns = implode(', ', $constraint->getReferencedColumns());
+            echo "    → $refTable ($refColumns)"
+               . '  ON UPDATE ' . $constraint->getUpdateRule()
+               . '  ON DELETE ' . $constraint->getDeleteRule() . "\n";
+        }
+    }
+    echo "\n";
+}
+
+// ── Read rows ────────────────────────────────────────────────────────────────
+if ($mode === 'read') {
+    $p      = $adapter->getPlatform();
+    $sql    = 'SELECT * FROM ' . $p->quoteIdentifier($table) . ' LIMIT ' . $limit;
+    $rows   = $adapter->query($sql, AdapterInterface::QUERY_MODE_EXECUTE)->toArray();
+
+    if ($rows === []) {
+        echo "\n(no rows in $table)\n\n";
+        exit(0);
+    }
+
+    $headers = array_keys($rows[0]);
+    $widths  = array_map('strlen', $headers);
+    foreach ($rows as $row) {
+        foreach ($headers as $i => $h) {
+            $len = strlen((string) ($row[$h] ?? ''));
+            if ($len > $widths[$i]) {
+                $widths[$i] = $len;
+            }
+        }
+    }
+
+    echo "\nRows: $table (limit $limit)\n";
+    $sep = '+' . implode('+', array_map(fn (int $w): string => str_repeat('-', $w + 2), $widths)) . '+';
+    echo $sep . "\n";
+    $header = '|';
+    foreach ($headers as $i => $h) {
+        $header .= ' ' . str_pad($h, $widths[$i]) . ' |';
+    }
+    echo $header . "\n" . $sep . "\n";
+    foreach ($rows as $row) {
+        $line = '|';
+        foreach ($headers as $i => $h) {
+            $line .= ' ' . str_pad((string) ($row[$h] ?? ''), $widths[$i]) . ' |';
+        }
+        echo $line . "\n";
+    }
+    echo $sep . "\n\n";
+}

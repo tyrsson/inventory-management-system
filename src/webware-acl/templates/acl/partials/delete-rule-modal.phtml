@@ -8,8 +8,8 @@ declare(strict_types=1);
  * Rendered by DeleteRuleModalHandler and swapped into
  * #sharedModalDialog (the shared modal shell in the layout).
  *
- * @var string $role_id
- * @var string $resource_id
+ * @var string $roleId
+ * @var string $resourceId
  */
 ?>
 <div class="modal-dialog modal-sm">
@@ -21,15 +21,15 @@ declare(strict_types=1);
     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 </div>
 <div class="modal-body small">
-    Remove rule <code><?= $this->escapeHtml($role_id) ?></code> &rarr;
-    <code><?= $this->escapeHtml($resource_id) ?></code>?
+    Remove rule <code><?= $this->escapeHtml($roleId) ?></code> &rarr;
+    <code><?= $this->escapeHtml($resourceId) ?></code>?
     <div class="text-secondary mt-1">This cannot be undone. Add a new rule if you need to restore it.</div>
 </div>
 <div class="modal-footer py-2">
     <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
     <button type="button"
             class="btn btn-sm btn-danger"
-            hx-delete="<?= $this->escapeHtmlAttr($this->adminUrl('acl.manager.rule.delete', ['role_id' => $role_id, 'resource_id' => $resource_id])) ?>"
+            hx-delete="<?= $this->escapeHtmlAttr($this->adminUrl('acl.manager.rule.delete', ['roleId' => $roleId, 'resourceId' => $resourceId])) ?>"
             hx-target="main"
             hx-push-url="false">Delete</button>
 </div>

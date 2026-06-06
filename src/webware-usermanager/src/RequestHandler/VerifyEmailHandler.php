@@ -74,9 +74,9 @@ final class VerifyEmailHandler implements RequestHandlerInterface
         }
 
         $this->users->update($user->id, [
-            'active'             => 1,
-            'verification_token' => null,
-            'token_created_at'   => null,
+            'active'            => 1,
+            'verificationToken' => null,
+            'tokenCreatedAt'    => null,
         ]);
 
         /** @var SystemMessengerInterface|null $messenger */

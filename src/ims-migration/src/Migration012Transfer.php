@@ -46,12 +46,12 @@ final class Migration012Transfer implements MigrationInterface
         );
 
         $create->addColumn(
-            (new SmallInteger('from_store_id', nullable: false))
+            (new SmallInteger('fromStoreId', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
         $create->addColumn(
-            (new SmallInteger('to_store_id', nullable: false))
+            (new SmallInteger('toStoreId', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
@@ -67,14 +67,14 @@ final class Migration012Transfer implements MigrationInterface
         );
 
         $create->addColumn(
-            (new Integer('completed_by', nullable: true))
+            (new Integer('completedBy', nullable: true))
                 ->setOptions(['unsigned' => true])
         );
 
-        $create->addColumn(new Datetime('completed_at', nullable: true));
+        $create->addColumn(new Datetime('completedAt', nullable: true));
 
         $create->addColumn(
-            (new Integer('created_by', nullable: false))
+            (new Integer('createdBy', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
@@ -89,11 +89,11 @@ final class Migration012Transfer implements MigrationInterface
 
         $create->addConstraint(new PrimaryKey('id'));
         $create->addConstraint(new UniqueKey('reference', 'uq_transfer_reference'));
-        $create->addConstraint(new Index(['from_store_id', 'status'], 'idx_transfer_from_status'));
-        $create->addConstraint(new ForeignKey('fk_xfer_from_store', 'from_store_id', 'store', 'store_number'));
-        $create->addConstraint(new ForeignKey('fk_xfer_to_store', 'to_store_id', 'store', 'store_number'));
-        $create->addConstraint(new ForeignKey('fk_xfer_completed_by', 'completed_by', 'user', 'id'));
-        $create->addConstraint(new ForeignKey('fk_xfer_created_by', 'created_by', 'user', 'id'));
+        $create->addConstraint(new Index(['fromStoreId', 'status'], 'idx_transfer_from_status'));
+        $create->addConstraint(new ForeignKey('fk_xfer_from_store', 'fromStoreId', 'store', 'store_number'));
+        $create->addConstraint(new ForeignKey('fk_xfer_to_store', 'toStoreId', 'store', 'store_number'));
+        $create->addConstraint(new ForeignKey('fk_xfer_completed_by', 'completedBy', 'user', 'id'));
+        $create->addConstraint(new ForeignKey('fk_xfer_created_by', 'createdBy', 'user', 'id'));
 
         $create->setOptions([
             'engine'          => new Literal('InnoDB'),

@@ -22,8 +22,8 @@ use Webware\Acl\Admin\CommandHandler\SaveRuleHandler;
 use Webware\Acl\Admin\CommandHandler\UpdateRuleTypeHandler;
 use Webware\Acl\Admin\Dashboard\Container\RegisterWidgetListenerFactory;
 use Webware\Acl\Admin\Dashboard\RegisterWidgetListener;
-use Webware\Acl\Admin\Middleware\BuildAccessControlMiddleware;
-use Webware\Acl\Admin\Middleware\Container\BuildAccessControlMiddlewareFactory;
+use Webware\Acl\Admin\Middleware\OverviewMiddleware;
+use Webware\Acl\Admin\Middleware\Container\OverviewMiddlewareFactory;
 use Webware\Acl\Admin\Middleware\Container\ProcessRoleMiddlewareFactory;
 use Webware\Acl\Admin\Middleware\Container\ProcessRuleMiddlewareFactory;
 use Webware\Acl\Admin\Middleware\ProcessRoleMiddleware;
@@ -95,7 +95,7 @@ final class ConfigProvider
                 Assertion\AssertionAggregateFactory::class => Assertion\AssertionAggregateFactoryFactory::class,
                 AssertionManager::class                    => Container\AssertionManagerFactory::class,
                 RouteResourceFactory::class                => RouteResourceFactoryFactory::class,
-                BuildAccessControlMiddleware::class        => BuildAccessControlMiddlewareFactory::class,
+                OverviewMiddleware::class        => OverviewMiddlewareFactory::class,
                 ForbiddenHandler::class                    => ForbiddenHandlerFactory::class,
                 AclOverviewHandler::class                  => AclOverviewHandlerFactory::class,
                 DeleteRuleModalHandler::class              => DeleteRuleModalHandlerFactory::class,

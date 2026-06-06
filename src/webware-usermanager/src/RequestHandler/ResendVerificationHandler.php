@@ -78,8 +78,8 @@ final class ResendVerificationHandler implements RequestHandlerInterface
             $now   = (new DateTimeImmutable())->format('Y-m-d H:i:s');
 
             $this->users->update($user->id, [
-                'verification_token' => $token,
-                'token_created_at'   => $now,
+                'verificationToken' => $token,
+                'tokenCreatedAt'    => $now,
             ]);
 
             $verificationUrl = rtrim($this->baseUrl, '/') . '/verify-email/' . $token;
