@@ -49,7 +49,7 @@ final class Migration001Store implements MigrationInterface
         );
 
         $create->addColumn(
-            (new Varchar('pqa_email', 255))
+            (new Varchar('pqaEmail', 255))
                 ->setOptions(['comment' => 'PQA system mailbox for damage images'])
         );
 

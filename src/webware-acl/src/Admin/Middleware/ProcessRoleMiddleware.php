@@ -37,7 +37,7 @@ final class ProcessRoleMiddleware implements MiddlewareInterface
         RequestHandlerInterface $handler,
     ): ResponseInterface {
         $body         = $request->getParsedBody(); // this returns an array 
-        $parentRoleId = $body['parent_id'] ?? 0;
+        $parentRoleId = $body['parentId'] ?? 0;
 
         /** @var SystemMessengerInterface|null $messenger */
         $messenger = $request->getAttribute(SystemMessengerInterface::class);
@@ -91,7 +91,7 @@ final class ProcessRoleMiddleware implements MiddlewareInterface
         RequestHandlerInterface $handler,
     ): ResponseInterface {
         $body     = $request->getParsedBody(); // this returns an array 
-        $roleId   = trim((string) ($body['role_id'] ?? ''));
+        $roleId   = trim((string) ($body['roleId'] ?? ''));
         $parentPk = (int) ($body['parent_pk'] ?? 0);
 
         /** @var SystemMessengerInterface|null $messenger */

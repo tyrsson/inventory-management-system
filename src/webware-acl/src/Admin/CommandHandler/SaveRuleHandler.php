@@ -17,6 +17,7 @@ namespace Webware\Acl\Admin\CommandHandler;
 use Override;
 use Throwable;
 use Webware\Acl\Admin\Command\SaveRuleCommand;
+use Webware\Acl\Repository\RoleRepository;
 use Webware\Acl\Repository\RuleRepository;
 use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandResultInterface;
@@ -30,6 +31,7 @@ final class SaveRuleHandler implements CommandHandlerInterface
 {
     public function __construct(
         private readonly RuleRepository $ruleRepository,
+        private readonly RoleRepository $roleRepository,
     ) {}
 
     #[Override]
@@ -38,16 +40,21 @@ final class SaveRuleHandler implements CommandHandlerInterface
         assert($command instanceof SaveRuleCommand);
 
         try {
-            $saved = $this->ruleRepository->save(
+            $ruleId = $this->ruleRepository->save(
                 $command->type,
                 $command->roleId,
                 $command->resourceId,
                 $command->assertions,
             );
+
+            if ($ruleId === false) {
+                return new CommandResult($command, CommandStatus::Failure, null);
+            }
+
         } catch (Throwable $e) {
             return new CommandResult($command, CommandStatus::Failure, $e);
         }
 
-        return new CommandResult($command, $saved ? CommandStatus::Success : CommandStatus::Failure, null);
+        return new CommandResult($command, CommandStatus::Success, null);
     }
 }

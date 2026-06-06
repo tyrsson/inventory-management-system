@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace Webware\Acl\Admin\Command;
 
+use Webware\Acl\GrantMode;
+use Webware\Acl\RuleType;
 use Webware\CommandBus\Command\NamedCommandInterface;
 use Webware\CommandBus\Command\NamedCommandTrait;
 
@@ -24,7 +26,7 @@ final readonly class SaveRuleCommand implements NamedCommandInterface
     public function __construct(
         public string $roleId,
         public string $resourceId,
-        public string $type,
+        public RuleType $type,
         public ?array $assertions = null,
     ) {}
 }

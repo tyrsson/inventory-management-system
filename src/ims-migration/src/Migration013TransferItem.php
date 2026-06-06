@@ -40,17 +40,17 @@ final class Migration013TransferItem implements MigrationInterface
         );
 
         $create->addColumn(
-            (new Integer('transfer_id', nullable: false))
+            (new Integer('transferId', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
         $create->addColumn(
-            (new Integer('product_id', nullable: false))
+            (new Integer('productId', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
         $create->addColumn(
-            (new Integer('confirmed_by', nullable: false))
+            (new Integer('confirmedBy', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
@@ -59,10 +59,10 @@ final class Migration013TransferItem implements MigrationInterface
         );
 
         $create->addConstraint(new PrimaryKey('id'));
-        $create->addConstraint(new UniqueKey(['transfer_id', 'product_id'], 'uq_transfer_item'));
-        $create->addConstraint(new ForeignKey('fk_xferi_transfer', 'transfer_id', 'transfer', 'id'));
-        $create->addConstraint(new ForeignKey('fk_xferi_product', 'product_id', 'product', 'id'));
-        $create->addConstraint(new ForeignKey('fk_xferi_confirmed_by', 'confirmed_by', 'user', 'id'));
+        $create->addConstraint(new UniqueKey(['transferId', 'productId'], 'uq_transfer_item'));
+        $create->addConstraint(new ForeignKey('fk_xferi_transfer', 'transferId', 'transfer', 'id'));
+        $create->addConstraint(new ForeignKey('fk_xferi_product', 'productId', 'product', 'id'));
+        $create->addConstraint(new ForeignKey('fk_xferi_confirmed_by', 'confirmedBy', 'user', 'id'));
 
         $create->setOptions([
             'engine'          => new Literal('InnoDB'),

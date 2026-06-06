@@ -47,12 +47,12 @@ final class Migration006ManifestItem implements MigrationInterface
         );
 
         $create->addColumn(
-            (new Integer('manifest_id', nullable: false))
+            (new Integer('manifestId', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
         $create->addColumn(
-            (new Varchar('ao_number', 20))
+            (new Varchar('aoNumber', 20))
                 ->setOptions(['comment' => 'AO# / Tag ID from SKU card (e.g. A006523361)'])
         );
 
@@ -77,7 +77,7 @@ final class Migration006ManifestItem implements MigrationInterface
         );
 
         $create->addColumn(
-            (new TinyInteger('is_damaged', nullable: false, default: 0))
+            (new TinyInteger('isDamaged', nullable: false, default: 0))
                 ->setOptions(['comment' => 'Flagged damaged at time of scan'])
         );
 
@@ -87,7 +87,7 @@ final class Migration006ManifestItem implements MigrationInterface
         );
 
         $create->addColumn(
-            (new Integer('scanned_by', nullable: false))
+            (new Integer('scannedBy', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
@@ -101,11 +101,11 @@ final class Migration006ManifestItem implements MigrationInterface
         );
 
         $create->addConstraint(new PrimaryKey('id'));
-        $create->addConstraint(new UniqueKey(['manifest_id', 'ao_number'], 'uq_manifest_item_ao'));
-        $create->addConstraint(new Index('ao_number', 'idx_mi_ao'));
-        $create->addConstraint(new ForeignKey('fk_mi_manifest', 'manifest_id', 'manifest', 'id'));
+        $create->addConstraint(new UniqueKey(['manifestId', 'aoNumber'], 'uq_manifest_item_ao'));
+        $create->addConstraint(new Index('aoNumber', 'idx_mi_ao'));
+        $create->addConstraint(new ForeignKey('fk_mi_manifest', 'manifestId', 'manifest', 'id'));
         $create->addConstraint(new ForeignKey('fk_mi_sku', 'sku', 'sku_catalogue', 'sku'));
-        $create->addConstraint(new ForeignKey('fk_mi_scanned_by', 'scanned_by', 'user', 'id'));
+        $create->addConstraint(new ForeignKey('fk_mi_scanned_by', 'scannedBy', 'user', 'id'));
 
         $create->setOptions([
             'engine'          => new Literal('InnoDB'),

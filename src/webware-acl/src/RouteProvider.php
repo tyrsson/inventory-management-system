@@ -10,7 +10,7 @@ use Mezzio\MiddlewareFactoryInterface;
 use Mezzio\Router\RouteCollectorInterface;
 use Mezzio\Router\RouteProviderInterface;
 use Override;
-use Webware\Acl\Admin\Middleware\BuildAccessControlMiddleware;
+use Webware\Acl\Admin\Middleware\OverviewMiddleware;
 use Webware\Acl\Admin\Middleware\ProcessRoleMiddleware;
 use Webware\Acl\Admin\Middleware\ProcessRuleMiddleware;
 use Webware\Acl\Admin\RequestHandler\AclOverviewHandler;
@@ -72,7 +72,7 @@ final readonly class RouteProvider implements RouteProviderInterface
             '/' . $this->adminRouteSegment,
             $middlewareFactory->prepare(
                 [
-                    BuildAccessControlMiddleware::class,
+                    OverviewMiddleware::class,
                     AclOverviewHandler::class,
                 ]
             ),
@@ -131,7 +131,7 @@ final readonly class RouteProvider implements RouteProviderInterface
             $middlewareFactory->prepare(
                 [
                     ProcessRuleMiddleware::class,
-                    BuildAccessControlMiddleware::class,
+                    OverviewMiddleware::class,
                     AclOverviewHandler::class,
                 ]
             ),
@@ -144,7 +144,7 @@ final readonly class RouteProvider implements RouteProviderInterface
                 [
                     BodyParamsMiddleware::class,
                     ProcessRuleMiddleware::class,
-                    BuildAccessControlMiddleware::class,
+                    OverviewMiddleware::class,
                     AclOverviewHandler::class
                 ]
             ),
@@ -152,19 +152,19 @@ final readonly class RouteProvider implements RouteProviderInterface
         );
 
         $routeCollector->delete(
-            '/' . $this->adminRouteSegment . '/rule/{role_id:[^/]+}/{resource_id:[^/]+}',
+            '/' . $this->adminRouteSegment . '/rule/{roleId:[^/]+}/{resourceId:[^/]+}',
             $middlewareFactory->prepare(
                 [
                     ProcessRuleMiddleware::class,
-                    BuildAccessControlMiddleware::class,
-                    AclOverviewHandler::class
+                    OverviewMiddleware::class,
+                    AclOverviewHandler::class,
                 ]
             ),
             $this->adminRouteNamePrefix . 'rule.delete'
         );
 
         $routeCollector->get(
-            '/' . $this->adminRouteSegment . '/rule/{role_id:[^/]+}/{resource_id:[^/]+}/modal',
+            '/' . $this->adminRouteSegment . '/rule/{roleId:[^/]+}/{resourceId:[^/]+}/modal',
             $middlewareFactory->prepare(
                 [
                     DisableBodyMiddleware::class,

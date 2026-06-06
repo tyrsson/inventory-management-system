@@ -50,15 +50,15 @@ final class SaveUserHandler implements CommandHandlerInterface
             $now    = (new DateTimeImmutable())->format('Y-m-d H:i:s');
 
             $id = $this->users->insert([
-                'store_id'           => $command->storeId,
-                'role_id'            => json_encode([$roleId]),
-                'first_name'         => $command->firstName,
-                'last_name'          => $command->lastName,
+                'storeId'            => $command->storeId,
+                'roleId'             => json_encode([$roleId]),
+                'firstName'          => $command->firstName,
+                'lastName'           => $command->lastName,
                 'email'              => $command->email,
-                'password_hash'      => password_hash($command->password, PASSWORD_DEFAULT),
+                'passwordHash'       => password_hash($command->password, PASSWORD_DEFAULT),
                 'active'             => 0,
-                'verification_token' => $token,
-                'token_created_at'   => $now,
+                'verificationToken'  => $token,
+                'tokenCreatedAt'     => $now,
             ]);
 
             $this->eventDispatcher->dispatch(new SendVerificationEmailEvent($command, $token));

@@ -44,7 +44,7 @@ final class Migration005Manifest implements MigrationInterface
         );
 
         $create->addColumn(
-            (new SmallInteger('store_id', nullable: false))
+            (new SmallInteger('storeId', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
@@ -53,10 +53,10 @@ final class Migration005Manifest implements MigrationInterface
                 ->setOptions(['comment' => 'DC manifest / bill-of-lading reference'])
         );
 
-        $create->addColumn(new Date('received_date'));
+        $create->addColumn(new Date('receivedDate'));
 
         $create->addColumn(
-            (new Integer('created_by', nullable: false))
+            (new Integer('createdBy', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
@@ -65,7 +65,7 @@ final class Migration005Manifest implements MigrationInterface
         );
 
         $create->addColumn(
-            (new Varchar('csv_path', 255, nullable: true))
+            (new Varchar('csvPath', 255, nullable: true))
                 ->setOptions(['comment' => 'Relative path to the uploaded CSV file; null once processing is complete'])
         );
 
@@ -75,9 +75,9 @@ final class Migration005Manifest implements MigrationInterface
         );
 
         $create->addConstraint(new PrimaryKey('id'));
-        $create->addConstraint(new Index('store_id', 'idx_manifest_store'));
-        $create->addConstraint(new ForeignKey('fk_manifest_store', 'store_id', 'store', 'store_number'));
-        $create->addConstraint(new ForeignKey('fk_manifest_created_by', 'created_by', 'user', 'id'));
+        $create->addConstraint(new Index('storeId', 'idx_manifest_store'));
+        $create->addConstraint(new ForeignKey('fk_manifest_store', 'storeId', 'store', 'store_number'));
+        $create->addConstraint(new ForeignKey('fk_manifest_created_by', 'createdBy', 'user', 'id'));
 
         $create->setOptions([
             'engine'          => new Literal('InnoDB'),

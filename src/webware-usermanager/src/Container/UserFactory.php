@@ -42,19 +42,19 @@ final class UserFactory
             Assert::allString($roles);
             Assert::isMap($details);
 
-            if (isset($details['id'], $details['store_id'], $details['first_name'])) {
+            if (isset($details['id'], $details['storeId'], $details['firstName'])) {
                 return new User(
                     id: $details['id'],
-                    storeId: $details['store_id'],
-                    firstName: $details['first_name'],
-                    lastName: $details['last_name'],
+                    storeId: $details['storeId'],
+                    firstName: $details['firstName'],
+                    lastName: $details['lastName'],
                     email: $identity,
-                    passwordHash: $details['password_hash'],
+                    passwordHash: $details['passwordHash'],
                     active: $details['active'],
                     createdAt: new DateTimeImmutable($details['created_at']),
-                    verificationToken: $details['verification_token'] ?? null,
-                    tokenCreatedAt: isset($details['token_created_at'])
-                        ? new DateTimeImmutable($details['token_created_at'])
+                    verificationToken: $details['verificationToken'] ?? null,
+                    tokenCreatedAt: isset($details['tokenCreatedAt'])
+                        ? new DateTimeImmutable($details['tokenCreatedAt'])
                         : null,
                     roles: $roles,
                     details: $details,

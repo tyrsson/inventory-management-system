@@ -36,10 +36,7 @@ final class ToggleUserActiveHandler implements RequestHandlerInterface
         }
 
         $this->users->update($id, [
-            'store_id' => $user->storeId,
-            'name'     => $user->name,
-            'email'    => $user->email,
-            'active'   => $user->active ? 0 : 1,
+            'active' => $user->active ? 0 : 1,
         ]);
 
         return new JsonResponse(['active' => ! $user->active]);

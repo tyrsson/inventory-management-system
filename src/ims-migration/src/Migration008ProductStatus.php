@@ -41,7 +41,7 @@ final class Migration008ProductStatus implements MigrationInterface
         );
 
         $create->addColumn(
-            (new Integer('product_id', nullable: false))
+            (new Integer('productId', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
@@ -50,7 +50,7 @@ final class Migration008ProductStatus implements MigrationInterface
         );
 
         $create->addColumn(
-            (new Integer('set_by', nullable: false))
+            (new Integer('setBy', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
@@ -59,9 +59,9 @@ final class Migration008ProductStatus implements MigrationInterface
         );
 
         $create->addConstraint(new PrimaryKey('id'));
-        $create->addConstraint(new UniqueKey(['product_id', 'status'], 'uq_product_status_flag'));
-        $create->addConstraint(new ForeignKey('fk_ps_product', 'product_id', 'product', 'id'));
-        $create->addConstraint(new ForeignKey('fk_ps_set_by', 'set_by', 'user', 'id'));
+        $create->addConstraint(new UniqueKey(['productId', 'status'], 'uq_product_status_flag'));
+        $create->addConstraint(new ForeignKey('fk_ps_product', 'productId', 'product', 'id'));
+        $create->addConstraint(new ForeignKey('fk_ps_set_by', 'setBy', 'user', 'id'));
 
         $create->setOptions([
             'engine'          => new Literal('InnoDB'),

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Webware\Acl\Admin\Command;
 
+use Webware\Acl\RuleType;
 use Webware\CommandBus\Command\NamedCommandInterface;
 use Webware\CommandBus\Command\NamedCommandTrait;
 
@@ -24,6 +25,6 @@ final readonly class UpdateRuleTypeCommand implements NamedCommandInterface
     public function __construct(
         public string $roleId,
         public string $resourceId,
-        public string $newType,
+        public RuleType $type,
     ) {}
 }

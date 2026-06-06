@@ -25,14 +25,14 @@ final class DeleteRuleModalHandler implements RequestHandlerInterface
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $roleId     = $request->getAttribute('role_id', '');
-        $resourceId = $request->getAttribute('resource_id', '');
+        $roleId     = $request->getAttribute('roleId', '');
+        $resourceId = $request->getAttribute('resourceId', '');
 
         return new HtmlResponse($this->template->render('acl::partials/delete-rule-modal', [
-            'role_id'     => $roleId,
-            'resource_id' => $resourceId,
-            'layout'      => false,
-            'body'        => false,
+            'roleId'     => $roleId,
+            'resourceId' => $resourceId,
+            'layout'     => false,
+            'body'       => false,
         ]));
     }
 }

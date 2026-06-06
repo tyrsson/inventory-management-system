@@ -6,12 +6,13 @@ namespace Webware\Acl\InputFilter;
 
 use Laminas\Filter;
 use Laminas\InputFilter;
-use Laminas\Validator;
 use Webware\Acl\RuleType;
 use Webware\Acl\Validator\Assertion;
 
 final class RuleDataFilter extends InputFilter\InputFilter
 {
+    use SystemMessageTrait;
+
     public function __construct(
         protected readonly InputFilter\Factory $factory
     ) {}
@@ -48,27 +49,25 @@ final class RuleDataFilter extends InputFilter\InputFilter
         ]);
 
         $this->add([
-            'name'     => 'grantMode',
-            'required' => true,
-            'filters'  => [
-                [
-                    'name' => Filter\AllowList::class,
-                    'options' => [
-                        'explicit',
-                        'inherited',
-                    ],
-                ],
-            ],
-        ]);
-
-        $this->add([
             'name'              => 'assertions',
             'allow_empty'       => true,
             'continue_if_empty' => true,
-            'required'          => true,
+            'required'          => false,
             'fallback_value'    => null,
             'filters'           => [
                 ['name' => Filter\ToNull::class],
+                [
+                    'name'    => Filter\Callback::class,
+                    'options' => [
+                        'callback' => static function ($value) {
+                            if (is_string($value)) {
+                                return [$value];
+                            }
+
+                            return $value;
+                        },
+                    ],
+                ],
             ],
             'validators'        => [
                 [

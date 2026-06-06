@@ -16,6 +16,7 @@ namespace Webware\Acl\Admin\CommandHandler\Container;
 
 use Psr\Container\ContainerInterface;
 use Webware\Acl\Admin\CommandHandler\SaveRuleHandler;
+use Webware\Acl\Repository\RoleRepository;
 use Webware\Acl\Repository\RuleRepository;
 
 final class SaveRuleHandlerFactory
@@ -24,6 +25,7 @@ final class SaveRuleHandlerFactory
     {
         return new SaveRuleHandler(
             $container->get(RuleRepository::class),
+            $container->get(RoleRepository::class),
         );
     }
 }

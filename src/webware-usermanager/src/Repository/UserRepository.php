@@ -95,10 +95,10 @@ final class UserRepository implements UserRepositoryInterface
     {
         $sql    = $this->gateway->getSql();
         $select = $sql->select()
-            ->order('user.last_name ASC');
+            ->order('user.lastName ASC');
 
         if ($storeId !== null) {
-            $select->where(['user.store_id' => $storeId]);
+            $select->where(['user.storeId' => $storeId]);
         }
 
         $users = [];
@@ -133,7 +133,7 @@ final class UserRepository implements UserRepositoryInterface
     {
         $sql    = $this->gateway->getSql();
         $select = $sql->select()
-            ->where(['user.verification_token' => $token])
+            ->where(['user.verificationToken' => $token])
             ->limit(1);
 
         $row = $sql->prepareStatementForSqlObject($select)->execute()->current();
@@ -154,19 +154,19 @@ final class UserRepository implements UserRepositoryInterface
     {
         return new User(
             id: (int) $row['id'],
-            storeId: (int) $row['store_id'],
-            firstName: (string) $row['first_name'],
-            lastName: (string) $row['last_name'],
+            storeId: (int) $row['storeId'],
+            firstName: (string) $row['firstName'],
+            lastName: (string) $row['lastName'],
             email: (string) $row['email'],
-            passwordHash: (string) $row['password_hash'],
+            passwordHash: (string) $row['passwordHash'],
             active: (bool) $row['active'],
             createdAt: new DateTimeImmutable((string) $row['created_at']),
-            verificationToken: isset($row['verification_token']) ? (string) $row['verification_token'] : null,
-            tokenCreatedAt: isset($row['token_created_at']) ? new DateTimeImmutable((string) $row['token_created_at']) : null,
-            roles: $row['role_id'],
+            verificationToken: isset($row['verificationToken']) ? (string) $row['verificationToken'] : null,
+            tokenCreatedAt: isset($row['tokenCreatedAt']) ? new DateTimeImmutable((string) $row['tokenCreatedAt']) : null,
+            roles: $row['roleId'],
             details: [
-                'id'       => (int) $row['id'],
-                'store_id' => (int) $row['store_id'],
+                'id'      => (int) $row['id'],
+                'storeId' => (int) $row['storeId'],
             ],
         );
     }

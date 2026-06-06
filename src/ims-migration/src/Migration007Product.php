@@ -45,16 +45,16 @@ final class Migration007Product implements MigrationInterface
         );
 
         $create->addColumn(
-            (new Integer('manifest_item_id', nullable: false))
+            (new Integer('manifestItemId', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
         $create->addColumn(
-            (new SmallInteger('store_id', nullable: false))
+            (new SmallInteger('storeId', nullable: false))
                 ->setOptions(['unsigned' => true])
         );
 
-        $create->addColumn(new Varchar('ao_number', 20));
+        $create->addColumn(new Varchar('aoNumber', 20));
 
         $create->addColumn(
             (new MediumInteger('sku', nullable: false))
@@ -73,26 +73,26 @@ final class Migration007Product implements MigrationInterface
         );
 
         $create->addColumn(
-            (new Varchar('serial_number', 100, nullable: true))
+            (new Varchar('serialNumber', 100, nullable: true))
                 ->setOptions(['comment' => 'Manufacturer serial number; only present on serialised products'])
         );
 
         $create->addColumn(
-            (new Varchar('customer_name', 200, nullable: true))
+            (new Varchar('customerName', 200, nullable: true))
                 ->setOptions(['comment' => 'Set on ticket removal for anti-fraud record'])
         );
 
         $create->addColumn(
-            (new Datetime('removed_at', nullable: true))
+            (new Datetime('removedAt', nullable: true))
                 ->setOptions(['comment' => 'NULL = in active inventory'])
         );
 
         $create->addColumn(
-            new Enum('removed_reason', ['Ticket', 'Transfer', 'PQA Resolution', 'Adjustment'], nullable: true)
+            new Enum('removedReason', ['Ticket', 'Transfer', 'PQA Resolution', 'Adjustment'], nullable: true)
         );
 
         $create->addColumn(
-            (new Integer('removed_by', nullable: true))
+            (new Integer('removedBy', nullable: true))
                 ->setOptions(['unsigned' => true])
         );
 
@@ -106,14 +106,14 @@ final class Migration007Product implements MigrationInterface
         );
 
         $create->addConstraint(new PrimaryKey('id'));
-        $create->addConstraint(new Index(['store_id', 'removed_at'], 'idx_product_store_active'));
-        $create->addConstraint(new Index('ao_number', 'idx_product_ao'));
+        $create->addConstraint(new Index(['storeId', 'removedAt'], 'idx_product_store_active'));
+        $create->addConstraint(new Index('aoNumber', 'idx_product_ao'));
         $create->addConstraint(new Index('sku', 'idx_product_sku'));
-        $create->addConstraint(new Index('serial_number', 'idx_product_serial'));
-        $create->addConstraint(new ForeignKey('fk_product_manifest_item', 'manifest_item_id', 'manifest_item', 'id'));
-        $create->addConstraint(new ForeignKey('fk_product_store', 'store_id', 'store', 'store_number'));
+        $create->addConstraint(new Index('serialNumber', 'idx_product_serial'));
+        $create->addConstraint(new ForeignKey('fk_product_manifest_item', 'manifestItemId', 'manifest_item', 'id'));
+        $create->addConstraint(new ForeignKey('fk_product_store', 'storeId', 'store', 'store_number'));
         $create->addConstraint(new ForeignKey('fk_product_sku', 'sku', 'sku_catalogue', 'sku'));
-        $create->addConstraint(new ForeignKey('fk_product_removed_by', 'removed_by', 'user', 'id'));
+        $create->addConstraint(new ForeignKey('fk_product_removed_by', 'removedBy', 'user', 'id'));
 
         $create->setOptions([
             'engine'          => new Literal('InnoDB'),

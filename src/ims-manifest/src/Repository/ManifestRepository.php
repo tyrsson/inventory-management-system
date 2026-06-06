@@ -34,14 +34,14 @@ final class ManifestRepository implements ManifestRepositoryInterface
     {
         $sql    = new Sql($this->adapter, 'manifest');
         $select = $sql->select()
-            ->columns(['id', 'store_id', 'reference', 'received_date', 'created_by', 'created_at'])
+            ->columns(['id', 'storeId', 'reference', 'receivedDate', 'createdBy', 'created_at'])
             ->join(
                 ['mi' => 'manifest_item'],
-                'mi.manifest_id = manifest.id',
+                'mi.manifestId = manifest.id',
                 [
                     'item_count'    => new Expression('COUNT(mi.id)'),
                     'piece_count'   => new Expression('COALESCE(SUM(mi.case_qty), 0)'),
-                    'damaged_count' => new Expression('COALESCE(SUM(mi.is_damaged), 0)'),
+                    'damaged_count' => new Expression('COALESCE(SUM(mi.isDamaged), 0)'),
                 ],
                 'left outer'
             )
@@ -75,7 +75,7 @@ final class ManifestRepository implements ManifestRepositoryInterface
     {
         $sql    = new Sql($this->adapter, 'manifest');
         $select = $sql->select()
-            ->columns(['id', 'store_id', 'reference', 'received_date', 'created_by', 'created_at'])
+            ->columns(['id', 'storeId', 'reference', 'receivedDate', 'createdBy', 'created_at'])
             ->where(['manifest.id' => $id])
             ->limit(1);
 
@@ -124,28 +124,28 @@ final class ManifestRepository implements ManifestRepositoryInterface
         // 3. Insert the manifest header row
         $now        = (new DateTimeImmutable())->format('Y-m-d H:i:s');
         $manifestId = $this->insert([
-            'store_id'      => $parsed->storeId,
-            'reference'     => $parsed->reference,
-            'received_date' => $parsed->receivedDate->format('Y-m-d'),
-            'created_by'    => $userId,
-            'created_at'    => $now,
-            'csv_path'      => $csvPath,
+            'storeId'      => $parsed->storeId,
+            'reference'    => $parsed->reference,
+            'receivedDate' => $parsed->receivedDate->format('Y-m-d'),
+            'createdBy'    => $userId,
+            'created_at'   => $now,
+            'csvPath'      => $csvPath,
         ]);
 
         // 4. Insert manifest_item rows; scanned_by = uploading user (import = initial record)
         $sql = new Sql($this->adapter, 'manifest_item');
         foreach ($parsed->items as $item) {
             $insert = $sql->insert()->values([
-                'manifest_id' => $manifestId,
-                'ao_number'   => $item->aoNumber,
-                'sku'         => $item->sku,
-                'vsn'         => $item->vsn,
-                'specs'       => $item->specs,
-                'case_qty'    => $item->caseQty,
-                'is_damaged'  => 0,
-                'notes'       => null,
-                'scanned_by'  => $userId,
-                'scanned_at'  => $now,
+                'manifestId' => $manifestId,
+                'aoNumber'   => $item->aoNumber,
+                'sku'        => $item->sku,
+                'vsn'        => $item->vsn,
+                'specs'      => $item->specs,
+                'case_qty'   => $item->caseQty,
+                'isDamaged'  => 0,
+                'notes'      => null,
+                'scannedBy'  => $userId,
+                'scanned_at' => $now,
             ]);
             $sql->prepareStatementForSqlObject($insert)->execute();
         }
@@ -189,10 +189,10 @@ final class ManifestRepository implements ManifestRepositoryInterface
         $row    = $sql->prepareStatementForSqlObject($select)->execute()->current();
 
         $data = [
-            'description'   => $description,
-            'vendor'        => $vendor,
-            'vendor_model'  => $vendorModel,
-            'major_code_id' => $majorCodeId,
+            'description'  => $description,
+            'vendor'       => $vendor,
+            'vendorModel'  => $vendorModel,
+            'majorCodeId'  => $majorCodeId,
         ];
 
         if ($row === null || $row === false) {
@@ -209,14 +209,14 @@ final class ManifestRepository implements ManifestRepositoryInterface
     {
         $sql    = new Sql($this->adapter, 'manifest_item');
         $select = $sql->select()
-            ->columns(['id', 'manifest_id', 'ao_number', 'sku', 'vsn', 'specs', 'case_qty', 'is_damaged', 'notes', 'scanned_by', 'scanned_at'])
+            ->columns(['id', 'manifestId', 'aoNumber', 'sku', 'vsn', 'specs', 'case_qty', 'isDamaged', 'notes', 'scannedBy', 'scanned_at'])
             ->join(
                 ['sc' => 'sku_catalogue'],
                 'sc.sku = manifest_item.sku',
-                ['sku_description' => 'description', 'vendor', 'vendor_model'],
+                ['sku_description' => 'description', 'vendor', 'vendorModel'],
                 'left outer'
             )
-            ->where(['manifest_item.manifest_id' => $manifestId])
+            ->where(['manifest_item.manifestId' => $manifestId])
             ->order('manifest_item.scanned_at ASC');
 
         $result = $sql->prepareStatementForSqlObject($select)->execute();
@@ -234,12 +234,12 @@ final class ManifestRepository implements ManifestRepositoryInterface
     {
         return new Manifest(
             id: (int) $row['id'],
-            storeId: (int) $row['store_id'],
+            storeId: (int) $row['storeId'],
             reference: ($row['reference'] !== null && $row['reference'] !== '') ? (string) $row['reference'] : null,
-            receivedDate: new DateTimeImmutable((string) $row['received_date']),
-            createdBy: (int) $row['created_by'],
+            receivedDate: new DateTimeImmutable((string) $row['receivedDate']),
+            createdBy: (int) $row['createdBy'],
             createdAt: new DateTimeImmutable((string) $row['created_at']),
-            csvPath: ($row['csv_path'] ?? null) !== null ? (string) $row['csv_path'] : null,
+            csvPath: ($row['csvPath'] ?? null) !== null ? (string) $row['csvPath'] : null,
             items: $items,
             itemCount: (int) ($row['item_count'] ?? 0),
             pieceCount: (int) ($row['piece_count'] ?? 0),
@@ -252,19 +252,19 @@ final class ManifestRepository implements ManifestRepositoryInterface
     {
         return new ManifestItem(
             id: (int) $row['id'],
-            manifestId: (int) $row['manifest_id'],
-            aoNumber: (string) $row['ao_number'],
+            manifestId: (int) $row['manifestId'],
+            aoNumber: (string) $row['aoNumber'],
             sku: (int) $row['sku'],
             vsn: (string) $row['vsn'],
             specs: (string) $row['specs'],
             caseQty: (int) $row['case_qty'],
-            isDamaged: (bool) $row['is_damaged'],
+            isDamaged: (bool) $row['isDamaged'],
             notes: ($row['notes'] ?? null) !== null ? (string) $row['notes'] : null,
-            scannedBy: (int) $row['scanned_by'],
+            scannedBy: (int) $row['scannedBy'],
             scannedAt: new DateTimeImmutable((string) $row['scanned_at']),
             skuDescription: ($row['sku_description'] ?? null) !== null ? (string) $row['sku_description'] : null,
             vendor: ($row['vendor'] ?? null)                  !== null ? (string) $row['vendor'] : null,
-            vendorModel: ($row['vendor_model'] ?? null)       !== null ? (string) $row['vendor_model'] : null,
+            vendorModel: ($row['vendorModel'] ?? null)       !== null ? (string) $row['vendorModel'] : null,
         );
     }
 }

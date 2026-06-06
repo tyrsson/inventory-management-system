@@ -221,7 +221,7 @@ $filters = $this->routeFilters ?? ['all' => 0, 'unprotected' => 0, 'protected' =
                                     <?php else: ?>
                                         <?php
                                             $newRuleType  = $rule['type'] === 'Allow' ? 'Deny' : 'Allow';
-                                            $toggleVals   = (string) json_encode(['role_id' => $rule['role_id'], 'resource_id' => $rule['resource_id'], 'type' => $newRuleType]);
+                                            $toggleVals   = (string) json_encode(['roleId' => $rule['roleId'], 'resourceId' => $rule['resourceId'], 'type' => $newRuleType]);
                                             $toggleClass  = $rule['type'] === 'Allow'
                                                 ? 'bg-success-subtle border-success-subtle text-success-emphasis'
                                                 : 'bg-danger-subtle border-danger-subtle text-danger-emphasis';
@@ -237,10 +237,10 @@ $filters = $this->routeFilters ?? ['all' => 0, 'unprotected' => 0, 'protected' =
                                     <?php endif; ?>
                                 </td>
                                 <td class="align-middle small<?= $isInherited ? ' text-secondary' : '' ?>">
-                                    <?= $this->escapeHtml($rule['role_id']) ?>
+                                    <?= $this->escapeHtml($rule['roleId']) ?>
                                 </td>
                                 <td class="align-middle">
-                                    <code class="ims-badge-xs"><?= $this->escapeHtml($rule['resource_id']) ?></code>
+                                    <code class="ims-badge-xs"><?= $this->escapeHtml($rule['resourceId']) ?></code>
                                 </td>
                                 <td class="align-middle">
                                     <?php foreach ($rule['assertions'] as $assertion): ?>
@@ -252,7 +252,7 @@ $filters = $this->routeFilters ?? ['all' => 0, 'unprotected' => 0, 'protected' =
                                 <td class="align-middle text-end">
                                     <?php if (! $isInherited): ?>
                                         <button class="btn btn-sm btn-outline-danger py-0 px-1"
-                                                hx-get="<?= $this->escapeHtmlAttr($this->adminUrl('acl.manager.rule.delete.modal', ['role_id' => $rule['role_id'], 'resource_id' => $rule['resource_id']])) ?>"
+                                                hx-get="<?= $this->escapeHtmlAttr($this->adminUrl('acl.manager.rule.delete.modal', ['roleId' => $rule['roleId'], 'resourceId' => $rule['resourceId']])) ?>"
                                                 hx-target="#sharedModalDialog"
                                                 hx-swap="innerHTML"
                                                 hx-push-url="false"

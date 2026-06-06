@@ -8,35 +8,35 @@ SET NAMES utf8mb4;
 -- Stores
 -- Replace pqa_email values with real addresses before deploying.
 -- -----------------------------------------------------------------------------
-INSERT INTO store (store_number, city, state, pqa_email) VALUES
+INSERT INTO store (store_number, city, state, pqaEmail) VALUES
     (207, 'Leeds',      'AL', 'pqa-207@example.com'),
     (112, 'Birmingham', 'AL', 'pqa-112@example.com')
 ON DUPLICATE KEY UPDATE
     city      = VALUES(city),
     state     = VALUES(state),
-    pqa_email = VALUES(pqa_email);
+    pqaEmail  = VALUES(pqaEmail);
 
 -- -----------------------------------------------------------------------------
 -- Developer seed user -- Joey Smith (Developer, Store 207)
 -- role_id is a plain VARCHAR -- no FK, no subquery needed.
 -- ON DUPLICATE KEY covers both the PK and the uq_user_email unique key.
 -- -----------------------------------------------------------------------------
-INSERT INTO `user` (store_id, role_id, first_name, last_name, email, password_hash, active)
+INSERT INTO `user` (storeId, roleId, firstName, lastName, email, passwordHash, active)
 VALUES (207, '["Developer"]', 'Joey', 'Smith', 'jsmith@webinertia.net',
         '$2y$12$5oaeB9aVIDGlccWGxAlHhuQg9mBL6RHxgGBHTHe9/03nXCCofAfBG',
         1)
 ON DUPLICATE KEY UPDATE
-    store_id      = VALUES(store_id),
-    role_id       = VALUES(role_id),
-    first_name    = VALUES(first_name),
-    last_name     = VALUES(last_name),
-    password_hash = VALUES(password_hash),
+    storeId       = VALUES(storeId),
+    roleId        = VALUES(roleId),
+    firstName     = VALUES(firstName),
+    lastName      = VALUES(lastName),
+    passwordHash  = VALUES(passwordHash),
     active        = VALUES(active);
 
 -- -----------------------------------------------------------------------------
 -- ACL roles
 -- -----------------------------------------------------------------------------
-INSERT INTO `acl_role` (role_id, parent_id) VALUES
+INSERT INTO `acl_role` (roleId, parentId) VALUES
 ('Guest',                JSON_ARRAY()),
 ('Member',               JSON_ARRAY('Guest')),
 ('Warehouse',            JSON_ARRAY('Member')),
@@ -47,12 +47,12 @@ INSERT INTO `acl_role` (role_id, parent_id) VALUES
 ('Manager',              JSON_ARRAY('Assistant Manager', 'Warehouse Supervisor')),
 ('Administrator',        JSON_ARRAY('Member', 'Manager')),
 ('Developer',            JSON_ARRAY('Administrator'))
-ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id);
+ON DUPLICATE KEY UPDATE parentId = VALUES(parentId);
 
 -- -----------------------------------------------------------------------------
 -- ACL rules
 -- -----------------------------------------------------------------------------
-INSERT INTO `acl_rule` (type, role_id, resource_id, assertions) VALUES
+INSERT INTO `acl_rule` (type, roleId, resourceId, assertions) VALUES
 -- Guest allow
 ('Allow','Guest','user.manager.session.read',                          JSON_ARRAY()),
 ('Allow','Guest','user.manager.session.create',                        JSON_ARRAY()),
@@ -92,3 +92,20 @@ INSERT INTO `acl_rule` (type, role_id, resource_id, assertions) VALUES
 ON DUPLICATE KEY UPDATE
     type       = VALUES(type),
     assertions = VALUES(assertions);
+
+-- -----------------------------------------------------------------------------
+-- ACL manager child rules (explicit rows so BuildAccessControlMiddleware can
+-- read the parent/child relationship directly without resource-tree traversal)
+-- -----------------------------------------------------------------------------
+INSERT INTO `acl_rule` (type, roleId, resourceId, assertions, parentResourceId) VALUES
+('Allow','Developer','webware.admin.acl.manager.acl.roles.read',   JSON_ARRAY(), 'webware.admin.acl.manager'),
+('Allow','Developer','webware.admin.acl.manager.rule.create',       JSON_ARRAY(), 'webware.admin.acl.manager'),
+('Allow','Developer','webware.admin.acl.manager.rule.update',       JSON_ARRAY(), 'webware.admin.acl.manager'),
+('Allow','Developer','webware.admin.acl.manager.rule.delete',       JSON_ARRAY(), 'webware.admin.acl.manager'),
+('Allow','Developer','webware.admin.acl.manager.rule.delete.modal', JSON_ARRAY(), 'webware.admin.acl.manager'),
+('Allow','Developer','webware.admin.acl.manager.role.create',       JSON_ARRAY(), 'webware.admin.acl.manager'),
+('Allow','Developer','webware.admin.acl.manager.role.delete',       JSON_ARRAY(), 'webware.admin.acl.manager')
+ON DUPLICATE KEY UPDATE
+    type             = VALUES(type),
+    assertions       = VALUES(assertions),
+    parentResourceId = VALUES(parentResourceId);

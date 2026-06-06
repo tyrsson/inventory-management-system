@@ -49,15 +49,15 @@ final readonly class ProcessRuleMiddleware implements MiddlewareInterface
         $filterManager = $request->getAttribute(InputFilter\InputFilterPluginManager::class);
         $filter        = $filterManager->get(RuleDataFilter::class);
         $filter->setValidationGroup([
-            'role_id',
-            'resource_id',
+            'roleId',
+            'resourceId',
             'type',
             'assertions',
         ]);
         $filter->setData($request->getParsedBody());
 
         if (! $filter->isValid()) {
-            $messenger?->warning($filter->getMessages());
+            $messenger?->warning($filter->getSystemMessage());
 
             return $handler->handle($request);
         }
@@ -81,22 +81,30 @@ final readonly class ProcessRuleMiddleware implements MiddlewareInterface
         ServerRequestInterface $request,
         RequestHandlerInterface $handler,
     ): ResponseInterface {
-        $parsed     = $request->getParsedBody();
-        $body       = is_array($parsed) ? $parsed : [];
-        $roleId     = $body['role_id']    ?? '';
-        $resourceId = $body['route_name'] ?? '';
-        $type       = $body['type']       ?? RuleType::Allow->value;
-
         /** @var SystemMessengerInterface|null $messenger */
-        $messenger = $request->getAttribute(SystemMessengerInterface::class);
+        $messenger     = $request->getAttribute(SystemMessengerInterface::class);
+        $filterManager = $request->getAttribute(InputFilter\InputFilterPluginManager::class);
+        $filter        = $filterManager->get(RuleDataFilter::class);
+        $filter->setValidationGroup([
+            'roleId',
+            'resourceId',
+            'type',
+        ]);
+        $filter->setData($request->getParsedBody());
 
-        if ($roleId !== '' && $resourceId !== '' && RuleType::tryFrom($type) !== null) {
-            $result = $this->commandBus->handle(new UpdateRuleTypeCommand($roleId, $resourceId, $type));
-            if ($result->getStatus() === CommandStatus::Success) {
-                $messenger?->success('Rule updated.');
-            } else {
-                $messenger?->warning('Rule update failed. Please try again.');
-            }
+        if (! $filter->isValid()) {
+            $messenger?->warning($filter->getSystemMessage());
+
+            return $handler->handle($request);
+        }
+
+        $filteredData = $filter->getValues();
+
+        $result = $this->commandBus->handle(new UpdateRuleTypeCommand(...$filteredData));
+        if ($result->getStatus() === CommandStatus::Success) {
+            $messenger?->success('Rule updated.');
+        } else {
+            $messenger?->warning('Rule update failed. Please try again.');
         }
 
         return $handler->handle($request->withAttribute(CommandResult::class, $result));
@@ -106,13 +114,19 @@ final readonly class ProcessRuleMiddleware implements MiddlewareInterface
         ServerRequestInterface $request,
         RequestHandlerInterface $handler,
     ): ResponseInterface {
-        $roleId     = $request->getAttribute('role_id');
-        $resourceId = $request->getAttribute('resource_id');
-
         /** @var SystemMessengerInterface|null $messenger */
-        $messenger = $request->getAttribute(SystemMessengerInterface::class);
+        $messenger     = $request->getAttribute(SystemMessengerInterface::class);
+        $filterManager = $request->getAttribute(InputFilter\InputFilterPluginManager::class);
+        $filter        = $filterManager->get(RuleDataFilter::class);
+        $filter->setValidationGroup([
+            'roleId',
+            'resourceId',
+        ]);
+        $filter->setData($request->getAttributes());
 
-        $result = $this->commandBus->handle(new DeleteRuleCommand($roleId, $resourceId));
+        $filteredData = $filter->getValues();
+
+        $result = $this->commandBus->handle(new DeleteRuleCommand(...$filteredData));
         if ($result->getStatus() === CommandStatus::Success) {
             $messenger?->success('Rule deleted.');
         } else {
