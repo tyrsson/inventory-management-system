@@ -22,7 +22,23 @@ final readonly class SaveRoleCommand implements NamedCommandInterface
     use NamedCommandTrait;
 
     public function __construct(
+        /** 
+         * The unique identifier of the role.
+         *
+         * @var int|null
+         */
+        public ?int $id,
+        /** 
+         * The role identifier.
+         *
+         * @var string
+         */
         public string $roleId,
-        public int $parentPk,
+        /** 
+         * The parent role identifiers.
+         *
+         * @var string[]|null
+         */
+        public ?array $parentId = null,
     ) {}
 }

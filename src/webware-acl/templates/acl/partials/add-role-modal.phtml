@@ -1,0 +1,58 @@
+<?php
+/**
+ * Add-role modal fragment.
+ *
+ * Rendered by AddRoleModalHandler and swapped into #sharedModalDialog.
+ *
+ * @var \Webware\Acl\Entity\Role[] $roles
+ */
+?>
+<div class="modal-dialog modal-sm">
+<div class="modal-content">
+<div class="modal-header py-2">
+    <h5 class="modal-title small fw-bold" id="sharedModalLabel">
+        <i class="bi bi-plus-lg me-1"></i> Add Role
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+    <form
+        id="addRoleForm"
+        hx-post="<?= $this->escapeHtmlAttr($this->adminUrl('acl.manager.role.create')) ?>"
+        hx-target="main"
+        hx-swap="innerHTML"
+        hx-push-url="false"
+    >
+        <div class="mb-3">
+            <label class="form-label small fw-semibold" for="new_role_name">
+                Role Name <span class="text-danger">*</span>
+            </label>
+            <input
+                type="text"
+                id="new_role_name"
+                name="roleId"
+                class="form-control form-control-sm"
+                placeholder="e.g. Shift Lead"
+                required
+            >
+            <div class="form-text">Stored exactly as entered.</div>
+        </div>
+        <div class="mb-0">
+            <label class="form-label small fw-semibold" for="new_parent_id">Inherits From</label>
+            <select id="new_parent_id" name="parentId[]" multiple class="form-select form-select-sm">
+                <?php foreach ($roles as $role): ?>
+                    <option value="<?= $this->escapeHtmlAttr($role->getRoleId()) ?>">
+                        <?= $this->escapeHtml($role->getRoleId()) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <div class="form-text">Hold Ctrl/Cmd to select multiple parents.</div>
+        </div>
+    </form>
+</div>
+<div class="modal-footer py-2">
+    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+    <button type="submit" form="addRoleForm" class="btn btn-sm btn-primary">Save Role</button>
+</div>
+</div>
+</div>

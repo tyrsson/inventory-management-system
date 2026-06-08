@@ -14,7 +14,9 @@ use Webware\Acl\Admin\Middleware\OverviewMiddleware;
 use Webware\Acl\Admin\Middleware\ProcessRoleMiddleware;
 use Webware\Acl\Admin\Middleware\ProcessRuleMiddleware;
 use Webware\Acl\Admin\RequestHandler\AclOverviewHandler;
+use Webware\Acl\Admin\RequestHandler\AddRoleModalHandler;
 use Webware\Acl\Admin\RequestHandler\DeleteRuleModalHandler;
+use Webware\Acl\Admin\RequestHandler\EditRoleModalHandler;
 use Webware\Acl\Admin\RequestHandler\ResourceListHandler;
 use Webware\Acl\Admin\RequestHandler\RoleListHandler;
 
@@ -87,13 +89,13 @@ final readonly class RouteProvider implements RouteProviderInterface
 
         // Role management
         $routeCollector->get(
-            '/' . $this->adminRouteSegment . '/acl.manager/roles',
+            '/' . $this->adminRouteSegment . '/roles',
             $middlewareFactory->prepare(
                 [
                     RoleListHandler::class
                 ]
             ),
-            $this->adminRouteNamePrefix . 'acl.roles.read'
+            $this->adminRouteNamePrefix . 'role.read'
         )->setOptions([
             'label'  => 'Roles',
             'icon'   => 'bi-shield-lock-fill',
@@ -186,8 +188,42 @@ final readonly class RouteProvider implements RouteProviderInterface
             $this->adminRouteNamePrefix . 'role.create'
         );
 
+        $routeCollector->get(
+            '/' . $this->adminRouteSegment . '/role/modal',
+            $middlewareFactory->prepare(
+                [
+                    DisableBodyMiddleware::class,
+                    AddRoleModalHandler::class,
+                ]
+            ),
+            $this->adminRouteNamePrefix . 'role.add.modal'
+        );
+
+        $routeCollector->get(
+            '/' . $this->adminRouteSegment . '/role/{roleId:[^/]+}/modal',
+            $middlewareFactory->prepare(
+                [
+                    DisableBodyMiddleware::class,
+                    EditRoleModalHandler::class,
+                ]
+            ),
+            $this->adminRouteNamePrefix . 'role.edit.modal'
+        );
+
+        $routeCollector->patch(
+            '/' . $this->adminRouteSegment . '/role/{roleId:[^/]+}',
+            $middlewareFactory->prepare(
+                [
+                    BodyParamsMiddleware::class,
+                    ProcessRoleMiddleware::class,
+                    RoleListHandler::class
+                ]
+            ),
+            $this->adminRouteNamePrefix . 'role.update'
+        );
+
         $routeCollector->delete(
-            '/' . $this->adminRouteSegment . '/role/{pk:\d+}',
+            '/' . $this->adminRouteSegment . '/role/{roleId:[^/]+}',
             $middlewareFactory->prepare(
                 [
                     ProcessRoleMiddleware::class,

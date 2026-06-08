@@ -16,6 +16,7 @@ namespace Webware\Acl\Admin\CommandHandler;
 
 use Override;
 use Throwable;
+use Webmozart\Assert\Assert;
 use Webware\Acl\Admin\Command\DeleteRoleCommand;
 use Webware\Acl\Repository\RoleRepository;
 use Webware\CommandBus\Command\CommandResult;
@@ -23,9 +24,6 @@ use Webware\CommandBus\Command\CommandResultInterface;
 use Webware\CommandBus\Command\CommandStatus;
 use Webware\CommandBus\CommandHandlerInterface;
 use Webware\CommandBus\CommandInterface;
-
-use function array_keys;
-use function assert;
 
 final class DeleteRoleHandler implements CommandHandlerInterface
 {
@@ -36,18 +34,11 @@ final class DeleteRoleHandler implements CommandHandlerInterface
     #[Override]
     public function handle(CommandInterface $command): CommandResultInterface
     {
-        assert($command instanceof DeleteRoleCommand);
-
-        // Resolve the synthetic integer PK to the role_id string.
-        $roleNames = array_keys($this->roleRepository->fetchAll());
-        $roleId    = $roleNames[$command->rolePk] ?? null;
-
-        if ($roleId === null) {
-            return new CommandResult($command, CommandStatus::Failure, null);
-        }
+        Assert::isInstanceOf($command, DeleteRoleCommand::class);
 
         try {
-            $this->roleRepository->delete($roleId);
+            $this->roleRepository->removeFromParents($command->roleId);
+            $this->roleRepository->delete($command->roleId);
         } catch (Throwable $e) {
             return new CommandResult($command, CommandStatus::Failure, $e);
         }

@@ -1,0 +1,78 @@
+<?php
+/**
+ * Edit-role modal fragment.
+ *
+ * Rendered by EditRoleModalHandler and swapped into #sharedModalDialog.
+ *
+ * @var \Webware\Acl\Entity\Role|null        $role   The role being edited
+ * @var \Webware\Acl\Entity\Role[]            $roles  All roles (for parent select)
+ */
+$currentRoleId = $role?->getRoleId() ?? '';
+$patchUrl      = $this->escapeHtmlAttr($this->adminUrl('acl.manager.role.update', ['roleId' => $currentRoleId]));
+$deleteUrl     = $this->escapeHtmlAttr($this->adminUrl('acl.manager.role.delete', ['roleId' => $currentRoleId]));
+?>
+<div class="modal-dialog modal-sm">
+<div class="modal-content">
+<div class="modal-header py-2">
+    <h5 class="modal-title small fw-bold" id="sharedModalLabel">
+        <i class="bi bi-pencil me-1"></i> Edit Role
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+    <form
+        id="editRoleForm"
+        hx-patch="<?= $patchUrl ?>"
+        hx-target="main"
+        hx-swap="innerHTML"
+        hx-push-url="false"
+    >
+        <input type="hidden" name="id" value="">
+        <div class="mb-3">
+            <label class="form-label small fw-semibold" for="edit_role_name">
+                Role Name <span class="text-danger">*</span>
+            </label>
+            <input
+                type="text"
+                id="edit_role_name"
+                name="roleId"
+                class="form-control form-control-sm"
+                value="<?= $this->escapeHtmlAttr($currentRoleId) ?>"
+                required
+            >
+        </div>
+        <div class="mb-0">
+            <label class="form-label small fw-semibold" for="edit_parent_id">Inherits From</label>
+            <select id="edit_parent_id" name="parentId[]" multiple class="form-select form-select-sm">
+                <?php foreach ($roles as $r): ?>
+                    <?php if ($r->getRoleId() === $currentRoleId) continue; ?>
+                    <option
+                        value="<?= $this->escapeHtmlAttr($r->getRoleId()) ?>"
+                        <?= in_array($r->getRoleId(), array_map(static fn($p) => $p->getRoleId(), $role?->parentId ?? []), true) ? 'selected' : '' ?>
+                    >
+                        <?= $this->escapeHtml($r->getRoleId()) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <div class="form-text">Hold Ctrl/Cmd to select multiple parents.</div>
+        </div>
+    </form>
+</div>
+<div class="modal-footer py-2 justify-content-between">
+    <button
+        type="button"
+        class="btn btn-sm btn-outline-danger"
+        hx-delete="<?= $deleteUrl ?>"
+        hx-target="main"
+        hx-swap="innerHTML"
+        hx-push-url="false"
+    >
+        <i class="bi bi-trash3"></i> Delete
+    </button>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" form="editRoleForm" class="btn btn-sm btn-primary">Save</button>
+    </div>
+</div>
+</div>
+</div>

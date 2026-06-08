@@ -207,28 +207,7 @@
       }
     }
 
-    // Role edit modal
-    if (e.target.id === 'editRoleModal') {
-      var roleId      = trigger.dataset.roleId      || '';
-      var rolePk      = trigger.dataset.rolePk      || '';
-      var parentId    = trigger.dataset.parentId    || '';
-      var userCount   = parseInt(trigger.dataset.userCount || '0', 10);
-      var hasChildren = trigger.dataset.hasChildren === 'true';
-      var nameEl  = document.getElementById('edit_role_name');
-      var parEl   = document.getElementById('edit_parent_id');
-      var delBtn  = document.getElementById('editRoleDeleteBtn');
-      if (nameEl) nameEl.value = roleId;
-      if (parEl)  Array.from(parEl.options).forEach(function (o) { o.selected = o.value === parentId; });
-      if (delBtn) {
-        var title = '';
-        if (userCount > 0)   title = userCount + ' users assigned — cannot delete';
-        else if (hasChildren) title = 'Has child roles — remove or reassign them first';
-        delBtn.disabled = userCount > 0 || hasChildren;
-        delBtn.title    = title;
-        delBtn.setAttribute('hx-delete', '/admin/access/roles/' + rolePk);
-        htmx.process(delBtn);
-      }
-    }
+    // Role edit modal — populated server-side via EditRoleModalHandler (hx-get pattern)
   });
 
   // ── Bootstrap modal cleanup after HTMX swaps ────────────────────────────

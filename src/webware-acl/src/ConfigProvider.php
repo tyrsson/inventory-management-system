@@ -30,10 +30,14 @@ use Webware\Acl\Admin\Middleware\ProcessRoleMiddleware;
 use Webware\Acl\Admin\Middleware\ProcessRuleMiddleware;
 use Webware\Acl\Admin\RequestHandler\AclOverviewHandler;
 use Webware\Acl\Admin\RequestHandler\Container\AclOverviewHandlerFactory;
+use Webware\Acl\Admin\RequestHandler\Container\AddRoleModalHandlerFactory;
 use Webware\Acl\Admin\RequestHandler\Container\DeleteRuleModalHandlerFactory;
+use Webware\Acl\Admin\RequestHandler\Container\EditRoleModalHandlerFactory;
 use Webware\Acl\Admin\RequestHandler\Container\ResourceListHandlerFactory;
 use Webware\Acl\Admin\RequestHandler\Container\RoleListHandlerFactory;
+use Webware\Acl\Admin\RequestHandler\AddRoleModalHandler;
 use Webware\Acl\Admin\RequestHandler\DeleteRuleModalHandler;
+use Webware\Acl\Admin\RequestHandler\EditRoleModalHandler;
 use Webware\Acl\Admin\RequestHandler\ResourceListHandler;
 use Webware\Acl\Admin\RequestHandler\RoleListHandler;
 use Webware\Acl\Container\AclFactory;
@@ -99,6 +103,8 @@ final class ConfigProvider
                 ForbiddenHandler::class                    => ForbiddenHandlerFactory::class,
                 AclOverviewHandler::class                  => AclOverviewHandlerFactory::class,
                 DeleteRuleModalHandler::class              => DeleteRuleModalHandlerFactory::class,
+                AddRoleModalHandler::class                 => AddRoleModalHandlerFactory::class,
+                EditRoleModalHandler::class                => EditRoleModalHandlerFactory::class,
                 AclMiddleware::class                       => AclMiddlewareFactory::class,
                 AuthorizationMiddleware::class             => AuthorizationMiddlewareFactory::class,
                 IdentityMiddleware::class                  => IdentityMiddlewareFactory::class,
