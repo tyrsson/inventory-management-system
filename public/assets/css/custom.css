@@ -732,3 +732,8 @@
 .ims-acl-summary-item:last-child { border-bottom: none; }
 .ims-acl-summary-label { color: var(--bs-secondary-color); font-size: 0.75rem; }
 
+
+/* ACL widget */
+.ims-widget-manage-link { font-size: .75rem; }
+.ims-widget-stat-label  { font-size: .75rem; }
+.ims-widget-footer-text { font-size: .72rem; }

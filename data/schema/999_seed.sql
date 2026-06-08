@@ -98,12 +98,15 @@ ON DUPLICATE KEY UPDATE
 -- read the parent/child relationship directly without resource-tree traversal)
 -- -----------------------------------------------------------------------------
 INSERT INTO `acl_rule` (type, roleId, resourceId, assertions, parentResourceId) VALUES
-('Allow','Developer','webware.admin.acl.manager.acl.roles.read',   JSON_ARRAY(), 'webware.admin.acl.manager'),
+('Allow','Developer','webware.admin.acl.manager.role.read',          JSON_ARRAY(), 'webware.admin.acl.manager'),
+('Allow','Developer','webware.admin.acl.manager.role.add.modal',      JSON_ARRAY(), 'webware.admin.acl.manager'),
+('Allow','Developer','webware.admin.acl.manager.role.edit.modal',     JSON_ARRAY(), 'webware.admin.acl.manager'),
 ('Allow','Developer','webware.admin.acl.manager.rule.create',       JSON_ARRAY(), 'webware.admin.acl.manager'),
 ('Allow','Developer','webware.admin.acl.manager.rule.update',       JSON_ARRAY(), 'webware.admin.acl.manager'),
 ('Allow','Developer','webware.admin.acl.manager.rule.delete',       JSON_ARRAY(), 'webware.admin.acl.manager'),
 ('Allow','Developer','webware.admin.acl.manager.rule.delete.modal', JSON_ARRAY(), 'webware.admin.acl.manager'),
 ('Allow','Developer','webware.admin.acl.manager.role.create',       JSON_ARRAY(), 'webware.admin.acl.manager'),
+('Allow','Developer','webware.admin.acl.manager.role.update',       JSON_ARRAY(), 'webware.admin.acl.manager'),
 ('Allow','Developer','webware.admin.acl.manager.role.delete',       JSON_ARRAY(), 'webware.admin.acl.manager')
 ON DUPLICATE KEY UPDATE
     type             = VALUES(type),

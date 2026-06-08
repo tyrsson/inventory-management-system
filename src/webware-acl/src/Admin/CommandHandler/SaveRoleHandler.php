@@ -16,6 +16,7 @@ namespace Webware\Acl\Admin\CommandHandler;
 
 use Override;
 use Throwable;
+use Webmozart\Assert\Assert;
 use Webware\Acl\Admin\Command\SaveRoleCommand;
 use Webware\Acl\Repository\RoleRepository;
 use Webware\CommandBus\Command\CommandResult;
@@ -23,9 +24,6 @@ use Webware\CommandBus\Command\CommandResultInterface;
 use Webware\CommandBus\Command\CommandStatus;
 use Webware\CommandBus\CommandHandlerInterface;
 use Webware\CommandBus\CommandInterface;
-
-use function array_keys;
-use function assert;
 
 final class SaveRoleHandler implements CommandHandlerInterface
 {
@@ -36,17 +34,10 @@ final class SaveRoleHandler implements CommandHandlerInterface
     #[Override]
     public function handle(CommandInterface $command): CommandResultInterface
     {
-        assert($command instanceof SaveRoleCommand);
-
-        // Resolve the synthetic integer PK sent by the form to the role_id string.
-        // Both BuildAccessControlMiddleware and this handler call fetchAll() within the
-        // same request, which returns rows in stable insertion order.
-        $roleNames = array_keys($this->roleRepository->fetchAll());
-        $parentId  = $roleNames[$command->parentPk] ?? null;
-        $parents   = $parentId !== null ? [$parentId] : [];
+        Assert::isInstanceOf($command, SaveRoleCommand::class);
 
         try {
-            $this->roleRepository->save($command->roleId, $parents);
+            $this->roleRepository->save($command->roleId, $command->parentId);
         } catch (Throwable $e) {
             return new CommandResult($command, CommandStatus::Failure, $e);
         }

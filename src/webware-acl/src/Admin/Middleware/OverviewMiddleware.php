@@ -167,7 +167,7 @@ final readonly class OverviewMiddleware implements MiddlewareInterface
         $roleParents = [];
 
         foreach ($roleNames as $pk => $roleId) {
-            $roles[$pk] = new Role($roleId);
+            $roles[$pk] = new Role(roleId: $roleId);
             $parentPks  = [];
             foreach ($configRoles[$roleId] as $parentName) {
                 if (isset($rolePkMap[$parentName])) {

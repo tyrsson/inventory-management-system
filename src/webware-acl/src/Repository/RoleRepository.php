@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace Webware\Acl\Repository;
 
-use Laminas\Permissions\Acl\Role\GenericRole;
 use Laminas\Permissions\Acl\Role\Registry;
 use PhpDb\Adapter\AdapterInterface;
 use PhpDb\TableGateway\TableGateway;
+use PhpDb\ResultSet\ResultSet;
+use PhpDb\ResultSet\ResultSetReturnType;
+use Webware\Acl\Entity\Role;
 use Webware\Acl\Schema;
 
-use function array_diff_key;
-use function array_fill_keys;
-use function count;
-use function json_decode;
+use function array_shift;
 use function json_encode;
 
 final class RoleRepository
@@ -22,24 +21,24 @@ final class RoleRepository
 
     public function __construct(AdapterInterface $adapter)
     {
-        $this->gateway = new TableGateway(Schema::Roles->value, $adapter);
+        $this->gateway = new TableGateway(
+            Schema::Roles->value,
+            $adapter,
+            null,
+            new ResultSet(
+                rowPrototype: new Role(),
+            )
+        );
     }
 
     /**
-     * Returns all roles as an associative array keyed by role_id.
-     * Each value is an array of parent role_id strings.
-     *
-     * @return array<string, string[]>
+     * @return Role[]
      */
     public function fetchAll(): array
     {
-        $sql    = $this->gateway->getSql();
-        $select = $sql->select()->columns(['roleId', 'parentId']);
-
         $roles = [];
-        foreach ($sql->prepareStatementForSqlObject($select)->execute() as $row) {
-            $parents               = json_decode($row['parentId'], true) ?? [];
-            $roles[$row['roleId']] = $parents;
+        foreach ($this->gateway->select() as $role) {
+            $roles[] = $role;
         }
 
         return $roles;
@@ -47,27 +46,44 @@ final class RoleRepository
 
     public function fetchAclRoleRegistry(): Registry
     {
-        $sql    = $this->gateway->getSql();
-        $select = $sql->select()->columns(['roleId', 'parentId']);
+        $roles = $this->fetchAll();
 
-        $roles = [];
-        foreach ($sql->prepareStatementForSqlObject($select)->execute() as $row) {
-            $roles[$row['roleId']] = json_decode($row['parentId'], true) ?? [];
+        // Index by roleId for O(1) lookup
+        $map = [];
+        foreach ($roles as $role) {
+            $map[$role->getRoleId()] = $role;
         }
 
-        $registry  = new Registry();
-        $added     = [];
-        $pending   = $roles;
-        $maxPasses = count($pending) + 1;
-        $pass      = 0;
+        // Kahn's topological sort — build in-degree and adjacency list
+        $inDegree = [];
+        $children = [];
+        foreach ($map as $roleId => $role) {
+            $inDegree[$roleId] ??= 0;
+            foreach ($role->parentId ?? [] as $parent) {
+                $parentId = $parent->getRoleId();
+                if (isset($map[$parentId])) {
+                    $inDegree[$roleId]++;
+                    $children[$parentId][] = $roleId;
+                }
+            }
+        }
 
-        while ($pending !== [] && $pass++ < $maxPasses) {
-            foreach ($pending as $roleId => $parents) {
-                if (array_diff_key(array_fill_keys($parents, true), $added) === []) {
-                    $parentRoles = $parents ? array_map(static fn ($p) => new GenericRole($p), $parents) : null;
-                    $registry->add(new GenericRole($roleId), $parentRoles);
-                    $added[$roleId] = true;
-                    unset($pending[$roleId]);
+        // Seed the queue with roots (roles that have no known parents)
+        $queue = [];
+        foreach ($inDegree as $roleId => $degree) {
+            if ($degree === 0) {
+                $queue[] = $roleId;
+            }
+        }
+
+        $registry = new Registry();
+        while ($queue !== []) {
+            $roleId = array_shift($queue);
+            $role   = $map[$roleId];
+            $registry->add($role, $role->parentId ?: null);
+            foreach ($children[$roleId] ?? [] as $childId) {
+                if (--$inDegree[$childId] === 0) {
+                    $queue[] = $childId;
                 }
             }
         }
@@ -95,11 +111,11 @@ final class RoleRepository
     }
 
     /**
-     * Insert or update a role. parent_id is JSON-encoded inside this method.
+     * Insert or update a role. parentId is JSON-encoded inside this method.
      *
-     * @param string[] $parents
+     * @param string[]|null $parents
      */
-    public function save(string $roleId, ?array $parents): void
+    public function save(string $roleId, ?array $parents): int|string|false
     {
         $sql    = $this->gateway->getSql();
         $exists = $sql->select()
@@ -114,15 +130,19 @@ final class RoleRepository
             'parentId' => json_encode($parents),
         ];
 
-        if ($row === null) {
+        if (! $row) {
             $insert = $sql->insert()->values($data);
             $sql->prepareStatementForSqlObject($insert)->execute();
-        } else {
-            $update = $sql->update()
-                ->set(['parentId' => $data['parentId']])
-                ->where(['roleId' => $roleId]);
-            $sql->prepareStatementForSqlObject($update)->execute();
+
+            return $this->gateway->getAdapter()->getDriver()->getConnection()->getLastGeneratedValue();
         }
+
+        $update = $sql->update()
+            ->set(['parentId' => $data['parentId']])
+            ->where(['roleId' => $roleId]);
+        $result = $sql->prepareStatementForSqlObject($update)->execute();
+
+        return $result->getAffectedRows() > 0 ? $row['id'] : false;
     }
 
     public function delete(string $roleId): void
@@ -130,5 +150,24 @@ final class RoleRepository
         $sql    = $this->gateway->getSql();
         $delete = $sql->delete()->where(['roleId' => $roleId]);
         $sql->prepareStatementForSqlObject($delete)->execute();
+    }
+
+    /**
+     * Removes the given roleId from the parentId JSON array of any role that lists it as a parent.
+     */
+    public function removeFromParents(string $roleId): void
+    {
+        $sql    = $this->gateway->getSql();
+        $select = $sql->select()->columns(['id', 'parentId']);
+        $select->where->expression('JSON_CONTAINS(parentId, JSON_QUOTE(?))', [$roleId]);
+
+        foreach ($sql->prepareStatementForSqlObject($select)->execute() as $row) {
+            $parents = json_decode($row['parentId'], true) ?? [];
+            $parents = array_values(array_filter($parents, static fn ($p) => $p !== $roleId));
+            $update  = $sql->update()
+                ->set(['parentId' => json_encode($parents)])
+                ->where(['id' => $row['id']]);
+            $sql->prepareStatementForSqlObject($update)->execute();
+        }
     }
 }

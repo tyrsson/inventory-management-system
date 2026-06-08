@@ -10,41 +10,34 @@ use Mezzio\Template\TemplateRendererInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Webware\Acl\Repository\RoleRepository;
 use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandStatus;
 
 use function json_encode;
 
-/**
- * Handles GET /admin/access/roles — list all roles with parent info and user counts.
- * Handles POST /admin/access/roles — create a new role.
- *
- * TODO: implement POST (task 2.7).
- */
 final class RoleListHandler implements RequestHandlerInterface
 {
     public function __construct(
-        private readonly array $config,
         private readonly TemplateRendererInterface $template,
+        private readonly RoleRepository $roleRepository,
     ) {}
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $roles       = [];
-        $roleParents = [];
+        $roles = $this->roleRepository->fetchAll();
 
-        // Build a set of role PKs that appear as a parent_pk in the inheritance
-        // map. Used by the template to disable the delete button for parent roles.
+        // Build a set of roleIds that appear as a parent in any role's parentId.
+        // Used by the template to disable the delete button for roles that have children.
         $rolesWithChildren = [];
-        foreach ($roleParents as $parentPks) {
-            foreach ($parentPks as $parentPk) {
-                $rolesWithChildren[$parentPk] = true;
+        foreach ($roles as $role) {
+            foreach ($role->parentId ?? [] as $parent) {
+                $rolesWithChildren[$parent->getRoleId()] = true;
             }
         }
 
         $response = new HtmlResponse($this->template->render('acl::admin-roles', [
             'roles'             => $roles,
-            'roleParents'       => $roleParents,
             'rolesWithChildren' => $rolesWithChildren,
         ]));
 

@@ -22,6 +22,6 @@ final readonly class DeleteRoleCommand implements NamedCommandInterface
     use NamedCommandTrait;
 
     public function __construct(
-        public int $rolePk,
+        public string $roleId,
     ) {}
 }

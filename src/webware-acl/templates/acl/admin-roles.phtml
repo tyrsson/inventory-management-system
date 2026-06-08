@@ -1,7 +1,7 @@
 <?php
 /**
- * @var array<int, \Webware\Acl\Entity\Role> $roles       — all roles keyed by PK
- * @var array<int, int[]>                    $roleParents  — child PK → array of parent PKs
+ * @var \Webware\Acl\Entity\Role[]            $roles              — all roles
+ * @var array<string, bool>                  $rolesWithChildren  — roleId → true if has children
  */
 $this->headTitle('Roles');
 ?>
@@ -23,7 +23,14 @@ $this->headTitle('Roles');
         </div>
         <p class="text-secondary small mb-0">Define roles and their inheritance relationships.</p>
     </div>
-    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addRoleModal">
+    <button
+        class="btn btn-primary btn-sm"
+        hx-get="<?= $this->escapeHtmlAttr($this->adminUrl('acl.manager.role.add.modal')) ?>"
+        hx-target="#sharedModalDialog"
+        hx-swap="innerHTML"
+        hx-push-url="false"
+        hx-on::after-request="if(event.detail.successful) bootstrap.Modal.getOrCreateInstance(document.getElementById('sharedModal')).show()"
+    >
         <i class="bi bi-plus-lg me-1"></i> Add Role
     </button>
 </div>
@@ -33,7 +40,7 @@ $this->headTitle('Roles');
     <div class="card-header py-2 d-flex align-items-center gap-2">
         <i class="bi bi-people text-secondary"></i>
         <span class="small fw-semibold">All Roles</span>
-        <span class="badge bg-body-tertiary border text-secondary ms-1"><?= count($this->roles) ?></span>
+        <span class="badge bg-body-tertiary border text-secondary ms-1"><?= count($roles) ?></span>
     </div>
     <div class="table-responsive">
         <table class="table table-hover table-sm mb-0 align-middle">
@@ -45,15 +52,15 @@ $this->headTitle('Roles');
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($this->roles as $pk => $role):
-                    $parentPks   = $this->roleParents[$pk] ?? [];
-                    $parentNames = array_filter(
-                        array_map(fn(int $ppk) => $this->roles[$ppk]->roleId ?? null, $parentPks)
+                <?php foreach ($roles as $role):
+                    $parentNames = array_map(
+                        static fn(\Webware\Acl\Entity\Role $p) => $p->getRoleId(),
+                        $role->parentId ?? []
                     );
-                    $isRoot = $parentPks === [];
+                    $isRoot = $role->parentId === [] || $role->parentId === null;
                 ?>
                     <tr>
-                        <td class="fw-semibold"><?= $this->escapeHtml($role->roleId) ?></td>
+                        <td class="fw-semibold"><?= $this->escapeHtml($role->getRoleId()) ?></td>
                         <td class="small text-secondary">
                             <?php if ($isRoot): ?>
                                 <span class="fst-italic">— root role</span>
@@ -69,13 +76,11 @@ $this->headTitle('Roles');
                             <?php else: ?>
                                 <button
                                     class="btn btn-sm btn-outline-secondary py-0 px-2"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#editRoleModal"
-                                    data-role-pk="<?= $pk ?>"
-                                    data-role-id="<?= $this->escapeHtmlAttr($role->roleId) ?>"
-                                    data-parent-id="<?= $this->escapeHtmlAttr((string) ($parentPks[0] ?? '')) ?>"
-                                    data-user-count="0"
-                                    data-has-children="<?= isset($this->rolesWithChildren[$pk]) ? 'true' : 'false' ?>"
+                                    hx-get="<?= $this->escapeHtmlAttr($this->adminUrl('acl.manager.role.edit.modal', ['roleId' => $role->getRoleId()])) ?>"
+                                    hx-target="#sharedModalDialog"
+                                    hx-swap="innerHTML"
+                                    hx-push-url="false"
+                                    hx-on::after-request="if(event.detail.successful) bootstrap.Modal.getOrCreateInstance(document.getElementById('sharedModal')).show()"
                                 >
                                     <i class="bi bi-pencil"></i>
                                 </button>
@@ -87,112 +92,6 @@ $this->headTitle('Roles');
         </table>
     </div>
     <div class="card-footer py-2 text-secondary small">
-        Changes to roles increment <code>acl_version</code> and invalidate the ACL cache on next request.
-    </div>
-</div>
-
-<!-- ADD ROLE MODAL -->
-<div class="modal fade" id="addRoleModal" tabindex="-1" aria-labelledby="addRoleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-            <div class="modal-header py-2">
-                <h5 class="modal-title small fw-bold" id="addRoleModalLabel">
-                    <i class="bi bi-plus-lg me-1"></i> Add Role
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form
-                    id="addRoleForm"
-                    method="POST"
-                    <?php /* TODO: was 'acl.roles.create' — renamed to 'acl.manager.role.create'. */ ?>
-                    action="<?= $this->adminUrl('acl.manager.role.create') ?>"
-                    hx-post="<?= $this->adminUrl('acl.manager.role.create') ?>"
-                    hx-target="main"
-                    hx-swap="innerHTML"
-                >
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold" for="new_role_name">Role Name <span class="text-danger">*</span></label>
-                        <input type="text" id="new_role_name" name="roleId" class="form-control form-control-sm" placeholder="e.g. Shift Lead" required>
-                        <div class="form-text">Title Case, spaces allowed. Stored exactly as entered.</div>
-                    </div>
-                    <div class="mb-0">
-                        <label class="form-label small fw-semibold" for="new_parent_id">Inherits From <span class="text-danger">*</span></label>
-                        <select id="new_parent_id" name="parent_pk" class="form-select form-select-sm" required>
-                            <option value="">— select parent role —</option>
-                            <?php foreach ($this->roles as $pk => $role): ?>
-                                <option value="<?= $pk ?>">
-                                    <?= $this->escapeHtml($role->roleId) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <div class="form-text">New role inherits all grants from selected parent.</div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer py-2">
-                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" form="addRoleForm" class="btn btn-sm btn-primary">Save Role</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- EDIT ROLE MODAL -->
-<div class="modal fade" id="editRoleModal" tabindex="-1" aria-labelledby="editRoleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-            <div class="modal-header py-2">
-                <h5 class="modal-title small fw-bold" id="editRoleModalLabel">
-                    <i class="bi bi-pencil me-1"></i> Edit Role
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form
-                    id="editRoleForm"
-                    method="POST"
-                    <?php /* TODO: was 'acl.roles.create' — renamed to 'acl.manager.role.create'. */ ?>
-                    action="<?= $this->adminUrl('acl.manager.role.create') ?>"
-                    hx-post="<?= $this->adminUrl('acl.manager.role.create') ?>"
-                    hx-target="main"
-                    hx-swap="innerHTML"
-                >
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold" for="edit_role_name">Role Name <span class="text-danger">*</span></label>
-                        <input type="text" id="edit_role_name" name="role_id" class="form-control form-control-sm" required>
-                    </div>
-                    <div class="mb-0">
-                        <label class="form-label small fw-semibold" for="edit_parent_id">Inherits From <span class="text-danger">*</span></label>
-                        <select id="edit_parent_id" name="parent_pk" class="form-select form-select-sm" required>
-                            <option value="">— select parent role —</option>
-                            <?php foreach ($this->roles as $pk => $role): ?>
-                                <option value="<?= $pk ?>">
-                                    <?= $this->escapeHtml($role->roleId) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer py-2 justify-content-between">
-                <button
-                    id="editRoleDeleteBtn"
-                    type="button"
-                    class="btn btn-sm btn-outline-danger"
-                    hx-delete=""
-                    hx-target="main"
-                    hx-swap="innerHTML"
-                    disabled
-                    title=""
-                >
-                    <i class="bi bi-trash3"></i> Delete
-                </button>
-                <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" form="editRoleForm" class="btn btn-sm btn-primary">Save</button>
-                </div>
-            </div>
-        </div>
+        Changes to roles take effect on next request.
     </div>
 </div>

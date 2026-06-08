@@ -13,19 +13,42 @@ final class RoleDataFilter extends InputFilter\InputFilter
     public function init(): void
     {
         $this->add([
-            'name' => 'id',
+            'name'        => 'id',
             'allow_empty' => true,
-            'filters' => [
+            'filters'     => [
                 ['name' => Filter\ToInt::class],
                 ['name' => Filter\ToNull::class],
             ],
         ]);
 
         $this->add([
-            'name'     => 'name',
+            'name'     => 'roleId',
             'required' => true,
             'filters'  => [
                 ['name' => Filter\StringTrim::class],
+            ],
+        ]);
+
+        $this->add([
+            'name'     => 'parentId',
+            'allow_empty'       => true,
+            'continue_if_empty' => true,
+            'required'          => false,
+            'fallback_value'    => null,
+            'filters'           => [
+                ['name' => Filter\StringTrim::class],
+                [
+                    'name'    => Filter\Callback::class,
+                    'options' => [
+                        'callback' => static function ($value) {
+                            if (is_string($value)) {
+                                return [$value];
+                            }
+
+                            return $value;
+                        },
+                    ],
+                ],
             ],
         ]);
     }
