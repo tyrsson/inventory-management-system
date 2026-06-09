@@ -7,8 +7,10 @@ namespace Webware\Acl\Repository;
 use PhpDb\Adapter\AdapterInterface;
 use PhpDb\Sql\Select;
 use PhpDb\TableGateway\TableGateway;
+use Webware\Acl\Entity\Rule;
 use Webware\Acl\RuleType;
 use Webware\Acl\Schema;
+use Webware\ResultSet\WithRowDataResultSet;
 
 use function json_decode;
 use function json_encode;
@@ -19,7 +21,14 @@ final class RuleRepository
 
     public function __construct(AdapterInterface $adapter)
     {
-        $this->gateway = new TableGateway(Schema::Rules->value, $adapter);
+        $this->gateway = new TableGateway(
+            Schema::Rules->value,
+            $adapter,
+            null,
+            new WithRowDataResultSet(
+                rowPrototype: new Rule(),
+            )
+        );
     }
 
     /**

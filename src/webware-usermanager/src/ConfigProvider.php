@@ -49,7 +49,6 @@ final class ConfigProvider
             ],
             'factories' => [
                 // Registers the user factory under our own interface key.
-                // Host app aliases Mezzio\Authentication\UserInterface::class → UserInterface::class.
                 UserInterface::class                                => Container\UserFactory::class,
                 Admin\RequestHandler\CreateUserHandler::class       => Admin\RequestHandler\Container\CreateUserHandlerFactory::class,
                 Admin\RequestHandler\UpdateUserHandler::class       => Admin\RequestHandler\Container\UpdateUserHandlerFactory::class,

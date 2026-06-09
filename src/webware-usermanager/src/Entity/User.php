@@ -21,6 +21,8 @@ use Webware\UserManager\UserInterface;
 
 use function array_merge;
 use function array_values;
+use function is_array;
+use function is_string;
 use function json_decode;
 
 final class User implements UserInterface
