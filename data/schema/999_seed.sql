@@ -21,17 +21,17 @@ ON DUPLICATE KEY UPDATE
 -- role_id is a plain VARCHAR -- no FK, no subquery needed.
 -- ON DUPLICATE KEY covers both the PK and the uq_user_email unique key.
 -- -----------------------------------------------------------------------------
-INSERT INTO `user` (storeId, roleId, firstName, lastName, email, passwordHash, active)
-VALUES (207, '["Developer"]', 'Joey', 'Smith', 'jsmith@webinertia.net',
+INSERT INTO `user` (roleId, firstName, lastName, email, passwordHash, active, details)
+VALUES ('["Developer"]', 'Joey', 'Smith', 'jsmith@webinertia.net',
         '$2y$12$5oaeB9aVIDGlccWGxAlHhuQg9mBL6RHxgGBHTHe9/03nXCCofAfBG',
-        1)
+        1, '{"storeId": 207}')
 ON DUPLICATE KEY UPDATE
-    storeId       = VALUES(storeId),
     roleId        = VALUES(roleId),
     firstName     = VALUES(firstName),
     lastName      = VALUES(lastName),
     passwordHash  = VALUES(passwordHash),
-    active        = VALUES(active);
+    active        = VALUES(active),
+    details       = VALUES(details);
 
 -- -----------------------------------------------------------------------------
 -- ACL roles

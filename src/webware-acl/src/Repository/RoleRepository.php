@@ -8,7 +8,6 @@ use Laminas\Permissions\Acl\Role\Registry;
 use PhpDb\Adapter\AdapterInterface;
 use PhpDb\TableGateway\TableGateway;
 use Webware\Acl\Entity\Role;
-use Webware\Acl\Schema;
 use Webware\ResultSet\WithRowDataResultSet;
 
 use function array_shift;
@@ -21,7 +20,7 @@ final class RoleRepository
     public function __construct(AdapterInterface $adapter)
     {
         $this->gateway = new TableGateway(
-            Schema::Roles->value,
+            Schema::Roles->table(),
             $adapter,
             null,
             new WithRowDataResultSet(

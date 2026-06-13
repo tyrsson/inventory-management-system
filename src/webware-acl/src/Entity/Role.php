@@ -7,8 +7,8 @@ namespace Webware\Acl\Entity;
 use Laminas\Permissions\Acl\Role\RoleInterface;
 use Webware\ResultSet\WithRowDataPrototypeInterface;
 
-use function json_decode;
 use function is_string;
+use function json_decode;
 
 final class Role implements RoleInterface, WithRowDataPrototypeInterface
 {
@@ -58,7 +58,7 @@ final class Role implements RoleInterface, WithRowDataPrototypeInterface
         return (array) $this;
     }
 
-    public function exchangeArray(array $array): array
+    public function exchangeArray(array $data): array
     {
         throw new \RuntimeException('Not implemented');
     }

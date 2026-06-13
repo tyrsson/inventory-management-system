@@ -41,7 +41,6 @@ use Webware\Acl\Admin\RequestHandler\EditRoleModalHandler;
 use Webware\Acl\Admin\RequestHandler\ResourceListHandler;
 use Webware\Acl\Admin\RequestHandler\RoleListHandler;
 use Webware\Acl\Container\AclFactory;
-use Webware\Acl\Container\IdentityMiddlewareFactory;
 use Webware\Acl\Container\RouteProviderFactory;
 use Webware\Acl\Http\Container\RouteResourceFactoryFactory;
 use Webware\Acl\Http\RouteResourceFactory;
@@ -50,7 +49,6 @@ use Webware\Acl\Middleware\AclMiddleware;
 use Webware\Acl\Middleware\AuthorizationMiddleware;
 use Webware\Acl\Middleware\Container\AclMiddlewareFactory;
 use Webware\Acl\Middleware\Container\AuthorizationMiddlewareFactory;
-use Webware\Acl\Middleware\IdentityMiddleware;
 use Webware\Acl\Repository\Container\RoleRepositoryFactory;
 use Webware\Acl\Repository\Container\RuleRepositoryFactory;
 use Webware\Acl\Repository\RoleRepository;
@@ -88,18 +86,17 @@ final class ConfigProvider
     public function getDependencies(): array
     {
         return [
-            'aliases'    => [
+            'aliases'   => [
                 AclInterface::class                  => Acl::class,
                 ForbiddenHandlerInterface::class     => ForbiddenHandler::class,
                 RouteResourceFactoryInterface::class => RouteResourceFactory::class,
             ],
-            'invokables' => [],
-            'factories'  => [
+            'factories' => [
                 Acl::class                                 => AclFactory::class,
                 Assertion\AssertionAggregateFactory::class => Assertion\AssertionAggregateFactoryFactory::class,
                 AssertionManager::class                    => Container\AssertionManagerFactory::class,
                 RouteResourceFactory::class                => RouteResourceFactoryFactory::class,
-                OverviewMiddleware::class        => OverviewMiddlewareFactory::class,
+                OverviewMiddleware::class                  => OverviewMiddlewareFactory::class,
                 ForbiddenHandler::class                    => ForbiddenHandlerFactory::class,
                 AclOverviewHandler::class                  => AclOverviewHandlerFactory::class,
                 DeleteRuleModalHandler::class              => DeleteRuleModalHandlerFactory::class,
@@ -107,7 +104,6 @@ final class ConfigProvider
                 EditRoleModalHandler::class                => EditRoleModalHandlerFactory::class,
                 AclMiddleware::class                       => AclMiddlewareFactory::class,
                 AuthorizationMiddleware::class             => AuthorizationMiddlewareFactory::class,
-                IdentityMiddleware::class                  => IdentityMiddlewareFactory::class,
                 RegisterWidgetListener::class              => RegisterWidgetListenerFactory::class,
                 ResourceListHandler::class                 => ResourceListHandlerFactory::class,
                 RoleListHandler::class                     => RoleListHandlerFactory::class,

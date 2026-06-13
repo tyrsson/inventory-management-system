@@ -33,7 +33,7 @@ final class SingleRoleUserProxy implements UserInterface
     }
 
     #[Override]
-    public function getRoles(): iterable
+    public function getRoles(): ?array
     {
         return [$this->roleId];
     }

@@ -17,8 +17,8 @@ namespace Webware\UserManager\Container;
 use DateTimeImmutable;
 use Psr\Container\ContainerInterface;
 use Webmozart\Assert\Assert;
+use Webware\ResultSet\WithRowDataPrototypeInterface;
 use Webware\UserManager\Entity\GuestUser;
-use Webware\UserManager\Entity\User;
 use Webware\UserManager\UserInterface;
 
 /**
@@ -34,34 +34,16 @@ final class UserFactory
 {
     public function __invoke(ContainerInterface $container): callable
     {
-        return static function (
-            string $identity,
-            array $roles = [],
-            array $details = [],
-        ): UserInterface {
-            Assert::allString($roles);
-            Assert::isMap($details);
+        $prototype = $container->get(WithRowDataPrototypeInterface::class);
+        $config    = Configuration::getCredentialConfig($container, self::class);
+        return static function (array $withData) use ($prototype, $config): UserInterface {
+            Assert::isMap($withData);
 
-            if (isset($details['id'], $details['storeId'], $details['firstName'])) {
-                return new User(
-                    id: $details['id'],
-                    storeId: $details['storeId'],
-                    firstName: $details['firstName'],
-                    lastName: $details['lastName'],
-                    email: $identity,
-                    passwordHash: $details['passwordHash'],
-                    active: $details['active'],
-                    createdAt: new DateTimeImmutable($details['created_at']),
-                    verificationToken: $details['verificationToken'] ?? null,
-                    tokenCreatedAt: isset($details['tokenCreatedAt'])
-                        ? new DateTimeImmutable($details['tokenCreatedAt'])
-                        : null,
-                    roles: $roles,
-                    details: $details,
-                );
+            if (isset($withData['id'], $withData[$config['username']])) {
+                return new $prototype(...$withData);
             }
 
-            return new GuestUser($identity, $roles ?: [GuestUser::GUEST_ROLE], $details);
+            return new GuestUser(firstName: 'Guest', roleId: [GuestUser::GUEST_ROLE]);
         };
     }
 }

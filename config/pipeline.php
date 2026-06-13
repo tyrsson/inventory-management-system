@@ -19,7 +19,7 @@ use Mezzio\Session\SessionMiddleware;
 use Psr\Container\ContainerInterface;
 use Webware\Acl\Middleware\AclMiddleware;
 use Webware\Acl\Middleware\AuthorizationMiddleware;
-use Webware\Acl\Middleware\IdentityMiddleware;
+use Webware\UserManager\Middleware\IdentityMiddleware;
 use Webware\Core\Middleware\AttachCoreServicesMiddleware;
 use Webware\Event\Middleware\EventDispatcherMiddleware;
 use Webware\Traccio\Middleware\TracyDebuggerMiddleware;

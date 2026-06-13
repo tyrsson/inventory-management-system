@@ -17,6 +17,8 @@ namespace Webware\UserManager\Repository;
 use PhpDb\Adapter\AdapterInterface;
 use Psr\Container\ContainerInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Webware\UserManager\Container\Configuration;
+use Webware\ResultSet\WithRowDataPrototypeInterface;
 
 final class UserRepositoryFactory
 {
@@ -29,9 +31,12 @@ final class UserRepositoryFactory
      */
     public function __invoke(ContainerInterface $container): UserRepository
     {
+        $config = Configuration::getCredentialConfig($container, self::class);
         return new UserRepository(
             adapter: $container->get(AdapterInterface::class),
             dispatcher: $container->get(EventDispatcherInterface::class),
+            userPrototype: $container->get(WithRowDataPrototypeInterface::class),
+            credentialColumn: $config['username'],
         );
     }
 }

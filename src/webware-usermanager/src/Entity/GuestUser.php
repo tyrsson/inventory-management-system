@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace Webware\UserManager\Entity;
 
+use DateTimeImmutable;
 use Override;
+use SensitiveParameter;
 use Webware\UserManager\UserInterface;
 
 /**
@@ -27,7 +29,7 @@ use Webware\UserManager\UserInterface;
  * Ownership assertions always return false for a GuestUser because getOwnerId()
  * returns null — the fail-closed OwnershipAssertion denies null owners.
  */
-final readonly class GuestUser implements UserInterface
+final class GuestUser implements UserInterface
 {
     public const string GUEST_ROLE = 'Guest';
 
@@ -37,22 +39,85 @@ final readonly class GuestUser implements UserInterface
      * @param array<string, mixed> $details Arbitrary details from the session.
      */
     public function __construct(
-        private string $identity = self::GUEST_ROLE,
-        private array $roles = [self::GUEST_ROLE],
-        private array $details = [],
+        public private(set) int|string|null $id = null {
+            get => $this->id ?? null;
+            set(int|string|null $value) {
+                if ($value === null) {
+                    $this->id = null;
+                } else {
+                    $this->id = is_string($value) ? (int) $value : $value;
+                }
+            }
+        },
+        public private(set) string|array|null $roleId = null {
+            get => $this->roleId ?? '';
+            set(string|array|null $value) {
+                if (is_string($value)) {
+                    $decoded = json_decode($value, true);
+                    $this->roleId = is_array($decoded) ? $decoded : [];
+                } else {
+                    $this->roleId = $value;
+                }
+            }
+        },
+        public private(set) ?string $firstName = null,
+        public private(set) ?string $lastName = null,
+        public private(set) ?string $email = null {
+            get => $this->email ?? '';
+            set(?string $value) {
+                $this->email = $value !== null ? strtolower($value) : null;
+            }
+        },
+        #[SensitiveParameter]
+        public private(set) ?string $passwordHash = null,
+        public private(set) ?bool $active = null {
+            get => $this->active ?? false;
+            set(?bool $value) {
+                $this->active = $value;
+            }
+        },
+        public private(set) DateTimeImmutable|string|null $createdAt = null {
+            get => $this->createdAt ?? new DateTimeImmutable();
+            set(DateTimeImmutable|string|null $value) {
+                if (is_string($value)) {
+                    $this->createdAt = new DateTimeImmutable($value);
+                } else {
+                    $this->createdAt = $value;
+                }
+            }
+        },
+        #[SensitiveParameter]
+        public private(set) ?string $verificationToken = null,
+        public private(set) DateTimeImmutable|string|null $tokenCreatedAt = null {
+            get => $this->tokenCreatedAt ?? new DateTimeImmutable();
+            set(DateTimeImmutable|string|null $value) {
+                if (is_string($value)) {
+                    $this->tokenCreatedAt = new DateTimeImmutable($value);
+                } else {
+                    $this->tokenCreatedAt = $value;
+                }
+            }
+        },
+        /** @var array<string, mixed>|null */
+        public private(set) ?array $details = null {
+            get => $this->details ?? [];
+            set(?array $value) {
+                $this->details = $value;
+            }
+        },
     ) {}
 
     #[Override]
     public function getIdentity(): string
     {
-        return $this->identity;
+        return $this->email ?? 'guest';
     }
 
     /** @return string[] */
     #[Override]
     public function getRoles(): array
     {
-        return $this->roles;
+        return [self::GUEST_ROLE];
     }
 
     /** @param mixed $default */
@@ -66,7 +131,7 @@ final readonly class GuestUser implements UserInterface
     #[Override]
     public function getDetails(): array
     {
-        return $this->details;
+        return $this->details ?? [];
     }
 
     /**
@@ -75,7 +140,7 @@ final readonly class GuestUser implements UserInterface
     #[Override]
     public function getRoleId(): string
     {
-        return $this->roles[0];
+        return self::GUEST_ROLE;
     }
 
     /**

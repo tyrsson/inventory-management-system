@@ -61,21 +61,7 @@ final class LoginMiddleware implements MiddlewareInterface
         }
 
         $session = RetrieveSession::fromRequest($request);
-        $session->set(UserInterface::class, [
-            'username' => $user->getIdentity(),
-            'roles'    => $user->getRoles(),
-            'details'  => [
-                'id'                 => $user->id,
-                'store_id'           => $user->storeId,
-                'first_name'         => $user->firstName,
-                'last_name'          => $user->lastName,
-                'active'             => $user->active,
-                'created_at'         => $user->createdAt->format('Y-m-d H:i:s'),
-                'verification_token' => $user->verificationToken,
-                'token_created_at'   => $user->tokenCreatedAt?->format('Y-m-d H:i:s'),
-                'password_hash'      => $user->passwordHash,
-            ],
-        ]);
+        $session->set(UserInterface::class, $user->toArray());
         $session->regenerate();
 
         return new RedirectResponse($this->redirectUrl);
