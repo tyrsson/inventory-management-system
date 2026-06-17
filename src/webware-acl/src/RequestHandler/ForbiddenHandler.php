@@ -23,7 +23,7 @@ final readonly class ForbiddenHandler implements ForbiddenHandlerInterface
         $user = $request->getAttribute(UserInterface::class);
 
         // Guest identity — silent redirect to login, no toast
-        if ($user->isGuest()) {
+        if (null === $user->getIdentity()) {
             return new RedirectResponse($this->loginPath);
         }
 

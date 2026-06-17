@@ -6,7 +6,7 @@ namespace Ims\Store;
 
 use Webware\Acl\AclInterface;
 use Webware\Acl\AssertionManager;
-use Webware\UserManager\UserInterface;
+use Webware\UserManager\Entity\User as WebwareUser;
 
 final class ConfigProvider
 {
@@ -23,7 +23,7 @@ final class ConfigProvider
     {
         return [
             'factories' => [
-                //UserInterface::class => Container\UserInterfaceFactory::class,
+                WebwareUser::class => Entity\User::class,
             ],
         ];
     }

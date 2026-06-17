@@ -24,11 +24,8 @@ use Webware\UserManager\UserInterface;
 /**
  * DI factory for the UserInterface::class callable service.
  *
- * Returns a callable that creates either a User or GuestUser instance.
- * When session details contain the fields written by LoginMiddleware, a fully-
- * hydrated User is returned. Otherwise a GuestUser is returned for unauthenticated
- * requests. The discriminator is the presence of 'id', 'role_id', and 'first_name'
- * in $details — fields that can only exist if LoginMiddleware wrote the session.
+ * Returns a callable that creates a UserInterface implementation from an array of data.
+ * The callable is used by IdentityMiddleware to reconstruct the authenticated user from session data.
  */
 final class UserFactory
 {
@@ -38,12 +35,7 @@ final class UserFactory
         $config    = Configuration::getCredentialConfig($container, self::class);
         return static function (array $withData) use ($prototype, $config): UserInterface {
             Assert::isMap($withData);
-
-            if (isset($withData['id'], $withData[$config['username']])) {
-                return new $prototype(...$withData);
-            }
-
-            return new GuestUser(firstName: 'Guest', roleId: [GuestUser::GUEST_ROLE]);
+            return new $prototype(...$withData);
         };
     }
 }

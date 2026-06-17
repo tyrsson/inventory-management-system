@@ -11,5 +11,7 @@ namespace Ims\Store\Acl;
  */
 interface StoreProprietaryInterface
 {
-    public function getStoreId(): int;
+    public final const string STORE_ID_KEY = 'storeId';
+
+    public function getStoreId(): string|int|null;
 }

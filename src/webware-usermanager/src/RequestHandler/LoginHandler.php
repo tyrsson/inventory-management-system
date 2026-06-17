@@ -43,7 +43,7 @@ final class LoginHandler implements RequestHandlerInterface
     {
         $user = $request->getAttribute(UserInterface::class);
 
-        if (! $user->isGuest()) {
+        if (null !== $user->getIdentity()) {
             // Authenticated — redirect; HTMX boosted forms need HX-Redirect
             if ($request->getAttribute(Attribute::Request->value) === true) {
                 return new EmptyResponse(200, [Header::Redirect->value => '/']);

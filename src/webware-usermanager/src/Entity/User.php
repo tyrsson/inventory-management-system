@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * This file is part of the Webware Farmers Store Inventory package.
+ * This file is part of the Webware UserManager package.
  *
  * Copyright (c) 2026 Joey Smith <jsmith@webinertia.net>
  * and contributors.
@@ -27,6 +27,7 @@ use function array_values;
 use function is_array;
 use function is_string;
 use function json_decode;
+use function json_validate;
 use function password_get_info;
 use function password_hash;
 
@@ -45,21 +46,25 @@ class User implements UserInterface, WithRowDataPrototypeInterface
                 }
             }
         },
-        public private(set) string|array|null $roleId = null {
-            get => $this->roleId ?? '';
-            set(string|array|null $value) {
+        public private(set) array|string|null $roleId = null {
+            get => $this->roleId ?? null;
+            set(array|string|null $value) {
                 if (is_string($value)) {
-                    $decoded = json_decode($value, true);
-                    $this->roleId = is_array($decoded) ? $decoded : [];
+                    if (json_validate($value)) {
+                        $decoded      = json_decode($value, true);
+                        $this->roleId = is_array($decoded) ? $decoded : [];
+                    } else {
+                        $this->roleId = [$value];
+                    }
                 } else {
                     $this->roleId = $value;
                 }
             }
         },
         public private(set) ?string $firstName = null,
-        public private(set) ?string $lastName = null,
-        public private(set) ?string $email = null {
-            get => $this->email ?? '';
+        public private(set) ?string $lastName  = null,
+        public private(set) ?string $email     = null {
+            get => $this->email;
             set(?string $value) {
                 $this->email = $value !== null ? strtolower($value) : null;
             }
@@ -72,14 +77,16 @@ class User implements UserInterface, WithRowDataPrototypeInterface
                 $this->active = (bool) $value;
             }
         },
-        public private(set) DateTimeImmutable|array|null $createdAt = null {
+        public private(set) DateTimeImmutable|array|string|null $createdAt = null {
             get => $this->createdAt ?? new DateTimeImmutable();
-            set(DateTimeImmutable|array|null $value) {
+            set(DateTimeImmutable|array|string|null $value) {
                 if (is_array($value) && isset($value['date'])) {
                     $this->createdAt = new DateTimeImmutable(
                         $value['date'],
                         new DateTimeZone($value['timezone'])
                     );
+                } elseif (is_string($value)) {
+                    $this->createdAt = new DateTimeImmutable($value);
                 } else {
                     $this->createdAt = $value;
                 }
@@ -87,15 +94,18 @@ class User implements UserInterface, WithRowDataPrototypeInterface
         },
         #[SensitiveParameter]
         public private(set) ?string $verificationToken = null,
-        public private(set) DateTimeImmutable|array|null $tokenCreatedAt = null {
+
+        public private(set) DateTimeImmutable|array|string|null $tokenCreatedAt = null {
             get => $this->tokenCreatedAt ?? new DateTimeImmutable();
-            set(DateTimeImmutable|array|null $value) {
+            set(DateTimeImmutable|array|string|null $value) {
                 if (is_array($value) && isset($value['date'])) {
                     $this->tokenCreatedAt = DateTimeImmutable::createFromFormat(
                         self::DATETIME_FORMAT,
                         $value['date'],
                         new DateTimeZone($value['timezone'] ?? 'UTC')
                     );
+                } elseif (is_string($value)) {
+                    $this->tokenCreatedAt = new DateTimeImmutable($value);
                 } else {
                     $this->tokenCreatedAt = $value;
                 }
@@ -117,11 +127,11 @@ class User implements UserInterface, WithRowDataPrototypeInterface
 
     public function __invoke(): UserInterface
     {
-        return new self();
+        return new static();
     }
 
     #[Override]
-    public function getIdentity(): string
+    public function getIdentity(): ?string
     {
         return $this->email;
     }
@@ -150,24 +160,14 @@ class User implements UserInterface, WithRowDataPrototypeInterface
     #[Override]
     public function getRoleId(): array|string|null
     {
-        if (is_array($this->roleId)) {
-            return $this->roleId[0] ?? '';
-        }
-
-        return is_string($this->roleId) ? $this->roleId : '';
+        return $this->roleId;
     }
 
-    /** @return string[]|null */
+    /** @return RoleInterface[]|null */
     #[Override]
     public function getRoles(): ?array
     {
         return $this->roleId;
-    }
-
-    #[Override]
-    public function isGuest(): bool
-    {
-        return false;
     }
 
     /** @param mixed $default */
@@ -314,7 +314,7 @@ class User implements UserInterface, WithRowDataPrototypeInterface
 
     public function withRowData(array $withRowData): static
     {
-        return new self(...$withRowData);
+        return new static(...$withRowData);
     }
 
     public function exchangeArray(array $data): array

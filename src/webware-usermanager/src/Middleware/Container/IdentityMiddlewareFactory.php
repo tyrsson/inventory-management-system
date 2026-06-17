@@ -19,7 +19,7 @@ use Webware\UserManager\Container\Configuration;
 use Webware\UserManager\Middleware\IdentityMiddleware;
 use Webware\UserManager\UserInterface;
 
-final class IdentityMiddlewareFactory
+final readonly class IdentityMiddlewareFactory
 {
     public function __invoke(ContainerInterface $container): IdentityMiddleware
     {

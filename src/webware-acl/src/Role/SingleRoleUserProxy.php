@@ -4,20 +4,23 @@ declare(strict_types=1);
 
 namespace Webware\Acl\Role;
 
+use Laminas\Permissions\Acl\Role\RoleInterface;
 use Override;
 use Webware\UserManager\UserInterface;
+
+use function is_string;
 
 final class SingleRoleUserProxy implements UserInterface
 {
     public function __construct(
         private readonly UserInterface $user,
-        private readonly string $roleId,
+        private readonly RoleInterface|string $roleId,
     ) {}
 
     #[Override]
     public function getRoleId(): string
     {
-        return $this->roleId;
+        return is_string($this->roleId) ? $this->roleId : $this->roleId->getRoleId();
     }
 
     #[Override]
@@ -35,7 +38,7 @@ final class SingleRoleUserProxy implements UserInterface
     #[Override]
     public function getRoles(): ?array
     {
-        return [$this->roleId];
+        return [is_string($this->roleId) ? $this->roleId : $this->roleId->getRoleId()];
     }
 
     #[Override]
@@ -54,11 +57,5 @@ final class SingleRoleUserProxy implements UserInterface
     public function getDetails(): array
     {
         return $this->user->getDetails();
-    }
-
-    #[Override]
-    public function isGuest(): bool
-    {
-        return $this->user->isGuest();
     }
 }

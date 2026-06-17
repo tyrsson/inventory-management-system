@@ -24,6 +24,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LoggerInterface;
+use Webware\UserManager\Entity\User;
 use Webware\UserManager\Repository\UserRepositoryInterface;
 use Webware\UserManager\UserInterface;
 
@@ -50,9 +51,10 @@ final class LoginMiddleware implements MiddlewareInterface
             return $handler->handle($request);
         }
 
+        /** @var User|null $user */
         $user = $this->repository->authenticate($email, $password);
 
-        if ($user === null) {
+        if (null === $user) {
             $this->logger->info('Failed login attempt', ['email' => $email]);
             $messenger = $request->getAttribute(SystemMessengerInterface::class);
             $messenger?->error('Invalid email or password.');

@@ -59,7 +59,7 @@ final class IdentityMiddleware implements MiddlewareInterface
         if (null !== $userInfo) {
             $user = ($this->userFactory)($userInfo);
         } else {
-            $user = ($this->userFactory)(['firstName' => 'Guest', 'roleId' => [GuestUser::GUEST_ROLE]]);
+            $user = ($this->userFactory)(['roleId' => UserInterface::GUEST_ROLE]);
         }
 
         return $handler->handle($request->withAttribute(UserInterface::class, $user));

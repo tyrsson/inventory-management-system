@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * This file is part of the Webware Farmers Store Inventory package.
+ * This file is part of the IMS Store Inventory package.
  *
  * Copyright (c) 2026 Joey Smith <jsmith@webinertia.net>
  * and contributors.
@@ -12,9 +12,9 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Webware\UserManager\Entity;
+namespace Ims\Store\Entity;
 
-final readonly class Store
+final class Store
 {
     public function __construct(
         public int $storeNumber,

@@ -11,6 +11,7 @@ use Laminas\Permissions\Acl\Role\RoleInterface;
 
 interface UserInterface extends RoleInterface, ResourceInterface, ProprietaryInterface
 {
+    public final const string GUEST_ROLE = 'Guest';
     public const string DATETIME_FORMAT = 'Y-m-d H:i:s';
     
     /**
@@ -36,6 +37,4 @@ interface UserInterface extends RoleInterface, ResourceInterface, ProprietaryInt
      * @return array<string, mixed>|null
      */
     public function getDetails(): ?array;
-
-    public function isGuest(): bool;
 }
