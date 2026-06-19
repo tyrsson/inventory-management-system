@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * This file is part of the Webware Farmers Store Inventory package.
+ * This file is part of the Webware UserManager package.
  *
  * Copyright (c) 2026 Joey Smith <jsmith@webinertia.net>
  * and contributors.
@@ -15,51 +15,123 @@ declare(strict_types=1);
 namespace Webware\UserManager\Entity;
 
 use DateTimeImmutable;
+use DateTimeZone;
+use Laminas\Permissions\Acl\Role\RoleInterface;
 use Override;
 use SensitiveParameter;
+use Webware\ResultSet\WithRowDataPrototypeInterface;
 use Webware\UserManager\UserInterface;
 
 use function array_merge;
 use function array_values;
+use function is_array;
+use function is_string;
 use function json_decode;
+use function json_validate;
+use function password_get_info;
+use function password_hash;
 
-final class User implements UserInterface
+use const PASSWORD_DEFAULT;
+
+class User implements UserInterface, WithRowDataPrototypeInterface
 {
     public function __construct(
-        public readonly int $id,
-        public readonly int $storeId,
-        public readonly string $firstName,
-        public readonly string $lastName,
-        public readonly string $email,
-        #[SensitiveParameter]
-        public readonly string $passwordHash,
-        public readonly bool $active,
-        public readonly DateTimeImmutable $createdAt,
-        #[SensitiveParameter]
-        public readonly ?string $verificationToken = null,
-        public readonly ?DateTimeImmutable $tokenCreatedAt = null,
-        /** @var string[] */
-        public string|array $roles = [] {
-            set(string|array $value) {
-                if (is_string($value)) {
-                    $decoded = json_decode($value, true);
-                    $this->roles = is_array($decoded) ? $decoded : [];
+        public private(set) int|string|null $id = null {
+            get => $this->id ?? null;
+            set(int|string|null $value) {
+                if ($value === null) {
+                    $this->id = null;
                 } else {
-                    $this->roles = $value;
+                    $this->id = is_string($value) ? (int) $value : $value;
                 }
             }
         },
-        /** @var array<string, mixed> */
-        private readonly array $details = [],
+        public private(set) array|string|null $roleId = null {
+            get => $this->roleId ?? null;
+            set(array|string|null $value) {
+                if (is_string($value)) {
+                    if (json_validate($value)) {
+                        $decoded      = json_decode($value, true);
+                        $this->roleId = is_array($decoded) ? $decoded : [];
+                    } else {
+                        $this->roleId = [$value];
+                    }
+                } else {
+                    $this->roleId = $value;
+                }
+            }
+        },
+        public private(set) ?string $firstName = null,
+        public private(set) ?string $lastName  = null,
+        public private(set) ?string $email     = null {
+            get => $this->email;
+            set(?string $value) {
+                $this->email = $value !== null ? strtolower($value) : null;
+            }
+        },
+        #[SensitiveParameter]
+        public private(set) ?string $passwordHash = null,
+        public private(set) int|bool|null $active = null {
+            get => $this->active ?? false;
+            set(int|bool|null $value) {
+                $this->active = (bool) $value;
+            }
+        },
+        public private(set) DateTimeImmutable|array|string|null $createdAt = null {
+            get => $this->createdAt ?? new DateTimeImmutable();
+            set(DateTimeImmutable|array|string|null $value) {
+                if (is_array($value) && isset($value['date'])) {
+                    $this->createdAt = new DateTimeImmutable(
+                        $value['date'],
+                        new DateTimeZone($value['timezone'])
+                    );
+                } elseif (is_string($value)) {
+                    $this->createdAt = new DateTimeImmutable($value);
+                } else {
+                    $this->createdAt = $value;
+                }
+            }
+        },
+        #[SensitiveParameter]
+        public private(set) ?string $verificationToken = null,
+
+        public private(set) DateTimeImmutable|array|string|null $tokenCreatedAt = null {
+            get => $this->tokenCreatedAt ?? new DateTimeImmutable();
+            set(DateTimeImmutable|array|string|null $value) {
+                if (is_array($value) && isset($value['date'])) {
+                    $this->tokenCreatedAt = DateTimeImmutable::createFromFormat(
+                        self::DATETIME_FORMAT,
+                        $value['date'],
+                        new DateTimeZone($value['timezone'] ?? 'UTC')
+                    );
+                } elseif (is_string($value)) {
+                    $this->tokenCreatedAt = new DateTimeImmutable($value);
+                } else {
+                    $this->tokenCreatedAt = $value;
+                }
+            }
+        },
+        /** @var array<string, mixed>|null */
+        public private(set) array|string|null $details = null {
+            get => $this->details ?? [];
+            set(array|string|null $value) {
+                if (is_string($value)) {
+                    $decoded = json_decode($value, true);
+                    $this->details = is_array($decoded) ? $decoded : [];
+                } else {
+                    $this->details = $value;
+                }
+            }
+        },
     ) {}
 
-    public function displayName(): string
+    public function __invoke(): UserInterface
     {
-        return $this->firstName . ' ' . $this->lastName;
+        return new static();
     }
 
     #[Override]
-    public function getIdentity(): string
+    public function getIdentity(): ?string
     {
         return $this->email;
     }
@@ -80,28 +152,22 @@ final class User implements UserInterface
      * $role->getOwnerId() === $resource->getOwnerId().
      */
     #[Override]
-    public function getOwnerId(): int
+    public function getOwnerId(): ?int
     {
         return $this->id;
     }
 
     #[Override]
-    public function getRoleId(): string
+    public function getRoleId(): array|string|null
     {
-        return $this->roles[0] ?? '';
+        return $this->roleId;
     }
 
-    /** @return string[] */
+    /** @return RoleInterface[]|null */
     #[Override]
-    public function getRoles(): array
+    public function getRoles(): ?array
     {
-        return $this->roles;
-    }
-
-    #[Override]
-    public function isGuest(): bool
-    {
-        return false;
+        return $this->roleId;
     }
 
     /** @param mixed $default */
@@ -118,148 +184,146 @@ final class User implements UserInterface
         return $this->details;
     }
 
-    public function withStoreId(int $storeId): self
-    {
-        return new self(
-            $this->id,
-            $storeId,
-            $this->firstName,
-            $this->lastName,
-            $this->email,
-            $this->passwordHash,
-            $this->active,
-            $this->createdAt,
-            $this->verificationToken,
-            $this->tokenCreatedAt,
-            $this->roles,
-            $this->details,
-        );
-    }
-
     public function withFirstName(string $firstName): self
     {
         return new self(
-            $this->id,
-            $this->storeId,
-            $firstName,
-            $this->lastName,
-            $this->email,
-            $this->passwordHash,
-            $this->active,
-            $this->createdAt,
-            $this->verificationToken,
-            $this->tokenCreatedAt,
-            $this->roles,
-            $this->details,
+            id: $this->id,
+            roleId: $this->roleId,
+            firstName: $firstName,
+            lastName: $this->lastName,
+            email: $this->email,
+            passwordHash: $this->passwordHash,
+            active: $this->active,
+            createdAt: $this->createdAt,
+            verificationToken: $this->verificationToken,
+            tokenCreatedAt: $this->tokenCreatedAt,
+            details: $this->details,
         );
     }
 
     public function withLastName(string $lastName): self
     {
         return new self(
-            $this->id,
-            $this->storeId,
-            $this->firstName,
-            $lastName,
-            $this->email,
-            $this->passwordHash,
-            $this->active,
-            $this->createdAt,
-            $this->verificationToken,
-            $this->tokenCreatedAt,
-            $this->roles,
-            $this->details,
+            id: $this->id,
+            roleId: $this->roleId,
+            firstName: $this->firstName,
+            lastName: $lastName,
+            email: $this->email,
+            passwordHash: $this->passwordHash,
+            active: $this->active,
+            createdAt: $this->createdAt,
+            verificationToken: $this->verificationToken,
+            tokenCreatedAt: $this->tokenCreatedAt,
+            details: $this->details,
         );
     }
 
     public function withEmail(string $email): self
     {
         return new self(
-            $this->id,
-            $this->storeId,
-            $this->firstName,
-            $this->lastName,
-            $email,
-            $this->passwordHash,
-            $this->active,
-            $this->createdAt,
-            $this->verificationToken,
-            $this->tokenCreatedAt,
-            $this->roles,
-            $this->details,
+            id: $this->id,
+            roleId: $this->roleId,
+            firstName: $this->firstName,
+            lastName: $this->lastName,
+            email: $email,
+            passwordHash: $this->passwordHash,
+            active: $this->active,
+            createdAt: $this->createdAt,
+            verificationToken: $this->verificationToken,
+            tokenCreatedAt: $this->tokenCreatedAt,
+            details: $this->details,
         );
     }
 
     public function withPasswordHash(string $passwordHash): self
     {
+        if (password_get_info($passwordHash)['algo'] === null) {
+            $passwordHash = password_hash($passwordHash, PASSWORD_DEFAULT);
+        }
+
         return new self(
-            $this->id,
-            $this->storeId,
-            $this->firstName,
-            $this->lastName,
-            $this->email,
-            $passwordHash,
-            $this->active,
-            $this->createdAt,
-            $this->verificationToken,
-            $this->tokenCreatedAt,
-            $this->roles,
-            $this->details,
+            id: $this->id,
+            roleId: $this->roleId,
+            firstName: $this->firstName,
+            lastName: $this->lastName,
+            email: $this->email,
+            passwordHash: $passwordHash,
+            active: $this->active,
+            createdAt: $this->createdAt,
+            verificationToken: $this->verificationToken,
+            tokenCreatedAt: $this->tokenCreatedAt,
+            details: $this->details,
         );
     }
 
     public function withActive(bool $active): self
     {
         return new self(
-            $this->id,
-            $this->storeId,
-            $this->firstName,
-            $this->lastName,
-            $this->email,
-            $this->passwordHash,
-            $active,
-            $this->createdAt,
-            $this->verificationToken,
-            $this->tokenCreatedAt,
-            $this->roles,
-            $this->details,
+            id: $this->id,
+            roleId: $this->roleId,
+            firstName: $this->firstName,
+            lastName: $this->lastName,
+            email: $this->email,
+            passwordHash: $this->passwordHash,
+            active: $active,
+            createdAt: $this->createdAt,
+            verificationToken: $this->verificationToken,
+            tokenCreatedAt: $this->tokenCreatedAt,
+            details: $this->details,
         );
     }
 
-    /** @param string[] $roles */
-    public function withRoles(array $roles): self
+    /** @param RoleInterface[]|string[]|string $roleId */
+    public function withRoleId(array $roleId): self
     {
+        if (is_string($roleId)) {
+            $roleId = [$roleId];
+        }
+
         return new self(
-            $this->id,
-            $this->storeId,
-            $this->firstName,
-            $this->lastName,
-            $this->email,
-            $this->passwordHash,
-            $this->active,
-            $this->createdAt,
-            $this->verificationToken,
-            $this->tokenCreatedAt,
-            array_values($roles),
-            $this->details,
+            id: $this->id,
+            roleId: array_merge($this->roleId, array_values($roleId)),
+            firstName: $this->firstName,
+            lastName: $this->lastName,
+            email: $this->email,
+            passwordHash: $this->passwordHash,
+            active: $this->active,
+            createdAt: $this->createdAt,
+            verificationToken: $this->verificationToken,
+            tokenCreatedAt: $this->tokenCreatedAt,
+            details: $this->details,
         );
     }
 
     public function withDetail(string $name, mixed $value): self
     {
         return new self(
-            $this->id,
-            $this->storeId,
-            $this->firstName,
-            $this->lastName,
-            $this->email,
-            $this->passwordHash,
-            $this->active,
-            $this->createdAt,
-            $this->verificationToken,
-            $this->tokenCreatedAt,
-            $this->roles,
-            array_merge($this->details, [$name => $value]),
+            id: $this->id,
+            roleId: $this->roleId,
+            firstName: $this->firstName,
+            lastName: $this->lastName,
+            email: $this->email,
+            passwordHash: $this->passwordHash,
+            active: $this->active,
+            createdAt: $this->createdAt,
+            verificationToken: $this->verificationToken,
+            tokenCreatedAt: $this->tokenCreatedAt,
+            details: array_merge($this->details, [$name => $value]),
         );
+    }
+
+    public function withRowData(array $withRowData): static
+    {
+        return new static(...$withRowData);
+    }
+
+    public function exchangeArray(array $data): array
+    {
+        throw new \RuntimeException('User entity does not support exchangeArray()');
+    }
+
+    public function toArray(): array
+    {
+        return (array) $this;
     }
 }

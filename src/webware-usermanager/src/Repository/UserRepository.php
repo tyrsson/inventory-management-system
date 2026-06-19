@@ -20,7 +20,10 @@ use DateTimeImmutable;
 use Monolog\Level;
 use PhpDb\Adapter\AdapterInterface;
 use PhpDb\TableGateway\TableGateway;
+use PhpDb\Sql\Where;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Webware\ResultSet\WithRowDataPrototypeInterface;
+use Webware\ResultSet\WithRowDataResultSet;
 use Webware\UserManager\Entity\User;
 use Webware\UserManager\UserInterface;
 
@@ -33,13 +36,19 @@ final class UserRepository implements UserRepositoryInterface
     public function __construct(
         private readonly AdapterInterface $adapter,
         private readonly EventDispatcherInterface $dispatcher,
+        private readonly WithRowDataPrototypeInterface $userPrototype,
+        private readonly string $credentialColumn,
     ) {
-        $this->gateway = new TableGateway('user', $adapter);
+        $this->gateway = new TableGateway(
+            table: Schema::User->table(),
+            adapter: $adapter,
+            resultSetPrototype: new WithRowDataResultSet($userPrototype)
+        );
     }
 
-    public function authenticate(string $credential, ?string $password = null): (User&UserInterface)|null
+    public function authenticate(string $credential, ?string $password = null): ?UserInterface
     {
-        $user = $this->findByEmail($credential);
+        $user = $this->findByConfiguredCredential($this->credentialColumn, $credential);
 
         if ($user === null || ! $user->active) {
             return null;
@@ -53,45 +62,35 @@ final class UserRepository implements UserRepositoryInterface
 
         $this->dispatcher->dispatch(
             (new LogEvent(LogChannel::Security, Level::Info))
-                ->setMessage($user->displayName() . ' authenticated successfully.')
+                ->setMessage($user->firstName . ' ' . $user->lastName . ' authenticated successfully.')
                 ->setContext(['identity' => $user->getIdentity()])
         );
 
         return $authenticatedUser;
     }
 
-    public function findByEmail(string $email): ?User
+    public function findByEmail(string $email): ?UserInterface
     {
         $sql    = $this->gateway->getSql();
         $select = $sql->select()
             ->where(['user.email' => $email])
             ->limit(1);
-
-        $row = $sql->prepareStatementForSqlObject($select)->execute()->current();
-        if ($row === null) {
-            return null;
-        }
-
-        return $this->hydrate((array) $row);
+        $row = $this->gateway->selectWith($select)->current();
+        return $row;
     }
 
-    public function findById(int $id): ?User
+    public function findById(int $id): ?UserInterface
     {
         $sql    = $this->gateway->getSql();
         $select = $sql->select()
             ->where(['user.id' => $id])
             ->limit(1);
 
-        $row = $sql->prepareStatementForSqlObject($select)->execute()->current();
-        if ($row === null) {
-            return null;
-        }
-
-        return $this->hydrate((array) $row);
+        return $this->gateway->selectWith($select)->current();
     }
 
     /** @return User[] */
-    public function findAll(?int $storeId = null): array
+    public function findAll(?int $storeId = null): ?array
     {
         $sql    = $this->gateway->getSql();
         $select = $sql->select()
@@ -101,12 +100,7 @@ final class UserRepository implements UserRepositoryInterface
             $select->where(['user.storeId' => $storeId]);
         }
 
-        $users = [];
-        foreach ($sql->prepareStatementForSqlObject($select)->execute() as $row) {
-            $users[] = $this->hydrate((array) $row);
-        }
-
-        return $users;
+        return $this->gateway->selectWith($select)->toArray();
     }
 
     /** @param array<string, mixed> $data */
@@ -129,7 +123,7 @@ final class UserRepository implements UserRepositoryInterface
         $sql->prepareStatementForSqlObject($update)->execute();
     }
 
-    public function findByVerificationToken(string $token): ?User
+    public function findByVerificationToken(string $token): ?UserInterface
     {
         $sql    = $this->gateway->getSql();
         $select = $sql->select()
@@ -141,7 +135,7 @@ final class UserRepository implements UserRepositoryInterface
             return null;
         }
 
-        return $this->hydrate((array) $row);
+        return $row;
     }
 
     public function findRoleIdByName(string $roleName): string
@@ -149,25 +143,13 @@ final class UserRepository implements UserRepositoryInterface
         return $roleName;
     }
 
-    /** @param array<string, mixed> $row */
-    private function hydrate(array $row): User
+    private function findByConfiguredCredential(string $column, string $credential): ?UserInterface
     {
-        return new User(
-            id: (int) $row['id'],
-            storeId: (int) $row['storeId'],
-            firstName: (string) $row['firstName'],
-            lastName: (string) $row['lastName'],
-            email: (string) $row['email'],
-            passwordHash: (string) $row['passwordHash'],
-            active: (bool) $row['active'],
-            createdAt: new DateTimeImmutable((string) $row['created_at']),
-            verificationToken: isset($row['verificationToken']) ? (string) $row['verificationToken'] : null,
-            tokenCreatedAt: isset($row['tokenCreatedAt']) ? new DateTimeImmutable((string) $row['tokenCreatedAt']) : null,
-            roles: $row['roleId'],
-            details: [
-                'id'      => (int) $row['id'],
-                'storeId' => (int) $row['storeId'],
-            ],
-        );
+        $sql    = $this->gateway->getSql();
+        $select = $sql->select()
+            ->where([$column => $credential])
+            ->limit(1);
+
+        return $this->gateway->selectWith($select)->current();
     }
 }

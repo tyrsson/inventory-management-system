@@ -17,51 +17,25 @@ namespace Webware\UserManager\Container;
 use DateTimeImmutable;
 use Psr\Container\ContainerInterface;
 use Webmozart\Assert\Assert;
+use Webware\ResultSet\WithRowDataPrototypeInterface;
 use Webware\UserManager\Entity\GuestUser;
-use Webware\UserManager\Entity\User;
 use Webware\UserManager\UserInterface;
 
 /**
  * DI factory for the UserInterface::class callable service.
  *
- * Returns a callable that creates either a User or GuestUser instance.
- * When session details contain the fields written by LoginMiddleware, a fully-
- * hydrated User is returned. Otherwise a GuestUser is returned for unauthenticated
- * requests. The discriminator is the presence of 'id', 'role_id', and 'first_name'
- * in $details — fields that can only exist if LoginMiddleware wrote the session.
+ * Returns a callable that creates a UserInterface implementation from an array of data.
+ * The callable is used by IdentityMiddleware to reconstruct the authenticated user from session data.
  */
 final class UserFactory
 {
     public function __invoke(ContainerInterface $container): callable
     {
-        return static function (
-            string $identity,
-            array $roles = [],
-            array $details = [],
-        ): UserInterface {
-            Assert::allString($roles);
-            Assert::isMap($details);
-
-            if (isset($details['id'], $details['storeId'], $details['firstName'])) {
-                return new User(
-                    id: $details['id'],
-                    storeId: $details['storeId'],
-                    firstName: $details['firstName'],
-                    lastName: $details['lastName'],
-                    email: $identity,
-                    passwordHash: $details['passwordHash'],
-                    active: $details['active'],
-                    createdAt: new DateTimeImmutable($details['created_at']),
-                    verificationToken: $details['verificationToken'] ?? null,
-                    tokenCreatedAt: isset($details['tokenCreatedAt'])
-                        ? new DateTimeImmutable($details['tokenCreatedAt'])
-                        : null,
-                    roles: $roles,
-                    details: $details,
-                );
-            }
-
-            return new GuestUser($identity, $roles ?: [GuestUser::GUEST_ROLE], $details);
+        $prototype = $container->get(WithRowDataPrototypeInterface::class);
+        $config    = Configuration::getCredentialConfig($container, self::class);
+        return static function (array $withData) use ($prototype, $config): UserInterface {
+            Assert::isMap($withData);
+            return new $prototype(...$withData);
         };
     }
 }

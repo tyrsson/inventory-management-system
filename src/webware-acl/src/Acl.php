@@ -65,7 +65,7 @@ final class Acl extends LaminasAcl implements AclInterface
         $resource = null,
         $privilege = null,
     ): bool {
-        if ($role === null) {
+        if (null === $role) {
             return false;
         }
 

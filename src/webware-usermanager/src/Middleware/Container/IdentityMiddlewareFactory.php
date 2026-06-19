@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * This file is part of the Webware\Acl package.
+ * This file is part of the Webware\UserManager package.
  *
  * Copyright (c) 2026 Joey Smith <jsmith@webinertia.net>
  * and contributors.
@@ -12,18 +12,20 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Webware\Acl\Container;
+namespace Webware\UserManager\Middleware\Container;
 
 use Psr\Container\ContainerInterface;
-use Webware\Acl\Middleware\IdentityMiddleware;
+use Webware\UserManager\Container\Configuration;
+use Webware\UserManager\Middleware\IdentityMiddleware;
 use Webware\UserManager\UserInterface;
 
-final class IdentityMiddlewareFactory
+final readonly class IdentityMiddlewareFactory
 {
     public function __invoke(ContainerInterface $container): IdentityMiddleware
     {
         return new IdentityMiddleware(
             userFactory: $container->get(UserInterface::class),
+            config: Configuration::getCredentialConfig($container, self::class)
         );
     }
 }

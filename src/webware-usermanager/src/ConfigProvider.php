@@ -17,6 +17,7 @@ namespace Webware\UserManager;
 use Webware\Acl\AclInterface;
 use Webware\Admin\Container\Configuration as AdminConfiguration;
 use Webware\CommandBus\CommandBusInterface;
+use Webware\ResultSet\WithRowDataPrototypeInterface;
 use Webware\UserManager\Repository\UserRepositoryInterface as UserRepositoryContract;
 use Webware\UserManager\View\Helper\UserAdminUrl;
 use Webware\UserManager\View\Helper\UserAdminUrlFactory;
@@ -46,17 +47,19 @@ final class ConfigProvider
         return [
             'aliases'   => [
                 UserRepositoryContract::class => Repository\UserRepository::class,
+                WithRowDataPrototypeInterface::class => Entity\User::class,
             ],
             'factories' => [
                 // Registers the user factory under our own interface key.
-                // Host app aliases Mezzio\Authentication\UserInterface::class → UserInterface::class.
                 UserInterface::class                                => Container\UserFactory::class,
+                Entity\User::class                                  => Entity\User::class,
                 Admin\RequestHandler\CreateUserHandler::class       => Admin\RequestHandler\Container\CreateUserHandlerFactory::class,
                 Admin\RequestHandler\UpdateUserHandler::class       => Admin\RequestHandler\Container\UpdateUserHandlerFactory::class,
                 Admin\RequestHandler\ToggleUserActiveHandler::class => Admin\RequestHandler\Container\ToggleUserActiveHandlerFactory::class,
                 CommandHandler\SaveUserHandler::class               => CommandHandler\Container\SaveUserHandlerFactory::class,
-                Middleware\RegistrationMiddleware::class            => Middleware\Container\RegistrationMiddlewareFactory::class,
+                Middleware\IdentityMiddleware::class                => Middleware\Container\IdentityMiddlewareFactory::class,
                 Middleware\LoginMiddleware::class                   => Middleware\Container\LoginMiddlewareFactory::class,
+                Middleware\RegistrationMiddleware::class            => Middleware\Container\RegistrationMiddlewareFactory::class,
                 Repository\UserRepository::class                    => Repository\UserRepositoryFactory::class,
                 RouteProvider::class                                => Container\RouteProviderFactory::class,
                 RequestHandler\LoginHandler::class                  => RequestHandler\Container\LoginHandlerFactory::class,

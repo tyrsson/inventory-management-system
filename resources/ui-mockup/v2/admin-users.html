@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Users | User Manager | Farmers IMS Admin</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="custom.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TOP NAVBAR
+════════════════════════════════════════════════════════════ -->
+<nav class="navbar fixed-top ims-topbar bg-body-tertiary border-bottom border-secondary-subtle px-3">
+    <div class="d-flex align-items-center gap-2 flex-grow-1">
+        <button class="btn btn-sm btn-link text-body p-1 d-lg-none"
+                type="button"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#imsSidebar"
+                aria-controls="imsSidebar"
+                aria-label="Open navigation">
+            <i class="bi bi-list fs-4"></i>
+        </button>
+        <div>
+            <div class="fw-bold lh-1 small">Users</div>
+            <div class="text-secondary ims-topbar-subtitle">Administration › User Manager</div>
+        </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <div class="ims-avatar">JW</div>
+    </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SIDEBAR
+════════════════════════════════════════════════════════════ -->
+<div class="offcanvas-lg offcanvas-start ims-sidebar bg-body-tertiary border-end border-secondary-subtle d-flex flex-column"
+     tabindex="-1"
+     id="imsSidebar"
+     aria-labelledby="imsSidebarLabel">
+
+    <div class="offcanvas-header border-bottom border-secondary-subtle">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-boxes fs-4 text-primary"></i>
+            <div><div class="fw-bold lh-1" id="imsSidebarLabel">Farmers IMS</div><div class="text-secondary ims-sidebar-subtitle">Inventory Management</div></div>
+        </div>
+        <button type="button" class="btn-close d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#imsSidebar" aria-label="Close"></button>
+    </div>
+    <div class="px-3 py-2 border-bottom border-secondary-subtle">
+        <div class="sidebar-section-label">Active Store</div>
+        <div class="fw-semibold small">Store #207 · Leeds, AL</div>
+    </div>
+
+    <div class="offcanvas-body p-2 d-flex flex-column flex-grow-1 overflow-y-auto">
+        <div class="sidebar-section-label">Main</div>
+        <nav class="nav flex-column gap-1">
+            <a href="index.html" class="nav-link"><i class="bi bi-grid-fill"></i> Dashboard</a>
+            <a href="inventory.html" class="nav-link"><i class="bi bi-boxes"></i> Inventory</a>
+            <a href="manifests.html" class="nav-link"><i class="bi bi-clipboard2-data"></i> Manifests</a>
+            <a href="tickets.html" class="nav-link"><i class="bi bi-receipt"></i> Tickets</a>
+            <a href="transfers.html" class="nav-link"><i class="bi bi-arrow-left-right"></i> Transfers</a>
+        </nav>
+        <div class="sidebar-section-label mt-2">Administration</div>
+        <nav class="nav flex-column gap-1">
+            <a href="admin-dashboard.html" class="nav-link"><i class="bi bi-speedometer2"></i> Admin Dashboard</a>
+            <button class="nav-link d-flex align-items-center gap-2 w-100 text-start border-0 bg-transparent" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#userSubNav" aria-expanded="true">
+                <i class="bi bi-person-lines-fill text-primary"></i>
+                <span class="flex-grow-1 text-primary">User Manager</span>
+                <i class="bi bi-chevron-down ims-chevron"></i>
+            </button>
+            <div class="collapse show" id="userSubNav">
+                <div class="d-flex flex-column gap-1 ps-3">
+                    <a href="admin-users.html" class="nav-link py-1 ims-sub-nav active" aria-current="page"><i class="bi bi-people"></i> Users</a>
+                </div>
+            </div>
+            <button class="nav-link d-flex align-items-center gap-2 w-100 text-start border-0 bg-transparent" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#aclSubNav" aria-expanded="false">
+                <i class="bi bi-shield-lock"></i>
+                <span class="flex-grow-1">ACL Manager</span>
+                <i class="bi bi-chevron-down ims-chevron"></i>
+            </button>
+            <div class="collapse" id="aclSubNav">
+                <div class="d-flex flex-column gap-1 ps-3">
+                    <a href="admin-acl.html" class="nav-link py-1 ims-sub-nav"><i class="bi bi-grid-3x3-gap"></i> Overview</a>
+                    <a href="admin-acl-roles.html" class="nav-link py-1 ims-sub-nav"><i class="bi bi-people"></i> Roles</a>
+                    <a href="admin-acl-resources.html" class="nav-link py-1 ims-sub-nav"><i class="bi bi-collection"></i> Resources</a>
+                    <a href="admin-acl-rules.html" class="nav-link py-1 ims-sub-nav"><i class="bi bi-toggles"></i> Rules</a>
+                    <a href="admin-acl-routes.html" class="nav-link py-1 ims-sub-nav"><i class="bi bi-signpost-split"></i> Route Map</a>
+                </div>
+            </div>
+        </nav>
+        <div class="sidebar-section-label mt-2">Reporting</div>
+        <nav class="nav flex-column gap-1">
+            <a href="analytics.html" class="nav-link"><i class="bi bi-bar-chart-line"></i> Analytics</a>
+        </nav>
+        <div class="mt-auto pt-2 border-top border-secondary-subtle">
+            <nav class="nav flex-column gap-1">
+                <a href="settings.html" class="nav-link"><i class="bi bi-gear"></i> Settings</a>
+                <a href="login.html" class="nav-link"><i class="bi bi-box-arrow-left"></i> Sign Out</a>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MAIN CONTENT
+════════════════════════════════════════════════════════════ -->
+<div class="ims-layout">
+    <main class="ims-main p-3 p-lg-4">
+
+        <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb small mb-0">
+                <li class="breadcrumb-item"><a href="admin-dashboard.html">Admin</a></li>
+                <li class="breadcrumb-item active" aria-current="page">User Manager</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <i class="bi bi-people text-primary fs-5"></i>
+                    <h1 class="h4 fw-bold mb-0">Users</h1>
+                </div>
+                <p class="text-secondary small mb-0">Manage user accounts, roles, and active status.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                <i class="bi bi-plus-lg me-1"></i> Add User
+            </button>
+        </div>
+
+        <!-- ═══ User table ═══ -->
+        <div class="card">
+            <div class="card-header py-2 d-flex align-items-center gap-2">
+                <i class="bi bi-people text-secondary"></i>
+                <span class="small fw-semibold">All Users</span>
+                <span class="badge bg-body-tertiary border text-secondary ms-1">7</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-sm mb-0 align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="ims-col-name">Name</th>
+                            <th class="ims-col-email">Email</th>
+                            <th class="ims-col-role">Role</th>
+                            <th class="text-center ims-col-status">Status</th>
+                            <th class="ims-col-actions"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Active users -->
+                        <tr>
+                            <td class="fw-semibold">James Wilson</td>
+                            <td class="small text-secondary">jwilson@farmersims.local</td>
+                            <td>
+                                <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">Developer</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Active</span>
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                        data-bs-toggle="modal" data-bs-target="#editUserModal"
+                                        title="Edit user">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning py-0 px-2 ms-1"
+                                        data-bs-toggle="modal" data-bs-target="#toggleUserModal"
+                                        title="Deactivate user">
+                                    <i class="bi bi-toggle-on"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-semibold">Sarah Chen</td>
+                            <td class="small text-secondary">schen@farmersims.local</td>
+                            <td>
+                                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">Administrator</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Active</span>
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                        data-bs-toggle="modal" data-bs-target="#editUserModal"
+                                        title="Edit user">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning py-0 px-2 ms-1"
+                                        data-bs-toggle="modal" data-bs-target="#toggleUserModal"
+                                        title="Deactivate user">
+                                    <i class="bi bi-toggle-on"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-semibold">Mike Rodriguez</td>
+                            <td class="small text-secondary">mrodriguez@farmersims.local</td>
+                            <td>
+                                <span class="badge bg-body-tertiary border text-secondary">Warehouse Supervisor</span>
+                                <span class="badge bg-body-tertiary border text-secondary ms-1">DC Warehouse</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Active</span>
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                        data-bs-toggle="modal" data-bs-target="#editUserModal"
+                                        title="Edit user">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning py-0 px-2 ms-1"
+                                        data-bs-toggle="modal" data-bs-target="#toggleUserModal"
+                                        title="Deactivate user">
+                                    <i class="bi bi-toggle-on"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-semibold">Lisa Thompson</td>
+                            <td class="small text-secondary">lthompson@farmersims.local</td>
+                            <td>
+                                <span class="badge bg-body-tertiary border text-secondary">Warehouse</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Active</span>
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                        data-bs-toggle="modal" data-bs-target="#editUserModal"
+                                        title="Edit user">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning py-0 px-2 ms-1"
+                                        data-bs-toggle="modal" data-bs-target="#toggleUserModal"
+                                        title="Deactivate user">
+                                    <i class="bi bi-toggle-on"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-semibold">David Park</td>
+                            <td class="small text-secondary">dpark@farmersims.local</td>
+                            <td>
+                                <span class="badge bg-body-tertiary border text-secondary">Sales</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Active</span>
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                        data-bs-toggle="modal" data-bs-target="#editUserModal"
+                                        title="Edit user">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning py-0 px-2 ms-1"
+                                        data-bs-toggle="modal" data-bs-target="#toggleUserModal"
+                                        title="Deactivate user">
+                                    <i class="bi bi-toggle-on"></i>
+                                </button>
+                            </td>
+                        </tr>
+
+                        <!-- Inactive users -->
+                        <tr class="ims-user-inactive">
+                            <td>
+                                <span class="fw-semibold text-secondary">Amanda Reed</span>
+                            </td>
+                            <td class="small text-secondary">areed@farmersims.local</td>
+                            <td>
+                                <span class="badge bg-body-tertiary border text-secondary">Credit Manager</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">Inactive</span>
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                        data-bs-toggle="modal" data-bs-target="#editUserModal"
+                                        title="Edit user">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success py-0 px-2 ms-1"
+                                        data-bs-toggle="modal" data-bs-target="#toggleUserModal"
+                                        title="Reactivate user">
+                                    <i class="bi bi-toggle-off"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="ims-user-inactive">
+                            <td>
+                                <span class="fw-semibold text-secondary">Tom Baker</span>
+                            </td>
+                            <td class="small text-secondary">tbaker@farmersims.local</td>
+                            <td>
+                                <span class="badge bg-body-tertiary border text-secondary">Warehouse</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">Inactive</span>
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                        data-bs-toggle="modal" data-bs-target="#editUserModal"
+                                        title="Edit user">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success py-0 px-2 ms-1"
+                                        data-bs-toggle="modal" data-bs-target="#toggleUserModal"
+                                        title="Reactivate user">
+                                    <i class="bi bi-toggle-off"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer py-2 text-secondary small">
+                Deactivated users cannot sign in. Their data and history are preserved.
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     EDIT USER MODAL
+════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h5 class="modal-title small fw-bold" id="editUserModalLabel">
+                    <i class="bi bi-pencil me-1"></i> Edit User
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm">
+                    <input type="hidden" name="id" value="1" />
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold" for="edit_first_name">
+                            First Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" id="edit_first_name" name="firstName"
+                               class="form-control form-control-sm" value="James" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold" for="edit_last_name">
+                            Last Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" id="edit_last_name" name="lastName"
+                               class="form-control form-control-sm" value="Wilson" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold" for="edit_email">
+                            Email <span class="text-danger">*</span>
+                        </label>
+                        <input type="email" id="edit_email" name="email"
+                               class="form-control form-control-sm" value="jwilson@farmersims.local" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold" for="edit_role_id">
+                            Role <span class="text-danger">*</span>
+                        </label>
+                        <select id="edit_role_id" name="roleId[]" multiple class="form-select form-select-sm">
+                            <option value="Sales">Sales</option>
+                            <option value="Warehouse">Warehouse</option>
+                            <option value="DC Warehouse">DC Warehouse</option>
+                            <option value="Credit Manager">Credit Manager</option>
+                            <option value="Warehouse Supervisor" selected>Warehouse Supervisor</option>
+                            <option value="Manager">Manager</option>
+                            <option value="Administrator">Administrator</option>
+                            <option value="Developer" selected>Developer</option>
+                        </select>
+                        <div class="form-text">Hold Ctrl/Cmd to select multiple roles.</div>
+                    </div>
+                    <div class="mb-0">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="edit_active" name="active" checked />
+                            <label class="form-check-label small fw-semibold" for="edit_active">Active account</label>
+                        </div>
+                        <div class="form-text">Inactive users cannot sign in.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="editUserForm" class="btn btn-sm btn-primary">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TOGGLE ACTIVE MODAL (confirm deactivate / reactivate)
+════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="toggleUserModal" tabindex="-1" aria-labelledby="toggleUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h5 class="modal-title small fw-bold" id="toggleUserModalLabel">
+                    <i class="bi bi-toggle-off me-1"></i> Change Status
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small mb-0">
+                    Deactivating <strong>James Wilson</strong> will prevent them from signing in.
+                    Their history and data will be preserved.<br>
+                    <span class="text-secondary">You can reactivate this account at any time.</span>
+                </p>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-warning">Deactivate</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ADD USER MODAL (placeholder for future create-user flow)
+════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h5 class="modal-title small fw-bold" id="addUserModalLabel">
+                    <i class="bi bi-plus-lg me-1"></i> Add User
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">First Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm" placeholder="e.g. Jane" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Last Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm" placeholder="e.g. Smith" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Email <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control form-control-sm" placeholder="jsmith@example.com" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Store Number <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control form-control-sm" placeholder="e.g. 207" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Password <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control form-control-sm" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Role</label>
+                        <select class="form-select form-select-sm">
+                            <option>Sales</option>
+                            <option>Warehouse</option>
+                            <option>DC Warehouse</option>
+                            <option>Credit Manager</option>
+                            <option>Warehouse Supervisor</option>
+                            <option>Manager</option>
+                            <option>Administrator</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-primary">Create User</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

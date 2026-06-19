@@ -8,6 +8,7 @@ use ArrayIterator;
 use FilterIterator;
 use Mezzio\Router\Route;
 use Override;
+use Webware\Acl\Acl;
 use Webware\Acl\AclInterface;
 use Webware\UserManager\UserInterface;
 
@@ -33,7 +34,7 @@ final class NavigationFilterIterator extends FilterIterator
         array $routes,
         private readonly string $navId,
         private readonly ?UserInterface $user,
-        private readonly AclInterface $acl,
+        private readonly AclInterface&Acl $acl,
     ) {
         parent::__construct(new ArrayIterator($routes));
     }

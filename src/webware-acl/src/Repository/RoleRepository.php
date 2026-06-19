@@ -7,10 +7,8 @@ namespace Webware\Acl\Repository;
 use Laminas\Permissions\Acl\Role\Registry;
 use PhpDb\Adapter\AdapterInterface;
 use PhpDb\TableGateway\TableGateway;
-use PhpDb\ResultSet\ResultSet;
-use PhpDb\ResultSet\ResultSetReturnType;
 use Webware\Acl\Entity\Role;
-use Webware\Acl\Schema;
+use Webware\ResultSet\WithRowDataResultSet;
 
 use function array_shift;
 use function json_encode;
@@ -22,10 +20,10 @@ final class RoleRepository
     public function __construct(AdapterInterface $adapter)
     {
         $this->gateway = new TableGateway(
-            Schema::Roles->value,
+            Schema::Roles->table(),
             $adapter,
             null,
-            new ResultSet(
+            new WithRowDataResultSet(
                 rowPrototype: new Role(),
             )
         );

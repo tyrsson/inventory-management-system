@@ -5,15 +5,32 @@ declare(strict_types=1);
 namespace Webware\Acl\Entity;
 
 use Laminas\Permissions\Acl\Role\RoleInterface;
-use PhpDb\ResultSet\RowPrototypeInterface;
+use Webware\ResultSet\WithRowDataPrototypeInterface;
 
-final class Role implements RoleInterface, RowPrototypeInterface
+use function is_string;
+use function json_decode;
+
+final class Role implements RoleInterface, WithRowDataPrototypeInterface
 {
     public function __construct(
-        public private(set) int|string|null $id     = null,
-        public private(set) int|string|null $roleId = null,
-        /** @var RoleInterface[]|string[]|null The parent role identifiers. */
-        public private(set) ?array $parentId        = null,
+        public private(set) int|string|null $id         = null,
+        public private(set) int|string|null $roleId     = null,
+        /** @var RoleInterface[]|string[]|string|null The parent role identifiers. */
+        public private(set) array|string|null $parentId = null {
+            set(array|string|null $value) {
+                if ($value === null) {
+                    $this->parentId = null;
+                } else {
+                    if (is_string($value)) {
+                        $value = json_decode($value, true);
+                    }
+                    $this->parentId = array_map(
+                        static fn ($id) => is_string($id) ? new self(roleId: $id) : $id,
+                        $value
+                    );
+                }
+            }
+        },
     ) {}
 
     public function getRoleId(): int|string|null
@@ -31,16 +48,18 @@ final class Role implements RoleInterface, RowPrototypeInterface
         return $this->parentId;
     }
 
+    public function withRowData(array $withRowData): static
+    {
+        return new self(...$withRowData);
+    }
+
+    public function toArray(): array
+    {
+        return (array) $this;
+    }
+
     public function exchangeArray(array $data): array
     {
-        $this->id       = $data['id'];
-        $this->roleId   = $data['roleId'];
-        $parents        = json_decode($data['parentId'], true) ?? [];
-        $this->parentId = array_map(
-            static fn (string $id) => new self(roleId: $id),
-            $parents
-        );
-
-        return (array) $this;
+        throw new \RuntimeException('Not implemented');
     }
 }

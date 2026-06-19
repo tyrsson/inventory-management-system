@@ -19,8 +19,7 @@ use PhpDb\Sql\Ddl\CreateTable;
 use PhpDb\Sql\Ddl\DropTable;
 use PhpDb\Sql\Literal;
 use PhpDb\Sql\Sql;
-
-// NOTE: role_id is a plain VARCHAR — not a FK. Roles are managed in config.
+use Webware\UserManager\Repository\Schema;
 
 final class Migration002User implements MigrationInterface
 {
@@ -37,17 +36,12 @@ final class Migration002User implements MigrationInterface
     public function up(AdapterInterface $adapter): void
     {
         $sql    = new Sql($adapter);
-        $create = new CreateTable('user');
+        $create = new CreateTable(Schema::User->table());
         $create->ifNotExists();
 
         $create->addColumn(
             (new Integer('id', nullable: false))
                 ->setOptions(['unsigned' => true, 'autoincrement' => true])
-        );
-
-        $create->addColumn(
-            (new SmallInteger('storeId', nullable: false))
-                ->setOptions(['unsigned' => true])
         );
 
         $create->addColumn(new Json('roleId', nullable: false));
@@ -67,17 +61,16 @@ final class Migration002User implements MigrationInterface
         $create->addColumn(new Datetime('tokenCreatedAt', nullable: true));
 
         $create->addColumn(
-            new Datetime('created_at', nullable: false, default: new ArgLiteral('CURRENT_TIMESTAMP'))
+            new Datetime('createdAt', nullable: false, default: new ArgLiteral('CURRENT_TIMESTAMP'))
         );
 
         $create->addColumn(
-            (new Json('params', nullable: true))
-                ->setOptions(['comment' => 'Plugin extension data'])
+            (new Json('details', nullable: true))
+                ->setOptions(['comment' => 'Plugin extension data - storeId, etc. as JSON'])
         );
 
         $create->addConstraint(new PrimaryKey('id'));
         $create->addConstraint(new UniqueKey('email', 'uq_user_email'));
-        $create->addConstraint(new ForeignKey('fk_user_store', 'storeId', 'store', 'store_number'));
 
         $create->setOptions([
             'engine'          => new Literal('InnoDB'),
@@ -96,7 +89,7 @@ final class Migration002User implements MigrationInterface
         $sql = new Sql($adapter);
 
         $adapter->query(
-            $sql->buildSqlString((new DropTable('user'))->ifExists()),
+            $sql->buildSqlString((new DropTable(Schema::User->table()))->ifExists()),
             AdapterInterface::QUERY_MODE_EXECUTE
         );
     }

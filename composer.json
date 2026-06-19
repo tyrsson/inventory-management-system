@@ -60,6 +60,7 @@
             "Webware\\Admin\\": "src/webware-admin/src/",
             "Webware\\Event\\":  "src/webware-event/src/",
             "Webware\\Navigation\\": "src/webware-navigation/src/",
+            "Webware\\ResultSet\\": "src/webware-resultset/src/",
             "PhpDb\\Session\\": "src/phpdb-mezzio-session/src/",
             "Webware\\ConfigManager\\": "src/webware-configmanager/src/"
         }

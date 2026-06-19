@@ -4,23 +4,27 @@ declare(strict_types=1);
 
 namespace Webware\UserManager;
 
+use DatetimeImmutable;
 use Laminas\Permissions\Acl\ProprietaryInterface;
 use Laminas\Permissions\Acl\Resource\ResourceInterface;
 use Laminas\Permissions\Acl\Role\RoleInterface;
 
 interface UserInterface extends RoleInterface, ResourceInterface, ProprietaryInterface
 {
+    public final const string GUEST_ROLE = 'Guest';
+    public const string DATETIME_FORMAT = 'Y-m-d H:i:s';
+    
     /**
      * Get the unique user identity (id, username, email address …)
      */
-    public function getIdentity(): string;
+    public function getIdentity(): ?string;
 
     /**
      * Get all user roles.
      *
-     * @return iterable<int|string, string>
+     * @return RoleInterface[]|string[]|null
      */
-    public function getRoles(): iterable;
+    public function getRoles(): ?array;
 
     /**
      * Get a detail $name if present, $default otherwise.
@@ -30,9 +34,7 @@ interface UserInterface extends RoleInterface, ResourceInterface, ProprietaryInt
     /**
      * Get all the details.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed>|null
      */
-    public function getDetails(): array;
-
-    public function isGuest(): bool;
+    public function getDetails(): ?array;
 }

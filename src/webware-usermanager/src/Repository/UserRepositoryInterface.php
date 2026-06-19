@@ -14,7 +14,6 @@ declare(strict_types=1);
 
 namespace Webware\UserManager\Repository;
 
-use Webware\UserManager\Entity\User;
 use Webware\UserManager\UserInterface;
 
 interface UserRepositoryInterface
@@ -25,24 +24,24 @@ interface UserRepositoryInterface
      * A successful authentication always returns a fully-hydrated User entity,
      * or null if the credential/password pair is not valid.
      */
-    public function authenticate(string $credential, ?string $password = null): (User&UserInterface)|null;
+    public function authenticate(string $credential, ?string $password = null): ?UserInterface;
 
     /**
      * Find a user by their email address, or null if not found.
      */
-    public function findByEmail(string $email): ?User;
+    public function findByEmail(string $email): ?UserInterface;
 
     /**
      * Find a user by their primary key, or null if not found.
      */
-    public function findById(int $id): ?User;
+    public function findById(int $id): ?UserInterface;
 
     /**
      * Return all users, optionally filtered to a specific store.
      *
-     * @return User[]
+     * @return UserInterface[]
      */
-    public function findAll(?int $storeId = null): array;
+    public function findAll(?int $storeId = null): ?array;
 
     /**
      * Persist a new user row and return the generated id.
@@ -66,5 +65,5 @@ interface UserRepositoryInterface
     /**
      * Find a user by their verification token, or null if not found.
      */
-    public function findByVerificationToken(string $token): ?User;
+    public function findByVerificationToken(string $token): ?UserInterface;
 }

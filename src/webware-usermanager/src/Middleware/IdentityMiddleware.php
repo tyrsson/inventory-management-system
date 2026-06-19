@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * This file is part of the Webware\Acl package.
+ * This file is part of the Webware\UserManager package.
  *
  * Copyright (c) 2026 Joey Smith <jsmith@webinertia.net>
  * and contributors.
@@ -12,7 +12,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Webware\Acl\Middleware;
+namespace Webware\UserManager\Middleware;
 
 use Mezzio\Session\RetrieveSession;
 use Override;
@@ -20,6 +20,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Webware\UserManager\Entity\GuestUser;
 use Webware\UserManager\UserInterface;
 
 use function is_array;
@@ -36,14 +37,15 @@ use function is_array;
  */
 final class IdentityMiddleware implements MiddlewareInterface
 {
-    /** @var callable(string, string[], array<string, mixed>): UserInterface */
+    /** @var callable(array): UserInterface */
     private $userFactory;
 
     /**
-     * @param callable(string, string[], array<string, mixed>): UserInterface $userFactory
+     * @param callable(array): UserInterface $userFactory
      */
     public function __construct(
         callable $userFactory,
+        private array $config,
     ) {
         $this->userFactory = $userFactory;
     }
@@ -54,14 +56,10 @@ final class IdentityMiddleware implements MiddlewareInterface
         $session  = RetrieveSession::fromRequestOrNull($request);
         $userInfo = $session?->get(UserInterface::class);
 
-        if (is_array($userInfo) && isset($userInfo['username'])) {
-            $user = ($this->userFactory)(
-                $userInfo['username'],
-                $userInfo['roles']   ?? [],
-                $userInfo['details'] ?? [],
-            );
+        if (null !== $userInfo) {
+            $user = ($this->userFactory)($userInfo);
         } else {
-            $user = ($this->userFactory)('Guest', [], []);
+            $user = ($this->userFactory)(['roleId' => UserInterface::GUEST_ROLE]);
         }
 
         return $handler->handle($request->withAttribute(UserInterface::class, $user));
