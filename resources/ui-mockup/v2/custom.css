@@ -428,6 +428,40 @@
     display: none;
 }
 
+/* ── Topbar breadcrumb subtitle ──────────────────────────── */
+.ims-topbar-subtitle {
+    font-size: 0.7rem;
+}
+
+/* ── Sidebar subtitle ────────────────────────────────────── */
+.ims-sidebar-subtitle {
+    font-size: 0.7rem;
+}
+
+/* ── Sidebar chevron on collapsible toggles ──────────────── */
+.ims-sidebar .ims-chevron {
+    font-size: 0.75rem;
+}
+
+/* ── Sidebar sub-navigation links ────────────────────────── */
+.ims-sidebar .ims-sub-nav {
+    font-size: 0.8125rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+/* ── User table column widths ────────────────────────────── */
+.ims-col-name    { width: 25%; }
+.ims-col-email   { width: 28%; }
+.ims-col-role    { width: 22%; }
+.ims-col-status  { width: 10%; }
+.ims-col-actions { width: 15%; }
+
+/* ── Inactive user row ───────────────────────────────────── */
+.ims-user-inactive td {
+    opacity: 0.65;
+}
+
 /* ── Status toggle buttons (damage / scan) ───────────────── */
 .ims-status-btn-group {
     display: flex;
