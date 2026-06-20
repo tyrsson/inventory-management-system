@@ -19,6 +19,7 @@ use Axleus\Log\LogChannel;
 use DateTimeImmutable;
 use Monolog\Level;
 use PhpDb\Adapter\AdapterInterface;
+use PhpDb\ResultSet\ResultSetInterface;
 use PhpDb\TableGateway\TableGateway;
 use PhpDb\Sql\Where;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -89,9 +90,9 @@ final class UserRepository implements UserRepositoryInterface
         return $this->gateway->selectWith($select)->current();
     }
 
-    /** @return User[] */
-    public function findAll(?int $storeId = null): ?array
-    {
+    public function findAll(
+        ?int $storeId = null
+    ): (ResultSetInterface&WithRowDataResultSet)|null {
         $sql    = $this->gateway->getSql();
         $select = $sql->select()
             ->order('user.lastName ASC');
@@ -100,7 +101,7 @@ final class UserRepository implements UserRepositoryInterface
             $select->where(['user.storeId' => $storeId]);
         }
 
-        return $this->gateway->selectWith($select)->toArray();
+        return $this->gateway->selectWith($select);
     }
 
     /** @param array<string, mixed> $data */

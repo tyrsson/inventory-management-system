@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Webware\Event\Container;
 
+use Phly\EventDispatcher\LazyListener;
 use Phly\EventDispatcher\ListenerProvider\AttachableListenerProvider;
 use Phly\EventDispatcher\ListenerProvider\ListenerProviderAggregate;
 use Phly\EventDispatcher\ListenerProvider\PrioritizedListenerProvider;
@@ -46,7 +47,7 @@ final class ListenerProviderAggregateFactory
             foreach ($spec as $listener) {
                 if (is_string($listener)) {
                     if ($container->has($listener)) {
-                        $attachableProvider->listen($eventType, $container->get($listener));
+                        $attachableProvider->listen($eventType, new LazyListener($container, $listener));
                     } elseif (is_callable($listener)) {
                         $attachableProvider->listen($eventType, $listener);
                     }
@@ -55,9 +56,8 @@ final class ListenerProviderAggregateFactory
                 }
 
                 if (is_array($listener)) {
-                    $resolvedListener = null;
                     if ($container->has($listener['listener'])) {
-                        $resolvedListener = $container->get($listener['listener']);
+                        $resolvedListener = new LazyListener($container, $listener['listener']);
                     } elseif (is_callable($listener['listener'])) {
                         $resolvedListener = $listener['listener'];
                     } else {

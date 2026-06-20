@@ -17,8 +17,11 @@ namespace Webware\UserManager;
 use Webware\Acl\AclInterface;
 use Webware\Admin\Container\Configuration as AdminConfiguration;
 use Webware\CommandBus\CommandBusInterface;
+use Webware\Admin\Event\RegisterWidgetEvent;
+use Webware\UserManager\Admin\Dashboard\RegisterWidgetListener;
+use Webware\UserManager\Admin\Dashboard\Container\RegisterWidgetListenerFactory;
 use Webware\ResultSet\WithRowDataPrototypeInterface;
-use Webware\UserManager\Repository\UserRepositoryInterface as UserRepositoryContract;
+use Webware\UserManager\Repository\UserRepositoryInterface;
 use Webware\UserManager\View\Helper\UserAdminUrl;
 use Webware\UserManager\View\Helper\UserAdminUrlFactory;
 use Webware\UserManager\View\Helper\UserUrl;
@@ -37,6 +40,7 @@ final class ConfigProvider
             CommandBusInterface::class => [
                 'command_map' => $this->getCommandMap(),
             ],
+            'listeners'                => $this->getListeners(),
             UserInterface::class       => $this->getDefaultConfig(),
             AclInterface::class        => $this->getAclConfig(),
         ];
@@ -46,7 +50,7 @@ final class ConfigProvider
     {
         return [
             'aliases'   => [
-                UserRepositoryContract::class => Repository\UserRepository::class,
+                UserRepositoryInterface::class => Repository\UserRepository::class,
                 WithRowDataPrototypeInterface::class => Entity\User::class,
             ],
             'factories' => [
@@ -69,6 +73,7 @@ final class ConfigProvider
                 RequestHandler\UserListHandler::class               => RequestHandler\Container\UserListHandlerFactory::class,
                 RequestHandler\VerifyEmailHandler::class            => RequestHandler\Container\VerifyEmailHandlerFactory::class,
                 Listener\SendVerificationEmailListener::class       => Listener\Container\SendVerificationEmailListenerFactory::class,
+                RegisterWidgetListener::class                   => RegisterWidgetListenerFactory::class,
             ],
         ];
     }
@@ -78,6 +83,15 @@ final class ConfigProvider
     {
         return [
             Command\SaveUserCommand::class => CommandHandler\SaveUserHandler::class,
+        ];
+    }
+
+    public function getListeners(): array
+    {
+        return [
+            RegisterWidgetEvent::class => [
+                ['listener' => RegisterWidgetListener::class, 'priority' => 1],
+            ],
         ];
     }
 
