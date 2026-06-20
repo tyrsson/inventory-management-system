@@ -14,6 +14,9 @@ declare(strict_types=1);
 
 namespace Webware\UserManager\Repository;
 
+use PhpDb\ResultSet\ResultSetInterface;
+use Webware\ResultSet\WithRowDataPrototypeInterface;
+use Webware\ResultSet\WithRowDataResultSet;
 use Webware\UserManager\UserInterface;
 
 interface UserRepositoryInterface
@@ -38,10 +41,8 @@ interface UserRepositoryInterface
 
     /**
      * Return all users, optionally filtered to a specific store.
-     *
-     * @return UserInterface[]
      */
-    public function findAll(?int $storeId = null): ?array;
+    public function findAll(?int $storeId = null): (ResultSetInterface&WithRowDataResultSet)|null;
 
     /**
      * Persist a new user row and return the generated id.

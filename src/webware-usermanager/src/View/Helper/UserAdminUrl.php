@@ -8,6 +8,8 @@ use Laminas\View\Helper\StatefulHelperInterface;
 use Mezzio\Helper\UrlHelper;
 use Override;
 
+use function rtrim;
+
 final readonly class UserAdminUrl implements StatefulHelperInterface
 {
     public function __construct(
@@ -22,8 +24,10 @@ final readonly class UserAdminUrl implements StatefulHelperInterface
         ?string $fragmentIdentifier = null,
         array $options = [],
     ): string {
+        $prefix = $routeName === '' ? rtrim($this->routeNamePrefix, '.') : $this->routeNamePrefix;
+
         return ($this->urlHelper)(
-            $this->routeNamePrefix . $routeName,
+            $prefix . $routeName,
             $routeParams,
             $queryParams,
             $fragmentIdentifier,

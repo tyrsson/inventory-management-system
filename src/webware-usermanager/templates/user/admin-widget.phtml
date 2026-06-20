@@ -1,0 +1,46 @@
+<?php
+/**
+ * @var int $totalUsers
+ * @var int $activeUsers
+ * @var int $inactiveUsers
+ */
+$this->headTitle('Admin Dashboard');
+?>
+<div class="col">
+    <div class="card h-100">
+        <div class="card-header d-flex align-items-center gap-2 py-2">
+            <i class="bi bi-people-fill text-primary"></i>
+            <span class="fw-semibold small">User Management</span>
+            <a href="<?= $this->escapeHtmlAttr($this->userAdminUrl('')) ?>"
+               class="ms-auto btn btn-sm btn-outline-secondary py-0 px-2 ims-widget-manage-link">
+                Manage <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="row row-cols-3 g-2 mb-3">
+                <div class="col text-center">
+                    <div class="fs-3 fw-bold text-primary"><?= $this->totalUsers ?></div>
+                    <div class="text-secondary ims-widget-stat-label">Total</div>
+                </div>
+                <div class="col text-center">
+                    <div class="fs-3 fw-bold text-success"><?= $this->activeUsers ?></div>
+                    <div class="text-secondary ims-widget-stat-label">Active</div>
+                </div>
+                <div class="col text-center">
+                    <div class="fs-3 fw-bold text-danger"><?= $this->inactiveUsers ?></div>
+                    <div class="text-secondary ims-widget-stat-label">Inactive</div>
+                </div>
+            </div>
+            <div class="d-flex flex-column gap-1">
+                <a href="<?= $this->escapeHtmlAttr($this->userAdminUrl('')) ?>"
+                   class="btn btn-sm btn-outline-secondary text-start">
+                    <i class="bi bi-people me-1"></i> Manage Users
+                </a>
+            </div>
+        </div>
+        <div class="card-footer py-1 text-secondary ims-widget-footer-text">
+            <?= $this->activeUsers ?> active,
+            <?= $this->inactiveUsers ?> inactive
+        </div>
+    </div>
+</div>
