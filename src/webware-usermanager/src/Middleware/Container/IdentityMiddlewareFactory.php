@@ -17,6 +17,7 @@ namespace Webware\UserManager\Middleware\Container;
 use Psr\Container\ContainerInterface;
 use Webware\UserManager\Container\Configuration;
 use Webware\UserManager\Middleware\IdentityMiddleware;
+use Webware\UserManager\Repository\UserRepositoryInterface;
 use Webware\UserManager\UserInterface;
 
 final readonly class IdentityMiddlewareFactory
@@ -24,6 +25,7 @@ final readonly class IdentityMiddlewareFactory
     public function __invoke(ContainerInterface $container): IdentityMiddleware
     {
         return new IdentityMiddleware(
+            repository: $container->get(UserRepositoryInterface::class),
             userFactory: $container->get(UserInterface::class),
             config: Configuration::getCredentialConfig($container, self::class)
         );

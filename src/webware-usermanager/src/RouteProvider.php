@@ -20,6 +20,7 @@ use Mezzio\Router\RouteCollectorInterface;
 use Mezzio\Router\RouteProviderInterface;
 use Override;
 use Webware\UserManager\Admin\RequestHandler\CreateUserHandler;
+use Webware\UserManager\Admin\RequestHandler\EditUserModalHandler;
 use Webware\UserManager\Admin\RequestHandler\ToggleUserActiveHandler;
 use Webware\UserManager\Admin\RequestHandler\UpdateUserHandler;
 use Webware\UserManager\Middleware\LoginMiddleware;
@@ -197,6 +198,17 @@ final readonly class RouteProvider implements RouteProviderInterface
                 ]
             ),
             $this->adminRouteNamePrefix . 'toggle.update'
+        );
+   
+        $routeCollector->get(
+            '/' . $this->adminRouteSegment . '/{id:\d+}/modal',
+            $middlewareFactory->prepare(
+                [
+                    DisableBodyMiddleware::class,
+                    EditUserModalHandler::class,
+                ]
+            ),
+            $this->adminRouteNamePrefix . 'edit.modal'
         );
     }
 }

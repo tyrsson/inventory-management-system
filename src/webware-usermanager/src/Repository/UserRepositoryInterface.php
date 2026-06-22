@@ -27,7 +27,7 @@ interface UserRepositoryInterface
      * A successful authentication always returns a fully-hydrated User entity,
      * or null if the credential/password pair is not valid.
      */
-    public function authenticate(string $credential, ?string $password = null): ?UserInterface;
+    public function authenticate(string $credential, ?string $password = null): \Webware\UserManager\Auth\AuthenticationResult;
 
     /**
      * Find a user by their email address, or null if not found.
@@ -50,6 +50,8 @@ interface UserRepositoryInterface
      * @param array<string, mixed> $data
      */
     public function insert(array $data): int;
+
+    public function checkStatus(int $id): bool;
 
     /**
      * Update an existing user row.

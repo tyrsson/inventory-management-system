@@ -25,6 +25,8 @@ use PhpDb\Sql\Where;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Webware\ResultSet\WithRowDataPrototypeInterface;
 use Webware\ResultSet\WithRowDataResultSet;
+use Webware\UserManager\Auth\AuthenticationResult;
+use Webware\UserManager\Auth\AuthenticationStatus;
 use Webware\UserManager\Entity\User;
 use Webware\UserManager\UserInterface;
 
@@ -47,19 +49,36 @@ final class UserRepository implements UserRepositoryInterface
         );
     }
 
-    public function authenticate(string $credential, ?string $password = null): ?UserInterface
+    public function authenticate(string $credential, ?string $password = null): AuthenticationResult
     {
         $user = $this->findByConfiguredCredential($this->credentialColumn, $credential);
 
-        if ($user === null || ! $user->active) {
-            return null;
+        if ($user === null) {
+            $this->dispatcher->dispatch(
+            (new LogEvent(LogChannel::Security, Level::Info))
+                ->setMessage('Failed login attempt.')
+                ->setContext(['credential' => $credential])
+            );
+            return new AuthenticationResult(AuthenticationStatus::InvalidCredentials);
+        }
+
+        if (! $user->active) {
+                $this->dispatcher->dispatch(
+                    (new LogEvent(LogChannel::Security, Level::Info))
+                        ->setMessage('Failed login attempt for inactive user: ' . $user->getIdentity())
+                        ->setContext(['credential' => $credential])
+                );
+            return new AuthenticationResult(AuthenticationStatus::NotActive);
         }
 
         if (! password_verify($password ?? '', $user->passwordHash)) {
-            return null;
+            $this->dispatcher->dispatch(
+                (new LogEvent(LogChannel::Security, Level::Info))
+                    ->setMessage('Failed login attempt for user: ' . $user->getIdentity())
+                    ->setContext(['credential' => $credential])
+            );
+            return new AuthenticationResult(AuthenticationStatus::InvalidCredentials);
         }
-
-        $authenticatedUser = $user;
 
         $this->dispatcher->dispatch(
             (new LogEvent(LogChannel::Security, Level::Info))
@@ -67,7 +86,7 @@ final class UserRepository implements UserRepositoryInterface
                 ->setContext(['identity' => $user->getIdentity()])
         );
 
-        return $authenticatedUser;
+        return new AuthenticationResult(AuthenticationStatus::Success, $user);
     }
 
     public function findByEmail(string $email): ?UserInterface
@@ -113,6 +132,18 @@ final class UserRepository implements UserRepositoryInterface
         $sql->prepareStatementForSqlObject($insert)->execute();
 
         return (int) $this->gateway->getAdapter()->getDriver()->getConnection()->getLastGeneratedValue();
+    }
+
+    public function checkStatus(int $id): bool
+    {
+        $sql    = $this->gateway->getSql();
+        $select = $sql->select()
+            ->columns(['active'])
+            ->where(['user.id' => $id])
+            ->limit(1);
+
+        $row = $sql->prepareStatementForSqlObject($select)->execute()->current();
+        return  (bool) ($row['active'] ?? false);
     }
 
     /** @param array<string, mixed> $data */

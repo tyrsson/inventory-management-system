@@ -1,0 +1,97 @@
+<?php
+/**
+ * Edit-user modal fragment.
+ *
+ * Rendered by EditUserModalHandler and swapped into #sharedModalDialog.
+ *
+ * @var \Webware\UserManager\UserInterface $user
+ */
+$patchUrl = $this->escapeHtmlAttr($this->userAdminUrl('update', ['id' => $user->id]));
+?>
+<div class="modal-dialog modal-sm">
+<div class="modal-content">
+<div class="modal-header py-2">
+    <h5 class="modal-title small fw-bold" id="sharedModalLabel">
+        <i class="bi bi-pencil me-1"></i> Edit User
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+    <form
+        id="editUserForm"
+        hx-patch="<?= $patchUrl ?>"
+        hx-target="main"
+        hx-swap="innerHTML"
+        hx-push-url="false"
+    >
+        <input type="hidden" name="id" value="<?= $this->escapeHtmlAttr($user->id) ?>">
+        <div class="mb-3">
+            <label class="form-label small fw-semibold" for="edit_first_name">
+                First Name <span class="text-danger">*</span>
+            </label>
+            <input
+                type="text"
+                id="edit_first_name"
+                name="firstName"
+                class="form-control form-control-sm"
+                value="<?= $this->escapeHtmlAttr($user->firstName) ?>"
+                required
+            >
+        </div>
+        <div class="mb-3">
+            <label class="form-label small fw-semibold" for="edit_last_name">
+                Last Name <span class="text-danger">*</span>
+            </label>
+            <input
+                type="text"
+                id="edit_last_name"
+                name="lastName"
+                class="form-control form-control-sm"
+                value="<?= $this->escapeHtmlAttr($user->lastName) ?>"
+                required
+            >
+        </div>
+        <div class="mb-3">
+            <label class="form-label small fw-semibold" for="edit_email">
+                Email <span class="text-danger">*</span>
+            </label>
+            <input
+                type="email"
+                id="edit_email"
+                name="email"
+                class="form-control form-control-sm"
+                value="<?= $this->escapeHtmlAttr($user->email) ?>"
+                required
+            >
+        </div>
+        <div class="mb-3">
+            <label class="form-label small fw-semibold" for="edit_role_id">
+                Role <span class="text-danger">*</span>
+            </label>
+            <select id="edit_role_id" name="roleId[]" multiple class="form-select form-select-sm">
+                <option value="Sales">Sales</option>
+                <option value="Warehouse">Warehouse</option>
+                <option value="DC Warehouse">DC Warehouse</option>
+                <option value="Credit Manager">Credit Manager</option>
+                <option value="Warehouse Supervisor">Warehouse Supervisor</option>
+                <option value="Manager">Manager</option>
+                <option value="Administrator">Administrator</option>
+                <option value="Developer">Developer</option>
+            </select>
+            <div class="form-text">Hold Ctrl/Cmd to select multiple roles.</div>
+        </div>
+        <div class="mb-0">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="edit_active" name="active" <?= $user->active ? 'checked' : '' ?>>
+                <label class="form-check-label small fw-semibold" for="edit_active">Active account</label>
+            </div>
+            <div class="form-text">Inactive users cannot sign in.</div>
+        </div>
+    </form>
+</div>
+<div class="modal-footer py-2">
+    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+    <button type="submit" form="editUserForm" class="btn btn-sm btn-primary">Save Changes</button>
+</div>
+</div>
+</div>

@@ -19,7 +19,7 @@ on insert vs update. Modal closes on success via `HX-Trigger: closeModal` from
 | **Reuse `SaveUserCommand`** + add `?int $id` | Matches `SaveRoleCommand` pattern (`?int $id` distinguishes create vs update) |
 | **Editable fields:** firstName, lastName, email, roleId, active | Core profile fields + role assignment; password excluded (separate reset flow) |
 | **Delete `EditUserHandler.php`** (duplicate class) | `EditUserHandler.php` defines `UpdateUserHandler` — same class as `UpdateUserHandler.php`; neither is wired for POST processing; replaced by modal + list |
-| **Event-driven extensibility** | `SaveUserHandler` dispatches `UserSavedEvent` (PSR-14) on both insert and update. External modules (e.g. `ims-store`) listen for `UserSavedEvent` to inject store-specific post-save logic without modifying usermanager code. |
+| **PhpDb event-based extensibility** | PhpDb provides an event cycle at the SQL layer. External modules (e.g. `ims-store`) hook into PhpDb events on the `user` table to modify inflight queries (add store filters, augment columns, inspect results) — no usermanager code changes needed. |
 
 ---
 
@@ -291,7 +291,6 @@ Replaced by `EditUserModalHandler` (GET modal) + `UserListHandler` (PATCH respon
 Add `public ?int $id = null` as the last constructor parameter (trailing optional).
 `null` = create (existing behaviour); non-null = update.
 
-### Step 4: Update `SaveUserHandler` for upsert + dispatch `UserSavedEvent`
 
 **File:** `src/webware-usermanager/src/CommandHandler/SaveUserHandler.php`
 
@@ -302,78 +301,19 @@ Branch on `$command->id !== null`:
   `email`, `roleId` (JSON-encoded array), `active`
 - Do **not** set password, `verificationToken`, `tokenCreatedAt`, `storeId`
 - Do **not** dispatch `SendVerificationEmailEvent`
-- **After** successful update: dispatch `UserSavedEvent` with the command, the user ID,
-  and `UserSavedEvent::OPERATION_UPDATE`
-
-**Insert path:**
-- Existing behaviour unchanged (insert with verification token, dispatch `SendVerificationEmailEvent`)
-- **After** successful insert: dispatch `UserSavedEvent` with the command, the new user ID,
-  and `UserSavedEvent::OPERATION_INSERT`
 
 Dependency: Add `EventDispatcherInterface` if not already injected (already present for
 `SendVerificationEmailEvent`).
 
 Return `CommandResult` with appropriate status in both branches.
 
-### Step 5: Create `UserSavedEvent`
-
-**File:** `src/webware-usermanager/src/Event/UserSavedEvent.php`  
-**Namespace:** `Webware\UserManager\Event`
-
-A PSR-14 event dispatched by `SaveUserHandler` after every successful insert or update.
-External modules listen for this event to inject store-specific or application-specific
-post-save logic without modifying usermanager.
-
-```php
-final readonly class UserSavedEvent
-{
-    public const OPERATION_INSERT = 'insert';
-    public const OPERATION_UPDATE = 'update';
-
-    public function __construct(
-        public SaveUserCommand $command,
-        public int $userId,
-        public string $operation,  // OPERATION_INSERT or OPERATION_UPDATE
-    ) {}
-
-    public function getCommand(): SaveUserCommand { return $this->command; }
-    public function getUserId(): int { return $this->userId; }
-    public function getOperation(): string { return $this->operation; }
-    public function isUpdate(): bool { return $this->operation === self::OPERATION_UPDATE; }
-    public function isInsert(): bool { return $this->operation === self::OPERATION_INSERT; }
-}
-```
-
-**No factory needed** — `SaveUserHandler` constructs it inline.
-
-**How external modules consume it (example — `ims-store`):**
-
-```php
-// src/ims-store/src/Listener/UserSavedListener.php
-final readonly class UserSavedListener
-{
-    public function __invoke(UserSavedEvent $event): void
-    {
-        if ($event->isUpdate()) {
-            // Store-specific post-update logic here.
-            // The event carries $event->getCommand() (has userId, email, etc.)
-            // and $event->getUserId().
-        }
-    }
-}
-```
-
-Register the listener in the consuming module's `ConfigProvider` under the
-`EventDispatcherInterface::class` listener config key, listening for `UserSavedEvent::class`.
-
-### Step 6: Update `SaveUserHandlerTest`
-
+### Step 5: Update `SaveUserHandlerTest`
 **File:** `test/unit/UserManager/CommandHandler/SaveUserHandlerTest.php` (create if absent)
 
 Add test cases for update path:
-- `$id` non-null → `update()` called, `UserSavedEvent` dispatched with `OPERATION_UPDATE`
+- `$id` non-null → `update()` called
 - `$id` non-null → verification token not generated
-- `$id` null (insert) → `UserSavedEvent` dispatched with `OPERATION_INSERT`
+- `$id` null (insert) → `insert()` called
 
 Existing insert tests remain unchanged.
 
@@ -613,7 +553,6 @@ $routeCollector->patch(
 - `src/webware-usermanager/src/Admin/RequestHandler/UserListHandler.php` — closeModal trigger
 
 ### Create
-- `src/webware-usermanager/src/Event/UserSavedEvent.php`
 - `src/webware-usermanager/src/InputFilter/UserDataFilter.php`
 - `src/webware-usermanager/src/Admin/Dashboard/Widget.php`
 - `src/webware-usermanager/src/Admin/Dashboard/RegisterWidgetListener.php`

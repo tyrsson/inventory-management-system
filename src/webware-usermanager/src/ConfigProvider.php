@@ -20,6 +20,8 @@ use Webware\CommandBus\CommandBusInterface;
 use Webware\Admin\Event\RegisterWidgetEvent;
 use Webware\UserManager\Admin\Dashboard\RegisterWidgetListener;
 use Webware\UserManager\Admin\Dashboard\Container\RegisterWidgetListenerFactory;
+use WebwareUserManagerAdminRequestHandlerEditUserModalHandler;
+use WebwareUserManagerAdminRequestHandlerContainerEditUserModalHandlerFactory;
 use Webware\ResultSet\WithRowDataPrototypeInterface;
 use Webware\UserManager\Repository\UserRepositoryInterface;
 use Webware\UserManager\View\Helper\UserAdminUrl;
@@ -57,6 +59,7 @@ final class ConfigProvider
                 // Registers the user factory under our own interface key.
                 UserInterface::class                                => Container\UserFactory::class,
                 Entity\User::class                                  => Entity\User::class,
+                Admin\RequestHandler\EditUserModalHandler::class    => Admin\RequestHandler\Container\EditUserModalHandlerFactory::class,
                 Admin\RequestHandler\CreateUserHandler::class       => Admin\RequestHandler\Container\CreateUserHandlerFactory::class,
                 Admin\RequestHandler\UpdateUserHandler::class       => Admin\RequestHandler\Container\UpdateUserHandlerFactory::class,
                 Admin\RequestHandler\ToggleUserActiveHandler::class => Admin\RequestHandler\Container\ToggleUserActiveHandlerFactory::class,
