@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace Ims\Store\Entity;
 
 use Ims\Store\Acl\StoreProprietaryInterface;
+use Webware\CommandBus\Command\NamedCommandInterface;
+use Webware\CommandBus\Command\NamedCommandTrait;
 use Webware\UserManager\Entity\User as WebwareUser;
 
-final class User extends WebwareUser implements StoreProprietaryInterface
+final class User extends WebwareUser implements StoreProprietaryInterface, NamedCommandInterface
 {
+    use NamedCommandTrait;
+
     public private(set) string|int|null $storeId {
-            get => $this->details['storeId'] ?? null;
-            set => $this->details['storeId'] = $value;
+            get => $this->details[self::STORE_ID_KEY] ?? null;
+            set => $this->details[self::STORE_ID_KEY] = $value;
     }
 
     public function getStoreId(): int|string|null

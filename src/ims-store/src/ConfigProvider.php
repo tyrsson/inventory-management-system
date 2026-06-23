@@ -6,6 +6,8 @@ namespace Ims\Store;
 
 use Webware\Acl\AclInterface;
 use Webware\Acl\AssertionManager;
+use Webware\CommandBus\CommandBusInterface;
+use Webware\UserManager\Command\SaveUserCommand;
 use Webware\UserManager\Entity\User as WebwareUser;
 
 final class ConfigProvider
@@ -16,6 +18,9 @@ final class ConfigProvider
             'dependencies'          => $this->getDependencies(),
             AclInterface::class     => $this->getAclConfig(),
             AssertionManager::class => $this->getAssertionManagerConfig(),
+            CommandBusInterface::class => [
+                'command_map' => $this->getCommandMap(),
+            ],
         ];
     }
 
@@ -25,6 +30,14 @@ final class ConfigProvider
             'factories' => [
                 WebwareUser::class => Entity\User::class,
             ],
+        ];
+    }
+
+    public function getCommandMap(): array
+    {
+        return [
+            // 'ims-store:import' => Command\ImportCommand::class,
+            SaveUserCommand::class => CommandHandler\SaveUserCommandHandler::class,
         ];
     }
 

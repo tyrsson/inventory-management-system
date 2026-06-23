@@ -134,6 +134,18 @@ final class UserRepository implements UserRepositoryInterface
         return (int) $this->gateway->getAdapter()->getDriver()->getConnection()->getLastGeneratedValue();
     }
 
+    public function save(UserInterface $user): bool
+    {
+        $result = null;
+        if (isset($user->id)) {
+            // Update existing user
+            return (bool) $this->gateway->update($user->id, $user->toArray());
+        } else {
+            // Insert new user
+            return (bool) $this->gateway->insert($user->toArray());
+        }
+    }
+
     public function checkStatus(int $id): bool
     {
         $sql    = $this->gateway->getSql();

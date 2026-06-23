@@ -51,6 +51,11 @@ interface UserRepositoryInterface
      */
     public function insert(array $data): int;
 
+    public function save(UserInterface $user): bool;
+
+    /**
+     * Check if a user is active.
+     */
     public function checkStatus(int $id): bool;
 
     /**

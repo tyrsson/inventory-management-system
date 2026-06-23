@@ -20,7 +20,6 @@ use InvalidArgumentException;
 use Laminas\Permissions\Acl\Role\RoleInterface;
 use Override;
 use SensitiveParameter;
-use Webware\ResultSet\WithRowDataPrototypeInterface;
 use Webware\UserManager\UserInterface;
 
 use function array_merge;
@@ -34,7 +33,7 @@ use function password_hash;
 
 use const PASSWORD_DEFAULT;
 
-class User implements UserInterface, WithRowDataPrototypeInterface
+class User implements UserInterface
 {
     public function __construct(
         public private(set) int|string|null $id = null {

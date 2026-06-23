@@ -76,7 +76,7 @@ final class ConfigProvider
                 RequestHandler\UserListHandler::class               => RequestHandler\Container\UserListHandlerFactory::class,
                 RequestHandler\VerifyEmailHandler::class            => RequestHandler\Container\VerifyEmailHandlerFactory::class,
                 Listener\SendVerificationEmailListener::class       => Listener\Container\SendVerificationEmailListenerFactory::class,
-                RegisterWidgetListener::class                   => RegisterWidgetListenerFactory::class,
+                RegisterWidgetListener::class                       => RegisterWidgetListenerFactory::class,
             ],
         ];
     }
