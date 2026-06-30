@@ -12,16 +12,16 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Webware\UserManager\Admin\RequestHandler\Container;
+namespace Webware\UserManager\CommandHandler\Container;
 
-use Mezzio\Template\TemplateRendererInterface;
 use Psr\Container\ContainerInterface;
-use Webware\UserManager\Admin\RequestHandler\ToggleUserActiveHandler;
+use Webware\UserManager\CommandHandler\ToggleUserActiveHandler;
+use Webware\UserManager\Repository\UserRepositoryInterface;
 
 final class ToggleUserActiveHandlerFactory
 {
     public function __invoke(ContainerInterface $container): ToggleUserActiveHandler
     {
-        return new ToggleUserActiveHandler(template: $container->get(TemplateRendererInterface::class));
+        return new ToggleUserActiveHandler(users: $container->get(UserRepositoryInterface::class));
     }
 }

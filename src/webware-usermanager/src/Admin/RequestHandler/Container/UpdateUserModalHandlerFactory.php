@@ -16,14 +16,14 @@ namespace Webware\UserManager\Admin\RequestHandler\Container;
 
 use Mezzio\Template\TemplateRendererInterface;
 use Psr\Container\ContainerInterface;
-use Webware\UserManager\Admin\RequestHandler\EditUserModalHandler;
+use Webware\UserManager\Admin\RequestHandler\UpdateUserModalHandler;
 use Webware\UserManager\Repository\UserRepositoryInterface;
 
-final class EditUserModalHandlerFactory
+final class UpdateUserModalHandlerFactory
 {
-    public function __invoke(ContainerInterface $container): EditUserModalHandler
+    public function __invoke(ContainerInterface $container): UpdateUserModalHandler
     {
-        return new EditUserModalHandler(
+        return new UpdateUserModalHandler(
             template: $container->get(TemplateRendererInterface::class),
             users: $container->get(UserRepositoryInterface::class),
         );

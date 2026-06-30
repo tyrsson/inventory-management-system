@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * This file is part of the Ims Store package.
+ * This file is part of the Webware Farmers Store Inventory package.
  *
  * Copyright (c) 2026 Joey Smith <jsmith@webinertia.net>
  * and contributors.
@@ -12,22 +12,22 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Ims\Store\Command;
+namespace Webware\UserManager\Command;
 
-use Ims\Store\Entity\User;
 use Webware\CommandBus\Command\NamedCommandInterface;
 use Webware\CommandBus\Command\NamedCommandTrait;
-use Webware\UserManager\UserInterface;
 
-final readonly class SaveUserCommand implements NamedCommandInterface
+final readonly class UpdateUserCommand implements NamedCommandInterface
 {
     use NamedCommandTrait;
 
+    /** @param string[] $roleId */
     public function __construct(
+        public int $id,
         public string $firstName,
         public string $lastName,
         public string $email,
-        public string $password,
-        public int $storeId,
+        public array $roleId,
+        public bool $active,
     ) {}
 }

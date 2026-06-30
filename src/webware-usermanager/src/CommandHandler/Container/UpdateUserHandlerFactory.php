@@ -12,20 +12,16 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Webware\UserManager\Admin\RequestHandler\Container;
+namespace Webware\UserManager\CommandHandler\Container;
 
-use Mezzio\Template\TemplateRendererInterface;
 use Psr\Container\ContainerInterface;
-use Webware\UserManager\Admin\RequestHandler\UpdateUserHandler;
+use Webware\UserManager\CommandHandler\UpdateUserHandler;
 use Webware\UserManager\Repository\UserRepositoryInterface;
 
 final class UpdateUserHandlerFactory
 {
     public function __invoke(ContainerInterface $container): UpdateUserHandler
     {
-        return new UpdateUserHandler(
-            template: $container->get(TemplateRendererInterface::class),
-            users: $container->get(UserRepositoryInterface::class),
-        );
+        return new UpdateUserHandler(users: $container->get(UserRepositoryInterface::class));
     }
 }
