@@ -58,4 +58,22 @@ final class SingleRoleUserProxy implements UserInterface
     {
         return $this->user->getDetails();
     }
+
+    #[Override]
+    public function withRowData(array $withRowData): static
+    {
+        throw new \Exception('Not implemented');
+    }
+
+    #[Override]
+    public function exchangeArray(array $array): array
+    {
+        throw new \Exception('Not implemented');
+    }
+
+    #[Override]
+    public function toArray(): array
+    {
+        throw new \Exception('Not implemented');
+    }
 }

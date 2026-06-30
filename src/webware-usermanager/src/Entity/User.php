@@ -16,10 +16,10 @@ namespace Webware\UserManager\Entity;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use InvalidArgumentException;
 use Laminas\Permissions\Acl\Role\RoleInterface;
 use Override;
 use SensitiveParameter;
-use Webware\ResultSet\WithRowDataPrototypeInterface;
 use Webware\UserManager\UserInterface;
 
 use function array_merge;
@@ -33,7 +33,7 @@ use function password_hash;
 
 use const PASSWORD_DEFAULT;
 
-class User implements UserInterface, WithRowDataPrototypeInterface
+class User implements UserInterface
 {
     public function __construct(
         public private(set) int|string|null $id = null {
@@ -116,10 +116,16 @@ class User implements UserInterface, WithRowDataPrototypeInterface
             get => $this->details ?? [];
             set(array|string|null $value) {
                 if (is_string($value)) {
-                    $decoded = json_decode($value, true);
-                    $this->details = is_array($decoded) ? $decoded : [];
-                } else {
+                    if (json_validate($value)) {
+                        $decoded = json_decode($value, true);
+                        $this->details = is_array($decoded) ? $decoded : [];
+                    } else {
+                        $this->details = [$value];
+                    }
+                } elseif (is_array($value) || $value === null) {
                     $this->details = $value;
+                } else {
+                    throw new InvalidArgumentException('$details must be an array, JSON string, or null');
                 }
             }
         },

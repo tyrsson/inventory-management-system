@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Webware\UserManager\RequestHandler;
 
 use Laminas\Diactoros\Response\RedirectResponse;
+use Mezzio\Session\RetrieveSession;
 use Mezzio\Session\SessionMiddleware;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -28,7 +29,7 @@ final class LogoutHandler implements RequestHandlerInterface
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $session = $request->getAttribute(SessionMiddleware::SESSION_ATTRIBUTE);
+        $session = RetrieveSession::fromRequestOrNull($request);
         $session?->clear();
 
         return new RedirectResponse($this->loginUrl);

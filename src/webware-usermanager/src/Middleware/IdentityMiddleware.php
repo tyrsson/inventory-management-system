@@ -20,7 +20,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Webware\UserManager\Entity\GuestUser;
+use Webware\UserManager\Repository\UserRepositoryInterface;
 use Webware\UserManager\UserInterface;
 
 use function is_array;
@@ -44,6 +44,7 @@ final class IdentityMiddleware implements MiddlewareInterface
      * @param callable(array): UserInterface $userFactory
      */
     public function __construct(
+        private UserRepositoryInterface $repository,
         callable $userFactory,
         private array $config,
     ) {
@@ -57,7 +58,14 @@ final class IdentityMiddleware implements MiddlewareInterface
         $userInfo = $session?->get(UserInterface::class);
 
         if (null !== $userInfo) {
-            $user = ($this->userFactory)($userInfo);
+            
+            $check = $this->repository->checkStatus($userInfo['id']);
+            if ($check) {
+                $user = ($this->userFactory)($userInfo);
+            } else {
+                $session?->clear();
+                $user = ($this->userFactory)(['roleId' => UserInterface::GUEST_ROLE]);
+            }
         } else {
             $user = ($this->userFactory)(['roleId' => UserInterface::GUEST_ROLE]);
         }

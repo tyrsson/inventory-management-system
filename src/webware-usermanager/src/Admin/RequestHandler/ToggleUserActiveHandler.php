@@ -14,31 +14,40 @@ declare(strict_types=1);
 
 namespace Webware\UserManager\Admin\RequestHandler;
 
-use Laminas\Diactoros\Response\JsonResponse;
+use Laminas\Diactoros\Response\HtmlResponse;
+use Mezzio\Template\TemplateRendererInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Webware\UserManager\Repository\UserRepositoryInterface;
+use Webware\CommandBus\Command\CommandResult;
+use Webware\CommandBus\Command\CommandStatus;
+use Webware\UserManager\UserInterface;
 
 final class ToggleUserActiveHandler implements RequestHandlerInterface
 {
     public function __construct(
-        private readonly UserRepositoryInterface $users,
+        private readonly TemplateRendererInterface $template,
     ) {}
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $id   = (int) $request->getAttribute('id');
-        $user = $this->users->findById($id);
+        /** @var CommandResult|null $result */
+        $result = $request->getAttribute(CommandResult::class);
 
-        if ($user === null) {
-            return new JsonResponse(['error' => 'Not found'], 404);
+        if (!$result instanceof CommandResult || $result->getStatus() !== CommandStatus::Success) {
+            return new HtmlResponse('', 422);
         }
 
-        $this->users->update($id, [
-            'active' => $user->active ? 0 : 1,
-        ]);
+        $user = $result->getResult();
 
-        return new JsonResponse(['active' => ! $user->active]);
+        if (!$user instanceof UserInterface) {
+            return new HtmlResponse('', 404);
+        }
+
+        return new HtmlResponse($this->template->render('user::partials/user-row', [
+            'user' => $user,
+            'layout' => false,
+            'body' => false,
+        ]));
     }
 }

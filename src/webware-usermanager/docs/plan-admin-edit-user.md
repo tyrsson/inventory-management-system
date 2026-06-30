@@ -11,6 +11,15 @@ role-edit pattern. Reuse `SaveUserCommand` by adding `?int $id`; `SaveUserHandle
 on insert vs update. Modal closes on success via `HX-Trigger: closeModal` from
 `UserListHandler`.
 
+> **Status (2026-06-30):** The actual admin route segment is `webware.admin/user.manager`
+> (route name prefix `webware.admin.user.manager.`), not the shorthand `admin/user.manager`
+> used in earlier drafts of this plan — all path/route-name examples below have been
+> corrected to match. Phase 0 (dashboard widget), the `EditUserModalHandler` GET modal
+> (Step 11/12), and the templates (Step 14/15) are **already implemented and confirmed
+> working**. `SaveUserCommand`'s upsert shape (Phase 2) is **superseded** — `SaveUserCommand`
+> is being replaced by the `User` entity implementing `CommandInterface` directly
+> (separate, in-progress refactor); Phase 2 of this plan should not be implemented as written.
+
 ## Design Decisions
 
 | Decision | Rationale |
@@ -19,20 +28,20 @@ on insert vs update. Modal closes on success via `HX-Trigger: closeModal` from
 | **Reuse `SaveUserCommand`** + add `?int $id` | Matches `SaveRoleCommand` pattern (`?int $id` distinguishes create vs update) |
 | **Editable fields:** firstName, lastName, email, roleId, active | Core profile fields + role assignment; password excluded (separate reset flow) |
 | **Delete `EditUserHandler.php`** (duplicate class) | `EditUserHandler.php` defines `UpdateUserHandler` — same class as `UpdateUserHandler.php`; neither is wired for POST processing; replaced by modal + list |
-| **Event-driven extensibility** | `SaveUserHandler` dispatches `UserSavedEvent` (PSR-14) on both insert and update. External modules (e.g. `ims-store`) listen for `UserSavedEvent` to inject store-specific post-save logic without modifying usermanager code. |
+| **PhpDb event-based extensibility** | PhpDb provides an event cycle at the SQL layer. External modules (e.g. `ims-store`) hook into PhpDb events on the `user` table to modify inflight queries (add store filters, augment columns, inspect results) — no usermanager code changes needed. |
 
 ---
 
 ## Pipeline Shape
 
 ```
-GET  /admin/user.manager                   → UserListHandler              (list)
-GET  /admin/user.manager/{id:\d+}/modal    → DisableBodyMiddleware
-                                              → EditUserModalHandler       (modal fragment)
-PATCH /admin/user.manager/{id:\d+}         → BodyParamsMiddleware
-                                              → ProcessUserMiddleware      (validates, dispatches SaveUserCommand)
-                                              → UserListHandler            (re-renders list, closeModal on success)
-POST /admin/user.manager/{id:\d+}/toggle   → ToggleUserActiveHandler      (unchanged)
+GET  /webware.admin/user.manager                   → UserListHandler              (list)
+GET  /webware.admin/user.manager/{id:\d+}/modal    → DisableBodyMiddleware
+                                                      → EditUserModalHandler       (modal fragment)
+PATCH /webware.admin/user.manager/{id:\d+}         → BodyParamsMiddleware
+                                                      → ProcessUserMiddleware      (validates, dispatches SaveUserCommand)
+                                                      → UserListHandler            (re-renders list, closeModal on success)
+POST /webware.admin/user.manager/{id:\d+}/toggle   → ToggleUserActiveHandler      (unchanged)
 ```
 
 ---
@@ -62,7 +71,7 @@ All modal fragments are swapped into `#sharedModalDialog`. The shell survives ev
 
 ```
 User clicks Edit (pencil icon)
-  → hx-get="/admin/user.manager/42/modal"
+  → hx-get="/webware.admin/user.manager/42/modal"
   → hx-target="#sharedModalDialog"
   → hx-swap="innerHTML"
   → hx-push-url="false"
@@ -83,7 +92,7 @@ Server:
 
 ```
 User clicks Save (button with form="editUserForm")
-  → form hx-patch="/admin/user.manager/42"
+  → form hx-patch="/webware.admin/user.manager/42"
   → hx-target="main"                          ← always targets main, never #sharedModalDialog
   → hx-swap="innerHTML"
   → hx-push-url="false"
@@ -162,7 +171,7 @@ Browser:
 | Shared modal shell | `src/App/templates/layout/default.phtml` |
 
 ---
-## Phase 0 — Dashboard Widget (Entry Point)
+## Phase 0 — Dashboard Widget (Entry Point) ✅ DONE
 
 The admin dashboard widget provides the UI entry point for the user management
 workflow. It appears on `/admin` alongside other module widgets (ACL, etc.).
@@ -291,7 +300,6 @@ Replaced by `EditUserModalHandler` (GET modal) + `UserListHandler` (PATCH respon
 Add `public ?int $id = null` as the last constructor parameter (trailing optional).
 `null` = create (existing behaviour); non-null = update.
 
-### Step 4: Update `SaveUserHandler` for upsert + dispatch `UserSavedEvent`
 
 **File:** `src/webware-usermanager/src/CommandHandler/SaveUserHandler.php`
 
@@ -302,78 +310,19 @@ Branch on `$command->id !== null`:
   `email`, `roleId` (JSON-encoded array), `active`
 - Do **not** set password, `verificationToken`, `tokenCreatedAt`, `storeId`
 - Do **not** dispatch `SendVerificationEmailEvent`
-- **After** successful update: dispatch `UserSavedEvent` with the command, the user ID,
-  and `UserSavedEvent::OPERATION_UPDATE`
-
-**Insert path:**
-- Existing behaviour unchanged (insert with verification token, dispatch `SendVerificationEmailEvent`)
-- **After** successful insert: dispatch `UserSavedEvent` with the command, the new user ID,
-  and `UserSavedEvent::OPERATION_INSERT`
 
 Dependency: Add `EventDispatcherInterface` if not already injected (already present for
 `SendVerificationEmailEvent`).
 
 Return `CommandResult` with appropriate status in both branches.
 
-### Step 5: Create `UserSavedEvent`
-
-**File:** `src/webware-usermanager/src/Event/UserSavedEvent.php`  
-**Namespace:** `Webware\UserManager\Event`
-
-A PSR-14 event dispatched by `SaveUserHandler` after every successful insert or update.
-External modules listen for this event to inject store-specific or application-specific
-post-save logic without modifying usermanager.
-
-```php
-final readonly class UserSavedEvent
-{
-    public const OPERATION_INSERT = 'insert';
-    public const OPERATION_UPDATE = 'update';
-
-    public function __construct(
-        public SaveUserCommand $command,
-        public int $userId,
-        public string $operation,  // OPERATION_INSERT or OPERATION_UPDATE
-    ) {}
-
-    public function getCommand(): SaveUserCommand { return $this->command; }
-    public function getUserId(): int { return $this->userId; }
-    public function getOperation(): string { return $this->operation; }
-    public function isUpdate(): bool { return $this->operation === self::OPERATION_UPDATE; }
-    public function isInsert(): bool { return $this->operation === self::OPERATION_INSERT; }
-}
-```
-
-**No factory needed** — `SaveUserHandler` constructs it inline.
-
-**How external modules consume it (example — `ims-store`):**
-
-```php
-// src/ims-store/src/Listener/UserSavedListener.php
-final readonly class UserSavedListener
-{
-    public function __invoke(UserSavedEvent $event): void
-    {
-        if ($event->isUpdate()) {
-            // Store-specific post-update logic here.
-            // The event carries $event->getCommand() (has userId, email, etc.)
-            // and $event->getUserId().
-        }
-    }
-}
-```
-
-Register the listener in the consuming module's `ConfigProvider` under the
-`EventDispatcherInterface::class` listener config key, listening for `UserSavedEvent::class`.
-
-### Step 6: Update `SaveUserHandlerTest`
-
+### Step 5: Update `SaveUserHandlerTest`
 **File:** `test/unit/UserManager/CommandHandler/SaveUserHandlerTest.php` (create if absent)
 
 Add test cases for update path:
-- `$id` non-null → `update()` called, `UserSavedEvent` dispatched with `OPERATION_UPDATE`
+- `$id` non-null → `update()` called
 - `$id` non-null → verification token not generated
-- `$id` null (insert) → `UserSavedEvent` dispatched with `OPERATION_INSERT`
+- `$id` null (insert) → `insert()` called
 
 Existing insert tests remain unchanged.
 
@@ -445,7 +394,7 @@ Resolves `CommandBusInterface` from container.
 
 ## Phase 5 — Request Handlers
 
-### Step 11: Create `EditUserModalHandler`
+### Step 11: Create `EditUserModalHandler` ✅ DONE
 
 **File:** `src/webware-usermanager/src/Admin/RequestHandler/EditUserModalHandler.php`  
 **Namespace:** `Webware\UserManager\Admin\RequestHandler`  
@@ -459,7 +408,7 @@ Resolves `CommandBusInterface` from container.
 4. Render `user::edit-user-modal` with `['user' => $user, 'layout' => false, 'body' => false]`
 5. Return `HtmlResponse`
 
-### Step 12: Create `EditUserModalHandlerFactory`
+### Step 12: Create `EditUserModalHandlerFactory` ✅ DONE
 
 **File:** `src/webware-usermanager/src/Admin/RequestHandler/Container/EditUserModalHandlerFactory.php`
 
@@ -478,9 +427,9 @@ Pattern reference: `RoleListHandler` in `src/webware-acl/src/Admin/RequestHandle
 
 ---
 
-## Phase 6 — Templates
+## Phase 6 — Templates ✅ DONE
 
-### Step 14: Create `list-users.phtml`
+### Step 14: Create `list-users.phtml` ✅ DONE
 
 **File:** `src/webware-usermanager/templates/user/list-users.phtml`  
 **Reference:** `src/webware-acl/templates/acl/admin-roles.phtml`
@@ -489,20 +438,20 @@ Breadcrumb (Admin → Users), page header with user count badge, table with colu
 Name, Email, Role, Status, Actions.
 
 Actions column:
-- Edit button with `hx-get` to `admin.user.manager.edit.modal` route, target `#sharedModalDialog`
-- Toggle active button with `hx-post` to `admin.user.manager.toggle.update` route
+- Edit button with `hx-get` to `webware.admin.user.manager.edit.modal` route, target `#sharedModalDialog`
+- Toggle active button with `hx-post` to `webware.admin.user.manager.toggle.update` route
 
 Conventions: `$this->escapeHtml()`, `$this->escapeHtmlAttr()`, `$this->adminUrl()`,
 no inline styles.
 
-### Step 15: Create `edit-user-modal.phtml`
+### Step 15: Create `edit-user-modal.phtml` ✅ DONE
 
 **File:** `src/webware-usermanager/templates/user/edit-user-modal.phtml`  
 **Reference:** `src/webware-acl/templates/acl/partials/edit-role-modal.phtml`
 
 Modal dialog fragment:
 - `.modal-dialog` → `.modal-content` → header (Edit User + close), body (form), footer (cancel + save)
-- Form: `hx-patch` to `admin.user.manager.update` route with `{id}` param, target `main`
+- Form: `hx-patch` to `webware.admin.user.manager.update` route with `{id}` param, target `main`
 - Hidden `<input type="hidden" name="id" value="">`
 - Fields: firstName (text), lastName (text), email (email), roleId (select multiple), active (checkbox)
 - Pre-populate values with `$this->escapeHtmlAttr($user->...)`
@@ -558,8 +507,8 @@ $routeCollector->patch(
 - `ProcessUserMiddleware::class => ProcessUserMiddlewareFactory::class`
 
 **Update ACL config:**
-- Add resource: `admin.user.manager.edit.modal`
-- Allow `Administrator` role on `admin.user.manager.edit.modal` with `read` privilege
+- Add resource: `webware.admin.user.manager.edit.modal`
+- Allow `Administrator` role on `webware.admin.user.manager.edit.modal` with `read` privilege
 
 **Command map:** `SaveUserCommand::class => SaveUserHandler::class` already exists — no change.
 
@@ -587,7 +536,7 @@ $routeCollector->patch(
 ### Step 19: Manual Verification
 
 1. Start dev server: `php -S 0.0.0.0:8080 -t public/`
-2. Navigate to `/admin/user.manager` → verify user list renders
+2. Navigate to `/webware.admin/user.manager` → verify user list renders
 3. Click Edit on a user → verify modal opens with pre-populated data
 4. Change fields, click Save → verify:
    - Modal closes (`closeModal` HTMX trigger)
@@ -613,7 +562,6 @@ $routeCollector->patch(
 - `src/webware-usermanager/src/Admin/RequestHandler/UserListHandler.php` — closeModal trigger
 
 ### Create
-- `src/webware-usermanager/src/Event/UserSavedEvent.php`
 - `src/webware-usermanager/src/InputFilter/UserDataFilter.php`
 - `src/webware-usermanager/src/Admin/Dashboard/Widget.php`
 - `src/webware-usermanager/src/Admin/Dashboard/RegisterWidgetListener.php`

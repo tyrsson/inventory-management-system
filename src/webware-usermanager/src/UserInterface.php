@@ -8,8 +8,13 @@ use DatetimeImmutable;
 use Laminas\Permissions\Acl\ProprietaryInterface;
 use Laminas\Permissions\Acl\Resource\ResourceInterface;
 use Laminas\Permissions\Acl\Role\RoleInterface;
+use Webware\ResultSet\WithRowDataPrototypeInterface;
 
-interface UserInterface extends RoleInterface, ResourceInterface, ProprietaryInterface
+interface UserInterface extends
+    RoleInterface,
+    ResourceInterface,
+    ProprietaryInterface,
+    WithRowDataPrototypeInterface
 {
     public final const string GUEST_ROLE = 'Guest';
     public const string DATETIME_FORMAT = 'Y-m-d H:i:s';

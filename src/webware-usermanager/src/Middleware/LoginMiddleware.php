@@ -24,7 +24,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LoggerInterface;
-use Webware\UserManager\Entity\User;
+use Webware\UserManager\Auth\AuthenticationStatus;
 use Webware\UserManager\Repository\UserRepositoryInterface;
 use Webware\UserManager\UserInterface;
 
@@ -50,20 +50,22 @@ final class LoginMiddleware implements MiddlewareInterface
         if ($email === null || $password === null) {
             return $handler->handle($request);
         }
+        $result = $this->repository->authenticate($email, $password);
 
-        /** @var User|null $user */
-        $user = $this->repository->authenticate($email, $password);
-
-        if (null === $user) {
+        if (AuthenticationStatus::Success !== $result->status) {
             $this->logger->info('Failed login attempt', ['email' => $email]);
             $messenger = $request->getAttribute(SystemMessengerInterface::class);
-            $messenger?->error('Invalid email or password.');
+            $messenger?->danger('Invalid email or password.');
+            if ($result->status === AuthenticationStatus::NotActive) {
+                $messenger?->info('Did you activate your account?');
+            }
 
             return $handler->handle($request);
         }
 
         $session = RetrieveSession::fromRequest($request);
-        $session->set(UserInterface::class, $user->toArray());
+        $session->set(UserInterface::class, $result->user->toArray());
+
         $session->regenerate();
 
         return new RedirectResponse($this->redirectUrl);

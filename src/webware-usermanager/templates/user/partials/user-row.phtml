@@ -1,0 +1,59 @@
+<?php
+
+declare(strict_types=1);
+
+use Laminas\Permissions\Acl\Role\RoleInterface;
+
+/**
+ * @var \Webware\UserManager\UserInterface $user
+ */
+?>
+<tr id="userRow<?= $this->escapeHtmlAttr($user->id) ?>">
+    <td>
+        <span class="fw-semibold<?= $user->active ? '' : ' text-secondary' ?>">
+            <?= $this->escapeHtml($user->firstName . ' ' . $user->lastName) ?>
+        </span>
+    </td>
+    <td class="small text-secondary">
+        <?= $this->escapeHtml($user->email) ?>
+    </td>
+    <td>
+        <?php $roles = $user->getRoles(); ?>
+        <?php if ($roles !== null && $roles !== []): ?>
+            <?php foreach ($roles as $role): ?>
+                <?php $roleName = $role instanceof RoleInterface ? $role->getRoleId() : (string) $role; ?>
+                <span class="badge bg-body-tertiary border text-secondary"><?= $this->escapeHtml($roleName) ?></span>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <span class="text-secondary fst-italic small">—</span>
+        <?php endif; ?>
+    </td>
+    <td class="text-center">
+        <?php if ($user->active): ?>
+            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Active</span>
+        <?php else: ?>
+            <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">Inactive</span>
+        <?php endif; ?>
+    </td>
+    <td class="text-end">
+        <button
+            class="btn btn-sm btn-outline-secondary py-0 px-2"
+            hx-get="<?= $this->escapeHtmlAttr($this->userAdminUrl('update.modal', ['id' => $user->id])) ?>"
+            hx-target="#sharedModalDialog"
+            hx-swap="innerHTML"
+            hx-push-url="false"
+            hx-on::after-request="if(event.detail.successful) bootstrap.Modal.getOrCreateInstance(document.getElementById('sharedModal')).show()"
+            title="Edit user">
+            <i class="bi bi-pencil"></i>
+        </button>
+        <button
+            class="btn btn-sm <?= $user->active ? 'btn-outline-warning' : 'btn-outline-success' ?> py-0 px-2 ms-1"
+            hx-post="<?= $this->escapeHtmlAttr($this->userAdminUrl('toggle.update', ['id' => $user->id])) ?>"
+            hx-target="closest tr"
+            hx-swap="outerHTML"
+            hx-push-url="false"
+            title="<?= $user->active ? 'Deactivate user' : 'Reactivate user' ?>">
+            <i class="bi bi-<?= $user->active ? 'toggle-on' : 'toggle-off' ?>"></i>
+        </button>
+    </td>
+</tr>
