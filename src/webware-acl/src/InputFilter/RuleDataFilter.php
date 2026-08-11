@@ -8,16 +8,17 @@ use Laminas\Filter;
 use Laminas\InputFilter;
 use Webware\Acl\RuleType;
 use Webware\Acl\Validator\Assertion;
+use Webware\Core\InputFilter\SystemMessageTrait;
 
 final class RuleDataFilter extends InputFilter\InputFilter
 {
     use SystemMessageTrait;
 
     public function __construct(
-        protected readonly InputFilter\Factory $factory
+        protected readonly InputFilter\Factory $factory,
     ) {}
 
-    public function init():  void
+    public function init(): void
     {
         $this->add([
             'name'     => 'resourceId',
@@ -28,11 +29,11 @@ final class RuleDataFilter extends InputFilter\InputFilter
         ]);
 
         $this->add([
-            'name' => 'type',
+            'name'     => 'type',
             'required' => true,
             'filters'  => [
                 [
-                    'name' => Filter\ToEnum::class,
+                    'name'    => Filter\ToEnum::class,
                     'options' => [
                         'enum' => RuleType::class,
                     ],
@@ -71,7 +72,7 @@ final class RuleDataFilter extends InputFilter\InputFilter
             ],
             'validators'        => [
                 [
-                    'name' => Assertion::class,
+                    'name'    => Assertion::class,
                     'options' => [
                         'nullable' => true,
                     ],

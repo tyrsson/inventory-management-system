@@ -14,11 +14,9 @@ declare(strict_types=1);
 
 namespace Webware\UserManager\Container;
 
-use DateTimeImmutable;
 use Psr\Container\ContainerInterface;
 use Webmozart\Assert\Assert;
 use Webware\ResultSet\WithRowDataPrototypeInterface;
-use Webware\UserManager\Entity\GuestUser;
 use Webware\UserManager\UserInterface;
 
 /**

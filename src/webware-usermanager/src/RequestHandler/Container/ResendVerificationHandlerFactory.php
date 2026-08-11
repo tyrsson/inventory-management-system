@@ -28,7 +28,7 @@ final class ResendVerificationHandlerFactory
     {
         /** @var array{user: array{from_email: string, from_name: string, base_url: string}, MailerInterface::class: array{verification_email_subject: string}} $config */
         $config     = $container->get('config');
-        $userConf   = $config['user']                 ?? [];
+        $userConf   = $config['user'] ?? [];
         $mailerConf = $config[MailerInterface::class] ?? [];
 
         /** @var HelperPluginManager $helperManager */
@@ -44,6 +44,7 @@ final class ResendVerificationHandlerFactory
             baseUrl: (string) ($userConf['base_url'] ?? 'http://localhost:8080'),
             verificationSubject: (string) ($mailerConf['verification_email_subject'] ?? 'Verify your account'),
             loginUrl: $userUrl('session.read'),
+            userUrl: $userUrl,
         );
     }
 }

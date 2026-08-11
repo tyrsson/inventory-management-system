@@ -148,6 +148,18 @@ use Override;
 - `operator_linebreak`: for multi-line expressions, operator goes at the **beginning** of the next line
 - `logical_operators`: use `&&` / `||` not `and` / `or`
 - `standardize_not_equals`: use `!=` not `<>`
+- `yoda_style`: **constant/literal on the left** of equality/identity comparisons — `null === $value`, `'foo' === $type`, `true === $flag` — not `$value === null`. Applies to `==`, `===`, `!=`, `!==`. Variable-to-variable comparisons (`$a === $b`) are unaffected — there's no literal to place first.
+
+```php
+// ✅ Correct — yoda style
+if (null === $user) { ... }
+if ('active' === $status) { ... }
+if (true !== $result) { ... }
+
+// ❌ Wrong
+if ($user === null) { ... }
+if ($status === 'active') { ... }
+```
 
 ---
 
@@ -305,6 +317,7 @@ namespace Vendor\Package;
 - [ ] Explicit visibility on all properties, methods, constants
 - [ ] Single quotes for strings (unless interpolation required)
 - [ ] `===` / `!==` for comparisons
+- [ ] Yoda style — constant/literal on the left of equality comparisons (`null === $x`, not `$x === null`)
 - [ ] `strict_param` — `in_array(..., true)` etc.
 - [ ] Trailing comma on all multiline arrays, parameter lists, and `match` arms
 - [ ] No trailing comma in single-line arrays/calls

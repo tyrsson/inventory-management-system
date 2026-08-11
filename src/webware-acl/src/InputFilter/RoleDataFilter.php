@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Webware\Acl\InputFilter;
 
-use Laminas\InputFilter;
 use Laminas\Filter;
+use Laminas\InputFilter;
 use Laminas\Validator;
+use Webware\Core\InputFilter\SystemMessageTrait;
 
 final class RoleDataFilter extends InputFilter\InputFilter
 {
+    use SystemMessageTrait;
+
     public function init(): void
     {
         $this->add([
@@ -30,7 +33,7 @@ final class RoleDataFilter extends InputFilter\InputFilter
         ]);
 
         $this->add([
-            'name'     => 'parentId',
+            'name'              => 'parentId',
             'allow_empty'       => true,
             'continue_if_empty' => true,
             'required'          => false,

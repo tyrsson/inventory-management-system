@@ -34,6 +34,7 @@
         "mezzio/mezzio-helpers": "^5.20",
         "mezzio/mezzio-laminasviewrenderer": "^3.0",
         "phly/phly-event-dispatcher": "^1.5.0",
+        "php-standard-library/type": "^6.2",
         "webware/command-bus": "0.5.x-dev"
     },
     "require-dev": {

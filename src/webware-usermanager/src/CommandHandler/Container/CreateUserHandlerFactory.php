@@ -16,14 +16,14 @@ namespace Webware\UserManager\CommandHandler\Container;
 
 use Psr\Container\ContainerInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
-use Webware\UserManager\CommandHandler\SaveUserHandler;
+use Webware\UserManager\CommandHandler\CreateUserHandler;
 use Webware\UserManager\Repository\UserRepositoryInterface;
 
-final class SaveUserHandlerFactory
+final class CreateUserHandlerFactory
 {
-    public function __invoke(ContainerInterface $container): SaveUserHandler
+    public function __invoke(ContainerInterface $container): CreateUserHandler
     {
-        return new SaveUserHandler(
+        return new CreateUserHandler(
             users: $container->get(UserRepositoryInterface::class),
             eventDispatcher: $container->get(EventDispatcherInterface::class),
         );

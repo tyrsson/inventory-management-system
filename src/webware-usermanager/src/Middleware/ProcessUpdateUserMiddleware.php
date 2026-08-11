@@ -24,36 +24,37 @@ use Webware\CommandBus\Command\CommandStatus;
 use Webware\CommandBus\CommandBusInterface;
 use Webware\Core\HttpMethodProcessorTrait;
 use Webware\UserManager\Command\UpdateUserCommand;
+use Webware\UserManager\InputFilter\UserDataFilter;
+use Webware\UserManager\InputFilter\ValidationGroupTrait;
 
-use function filter_var;
-use function is_array;
-
-use const FILTER_VALIDATE_INT;
+use function array_merge;
 
 final readonly class ProcessUpdateUserMiddleware implements MiddlewareInterface
 {
     use HttpMethodProcessorTrait;
+    use ValidationGroupTrait;
 
     public function __construct(
         private CommandBusInterface $commandBus,
+        private UserDataFilter $filter,
     ) {}
 
     public function processPatch(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         /** @var SystemMessengerInterface|null $messenger */
         $messenger = $request->getAttribute(SystemMessengerInterface::class);
-        $id = filter_var($request->getAttribute('id'), FILTER_VALIDATE_INT, ['options' => ['default' => 0]]);
-        $params = $request->getParsedBody();
-        $roleId = $params['roleId'] ?? [];
-
-        $command = new UpdateUserCommand(
-            id: $id,
-            firstName: $params['firstName'] ?? '',
-            lastName: $params['lastName'] ?? '',
-            email: $params['email'] ?? '',
-            roleId: is_array($roleId) ? $roleId : [$roleId],
-            active: isset($params['active']),
+        $data      = array_merge(
+            $request->getParsedBody(),
+            ['id' => $request->getAttribute('id')],
         );
+
+        $this->filter->setValidationGroup(self::UPDATE_VALIDATION_GROUP);
+        $this->filter->setData($data);
+        if (! $this->filter->isValid()) {
+            $messenger?->warning($this->filter->getSystemMessage());
+            return $handler->handle($request);
+        }
+        $command = new UpdateUserCommand(...$this->filter->getValues());
 
         $result = $this->commandBus->handle($command);
 

@@ -20,6 +20,8 @@ use InvalidArgumentException;
 use Laminas\Permissions\Acl\Role\RoleInterface;
 use Override;
 use SensitiveParameter;
+use Webware\CommandBus\Command\NamedCommandInterface;
+use Webware\CommandBus\Command\NamedCommandTrait;
 use Webware\UserManager\UserInterface;
 
 use function array_merge;
@@ -33,8 +35,10 @@ use function password_hash;
 
 use const PASSWORD_DEFAULT;
 
-class User implements UserInterface
+class User implements UserInterface, NamedCommandInterface
 {
+    use NamedCommandTrait;
+
     public function __construct(
         public private(set) int|string|null $id = null {
             get => $this->id ?? null;
@@ -62,15 +66,14 @@ class User implements UserInterface
             }
         },
         public private(set) ?string $firstName = null,
-        public private(set) ?string $lastName  = null,
-        public private(set) ?string $email     = null {
+        public private(set) ?string $lastName = null,
+        public private(set) ?string $email = null {
             get => $this->email;
             set(?string $value) {
                 $this->email = $value !== null ? strtolower($value) : null;
             }
         },
-        #[SensitiveParameter]
-        public private(set) ?string $passwordHash = null,
+        #[SensitiveParameter] public private(set) ?string $passwordHash = null,
         public private(set) int|bool|null $active = null {
             get => $this->active ?? false;
             set(int|bool|null $value) {
@@ -83,7 +86,7 @@ class User implements UserInterface
                 if (is_array($value) && isset($value['date'])) {
                     $this->createdAt = new DateTimeImmutable(
                         $value['date'],
-                        new DateTimeZone($value['timezone'])
+                        new DateTimeZone($value['timezone']),
                     );
                 } elseif (is_string($value)) {
                     $this->createdAt = new DateTimeImmutable($value);
@@ -92,8 +95,7 @@ class User implements UserInterface
                 }
             }
         },
-        #[SensitiveParameter]
-        public private(set) ?string $verificationToken = null,
+        #[SensitiveParameter] public private(set) ?string $verificationToken = null,
 
         public private(set) DateTimeImmutable|array|string|null $tokenCreatedAt = null {
             get => $this->tokenCreatedAt ?? new DateTimeImmutable();
@@ -102,7 +104,7 @@ class User implements UserInterface
                     $this->tokenCreatedAt = DateTimeImmutable::createFromFormat(
                         self::DATETIME_FORMAT,
                         $value['date'],
-                        new DateTimeZone($value['timezone'] ?? 'UTC')
+                        new DateTimeZone($value['timezone'] ?? 'UTC'),
                     );
                 } elseif (is_string($value)) {
                     $this->tokenCreatedAt = new DateTimeImmutable($value);
@@ -117,7 +119,7 @@ class User implements UserInterface
             set(array|string|null $value) {
                 if (is_string($value)) {
                     if (json_validate($value)) {
-                        $decoded = json_decode($value, true);
+                        $decoded       = json_decode($value, true);
                         $this->details = is_array($decoded) ? $decoded : [];
                     } else {
                         $this->details = [$value];
@@ -131,49 +133,9 @@ class User implements UserInterface
         },
     ) {}
 
-    public function __invoke(): UserInterface
+    public function exchangeArray(array $data): array
     {
-        return new static();
-    }
-
-    #[Override]
-    public function getIdentity(): ?string
-    {
-        return $this->email;
-    }
-
-    /**
-     * Implements ResourceInterface — identifies this object as the 'user' ACL resource.
-     * Allows $acl->isAllowed($role, $userEntity, $privilege) calls.
-     */
-    #[Override]
-    public function getResourceId(): string
-    {
-        return 'user';
-    }
-
-    /**
-     * Implements ProprietaryInterface — used by the Laminas Ownership assertion.
-     * Returns the user's primary key so the assertion can compare
-     * $role->getOwnerId() === $resource->getOwnerId().
-     */
-    #[Override]
-    public function getOwnerId(): ?int
-    {
-        return $this->id;
-    }
-
-    #[Override]
-    public function getRoleId(): array|string|null
-    {
-        return $this->roleId;
-    }
-
-    /** @return RoleInterface[]|null */
-    #[Override]
-    public function getRoles(): ?array
-    {
-        return $this->roleId;
+        throw new \RuntimeException('User entity does not support exchangeArray()');
     }
 
     /** @param mixed $default */
@@ -190,81 +152,54 @@ class User implements UserInterface
         return $this->details;
     }
 
-    public function withFirstName(string $firstName): self
+    #[Override]
+    public function getIdentity(): ?string
     {
-        return new self(
-            id: $this->id,
-            roleId: $this->roleId,
-            firstName: $firstName,
-            lastName: $this->lastName,
-            email: $this->email,
-            passwordHash: $this->passwordHash,
-            active: $this->active,
-            createdAt: $this->createdAt,
-            verificationToken: $this->verificationToken,
-            tokenCreatedAt: $this->tokenCreatedAt,
-            details: $this->details,
-        );
+        return $this->email;
     }
 
-    public function withLastName(string $lastName): self
+    /**
+     * Implements ProprietaryInterface — used by the Laminas Ownership assertion.
+     * Returns the user's primary key so the assertion can compare
+     * $role->getOwnerId() === $resource->getOwnerId().
+     */
+    #[Override]
+    public function getOwnerId(): ?int
     {
-        return new self(
-            id: $this->id,
-            roleId: $this->roleId,
-            firstName: $this->firstName,
-            lastName: $lastName,
-            email: $this->email,
-            passwordHash: $this->passwordHash,
-            active: $this->active,
-            createdAt: $this->createdAt,
-            verificationToken: $this->verificationToken,
-            tokenCreatedAt: $this->tokenCreatedAt,
-            details: $this->details,
-        );
+        return $this->id;
     }
 
-    public function withEmail(string $email): self
+    /**
+     * Implements ResourceInterface — identifies this object as the 'user' ACL resource.
+     * Allows $acl->isAllowed($role, $userEntity, $privilege) calls.
+     */
+    #[Override]
+    public function getResourceId(): string
     {
-        return new self(
-            id: $this->id,
-            roleId: $this->roleId,
-            firstName: $this->firstName,
-            lastName: $this->lastName,
-            email: $email,
-            passwordHash: $this->passwordHash,
-            active: $this->active,
-            createdAt: $this->createdAt,
-            verificationToken: $this->verificationToken,
-            tokenCreatedAt: $this->tokenCreatedAt,
-            details: $this->details,
-        );
+        return 'user';
     }
 
-    public function withPasswordHash(string $passwordHash): self
+    #[Override]
+    public function getRoleId(): array|string|null
     {
-        if (password_get_info($passwordHash)['algo'] === null) {
-            $passwordHash = password_hash($passwordHash, PASSWORD_DEFAULT);
-        }
-
-        return new self(
-            id: $this->id,
-            roleId: $this->roleId,
-            firstName: $this->firstName,
-            lastName: $this->lastName,
-            email: $this->email,
-            passwordHash: $passwordHash,
-            active: $this->active,
-            createdAt: $this->createdAt,
-            verificationToken: $this->verificationToken,
-            tokenCreatedAt: $this->tokenCreatedAt,
-            details: $this->details,
-        );
+        return $this->roleId;
     }
 
-    public function withActive(bool $active): self
+    /** @return RoleInterface[]|null */
+    #[Override]
+    public function getRoles(): ?array
     {
-        return new self(
+        return $this->roleId;
+    }
+
+    public function toArray(): array
+    {
+        return (array) $this;
+    }
+
+    public function withActive(bool $active): static
+    {
+        return new static(
             id: $this->id,
             roleId: $this->roleId,
             firstName: $this->firstName,
@@ -279,31 +214,9 @@ class User implements UserInterface
         );
     }
 
-    /** @param RoleInterface[]|string[]|string $roleId */
-    public function withRoleId(array $roleId): self
+    public function withDetail(string $name, mixed $value): static
     {
-        if (is_string($roleId)) {
-            $roleId = [$roleId];
-        }
-
-        return new self(
-            id: $this->id,
-            roleId: array_merge($this->roleId, array_values($roleId)),
-            firstName: $this->firstName,
-            lastName: $this->lastName,
-            email: $this->email,
-            passwordHash: $this->passwordHash,
-            active: $this->active,
-            createdAt: $this->createdAt,
-            verificationToken: $this->verificationToken,
-            tokenCreatedAt: $this->tokenCreatedAt,
-            details: $this->details,
-        );
-    }
-
-    public function withDetail(string $name, mixed $value): self
-    {
-        return new self(
+        return new static(
             id: $this->id,
             roleId: $this->roleId,
             firstName: $this->firstName,
@@ -318,18 +231,124 @@ class User implements UserInterface
         );
     }
 
+    public function withEmail(string $email): static
+    {
+        return new static(
+            id: $this->id,
+            roleId: $this->roleId,
+            firstName: $this->firstName,
+            lastName: $this->lastName,
+            email: $email,
+            passwordHash: $this->passwordHash,
+            active: $this->active,
+            createdAt: $this->createdAt,
+            verificationToken: $this->verificationToken,
+            tokenCreatedAt: $this->tokenCreatedAt,
+            details: $this->details,
+        );
+    }
+
+    public function withFirstName(string $firstName): static
+    {
+        return new static(
+            id: $this->id,
+            roleId: $this->roleId,
+            firstName: $firstName,
+            lastName: $this->lastName,
+            email: $this->email,
+            passwordHash: $this->passwordHash,
+            active: $this->active,
+            createdAt: $this->createdAt,
+            verificationToken: $this->verificationToken,
+            tokenCreatedAt: $this->tokenCreatedAt,
+            details: $this->details,
+        );
+    }
+
+    public function withId(int|string|null $id): static
+    {
+        return new static(
+            id: $id,
+            roleId: $this->roleId,
+            firstName: $this->firstName,
+            lastName: $this->lastName,
+            email: $this->email,
+            passwordHash: $this->passwordHash,
+            active: $this->active,
+            createdAt: $this->createdAt,
+            verificationToken: $this->verificationToken,
+            tokenCreatedAt: $this->tokenCreatedAt,
+            details: $this->details,
+        );
+    }
+
+    public function withLastName(string $lastName): static
+    {
+        return new static(
+            id: $this->id,
+            roleId: $this->roleId,
+            firstName: $this->firstName,
+            lastName: $lastName,
+            email: $this->email,
+            passwordHash: $this->passwordHash,
+            active: $this->active,
+            createdAt: $this->createdAt,
+            verificationToken: $this->verificationToken,
+            tokenCreatedAt: $this->tokenCreatedAt,
+            details: $this->details,
+        );
+    }
+
+    public function withPasswordHash(string $passwordHash): static
+    {
+        if (password_get_info($passwordHash)['algo'] === null) {
+            $passwordHash = password_hash($passwordHash, PASSWORD_DEFAULT);
+        }
+
+        return new static(
+            id: $this->id,
+            roleId: $this->roleId,
+            firstName: $this->firstName,
+            lastName: $this->lastName,
+            email: $this->email,
+            passwordHash: $passwordHash,
+            active: $this->active,
+            createdAt: $this->createdAt,
+            verificationToken: $this->verificationToken,
+            tokenCreatedAt: $this->tokenCreatedAt,
+            details: $this->details,
+        );
+    }
+
+    /** @param RoleInterface[]|string[]|string $roleId */
+    public function withRoleId(array $roleId): static
+    {
+        if (is_string($roleId)) {
+            $roleId = [$roleId];
+        }
+
+        return new static(
+            id: $this->id,
+            roleId: array_merge($this->roleId, array_values($roleId)),
+            firstName: $this->firstName,
+            lastName: $this->lastName,
+            email: $this->email,
+            passwordHash: $this->passwordHash,
+            active: $this->active,
+            createdAt: $this->createdAt,
+            verificationToken: $this->verificationToken,
+            tokenCreatedAt: $this->tokenCreatedAt,
+            details: $this->details,
+        );
+    }
+
     public function withRowData(array $withRowData): static
     {
         return new static(...$withRowData);
     }
 
-    public function exchangeArray(array $data): array
+    public function __invoke(): UserInterface
     {
-        throw new \RuntimeException('User entity does not support exchangeArray()');
-    }
-
-    public function toArray(): array
-    {
-        return (array) $this;
+        return new static();
     }
 }

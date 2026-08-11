@@ -25,6 +25,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Ramsey\Uuid\Uuid;
 use Webware\UserManager\Repository\UserRepositoryInterface;
+use Webware\UserManager\UserInterface;
+use Webware\UserManager\View\Helper\UserUrl;
 
 use function htmlspecialchars;
 use function is_array;
@@ -44,6 +46,7 @@ final class ResendVerificationHandler implements RequestHandlerInterface
         private readonly string $baseUrl,
         private readonly string $verificationSubject,
         private readonly string $loginUrl,
+        private readonly UserUrl $userUrl,
     ) {}
 
     #[Override]
@@ -60,7 +63,7 @@ final class ResendVerificationHandler implements RequestHandlerInterface
             return new HtmlResponse(
                 $this->template->render('user::resend-verification', [
                     'error' => 'Please enter a valid email address.',
-                ])
+                ]),
             );
         }
 
@@ -75,33 +78,41 @@ final class ResendVerificationHandler implements RequestHandlerInterface
         // (prevents user enumeration). The "check your inbox" page is always shown.
         if ($user !== null) {
             $token = Uuid::uuid7()->toString();
-            $now   = (new DateTimeImmutable())->format('Y-m-d H:i:s');
+            $now   = new DateTimeImmutable()->format(UserInterface::DATETIME_FORMAT);
 
-            $this->users->update($user->id, [
+            $updated = $this->users->update($user->id, [
                 'verificationToken' => $token,
                 'tokenCreatedAt'    => $now,
             ]);
 
-            $verificationUrl = rtrim($this->baseUrl, '/') . '/verify-email/' . $token;
-            $adapter         = $this->mailer->getAdapter();
+            $verificationUrl =
+                rtrim($this->baseUrl, '/')
+                . ($this->userUrl)('verify.email.read', ['token' => $token]);
+            $adapter = $updated > 0 ? $this->mailer->getAdapter() : null;
 
             if ($adapter !== null) {
-                $adapter
-                    ->from($this->fromEmail, $this->fromName)
+                $adapter->from($this->fromEmail, $this->fromName)
                     ->to($email, $user->firstName . ' ' . $user->lastName)
                     ->subject($this->verificationSubject)
                     ->isHtml(true)
                     ->body(
-                        '<p>Hello ' . htmlspecialchars($user->firstName, ENT_QUOTES, 'UTF-8') . ',</p>'
+                        '<p>Hello '
+                        . htmlspecialchars($user->firstName, ENT_QUOTES, 'UTF-8')
+                        . ',</p>'
                         . '<p>You requested a new verification link. Please verify your email address by clicking below.</p>'
-                        . '<p><a href="' . htmlspecialchars($verificationUrl, ENT_QUOTES, 'UTF-8') . '">Verify my email</a></p>'
-                        . '<p>This link expires in 24 hours.</p>'
+                        . '<p><a href="'
+                        . htmlspecialchars($verificationUrl, ENT_QUOTES, 'UTF-8')
+                        . '">Verify my email</a></p>'
+                        . '<p>This link expires in 24 hours.</p>',
                     )
                     ->altBody(
-                        'Hello ' . $user->firstName . ",\n\n"
+                        'Hello '
+                        . $user->firstName
+                        . ",\n\n"
                         . "You requested a new verification link. Please visit:\n"
-                        . $verificationUrl . "\n\n"
-                        . "This link expires in 24 hours.\n"
+                        . $verificationUrl
+                        . "\n\n"
+                        . "This link expires in 24 hours.\n",
                     );
 
                 $this->mailer->send();
@@ -109,7 +120,7 @@ final class ResendVerificationHandler implements RequestHandlerInterface
         }
 
         return new HtmlResponse(
-            $this->template->render('user::resend-verification', ['sent' => true])
+            $this->template->render('user::resend-verification', ['sent' => true]),
         );
     }
 }

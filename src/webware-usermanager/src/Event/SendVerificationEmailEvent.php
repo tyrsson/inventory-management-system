@@ -3,16 +3,15 @@
 declare(strict_types=1);
 
 namespace Webware\UserManager\Event;
-    
+
 use Webware\Event\Event;
-use Webware\UserManager\Command\SaveUserCommand;
-use Webware\UserManager\UserInterface;
+use Webware\UserManager\Command\CreateUserCommand;
+use Webware\UserManager\Command\UpdateUserCommand;
 
 final class SendVerificationEmailEvent extends Event
 {
     public function __construct(
-        public readonly SaveUserCommand|UserInterface $target,
-        public readonly string $verificationToken,
+        public readonly CreateUserCommand|UpdateUserCommand $target,
     ) {}
 
     public function getEmail(): string
@@ -20,13 +19,13 @@ final class SendVerificationEmailEvent extends Event
         return $this->target->email;
     }
 
-    public function getToken(): string
-    {
-        return $this->verificationToken;
-    }
-
-    public function getCommand(): SaveUserCommand|UserInterface
+    public function getTarget(): CreateUserCommand|UpdateUserCommand
     {
         return $this->target;
+    }
+
+    public function getToken(): string
+    {
+        return $this->target->verificationToken;
     }
 }

@@ -6,15 +6,17 @@ namespace Webware\ResultSet;
 
 use ArrayObject;
 use Override;
-use PhpDb\ResultSet\RowPrototypeInterface;
+use PhpDb\Exception\InvalidArgumentException;
 use PhpDb\ResultSet\AbstractResultSet;
 use PhpDb\ResultSet\ResultSetInterface;
+use PhpDb\ResultSet\RowPrototypeInterface;
 
 final class WithRowDataResultSet extends AbstractResultSet
 {
     public function __construct(
-        private WithRowDataPrototypeInterface $rowPrototype
+        private WithRowDataPrototypeInterface $rowPrototype,
     ) {}
+
     /**
      * Iterator: get current item
      */
@@ -31,23 +33,23 @@ final class WithRowDataResultSet extends AbstractResultSet
     }
 
     #[Override]
+    public function getRowPrototype(): WithRowDataPrototypeInterface
+    {
+        return $this->rowPrototype;
+    }
+
+    #[Override]
     public function setRowPrototype(
-        ArrayObject|RowPrototypeInterface|WithRowDataPrototypeInterface $rowPrototype
+        ArrayObject|RowPrototypeInterface|WithRowDataPrototypeInterface $rowPrototype,
     ): ResultSetInterface {
         if (! $rowPrototype instanceof WithRowDataPrototypeInterface) {
-            throw new \InvalidArgumentException(
-                'Row prototype must implement ' . WithRowDataPrototypeInterface::class
+            throw new InvalidArgumentException(
+                'Row prototype must implement ' . WithRowDataPrototypeInterface::class,
             );
         }
 
         $this->rowPrototype = $rowPrototype;
 
         return $this;
-    }
-
-    #[Override]
-    public function getRowPrototype(): WithRowDataPrototypeInterface
-    {
-        return $this->rowPrototype;
     }
 }

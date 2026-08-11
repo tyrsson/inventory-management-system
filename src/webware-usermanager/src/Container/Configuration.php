@@ -42,9 +42,9 @@ final readonly class Configuration extends Config
                 self::MEZZIO_AUTH_KEY,
                 'array',
                 get_debug_type(
-                    $config[self::MEZZIO_AUTH_KEY]
+                    $config[self::MEZZIO_AUTH_KEY],
                 ),
-                $callingFactory
+                $callingFactory,
             );
         }
 

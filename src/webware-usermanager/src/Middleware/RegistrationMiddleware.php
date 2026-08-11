@@ -22,65 +22,76 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Ramsey\Uuid\Uuid;
+use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandStatus;
 use Webware\CommandBus\CommandBusInterface;
-use Webware\UserManager\Command\SaveUserCommand;
+use Webware\UserManager\Command\CreateUserCommand;
+use Webware\UserManager\InputFilter\UserDataFilter;
+use Webware\UserManager\InputFilter\ValidationGroupTrait;
+
+use function array_merge;
+use function json_encode;
 
 final class RegistrationMiddleware implements MiddlewareInterface
 {
-    public const DEFAULT_ROLE = 'Warehouse';
+    use ValidationGroupTrait;
+
+    const string DEFAULT_ROLE_ID = 'Member';
+    const array DEFAULT_ROLE    = ['Member'];
 
     public function __construct(
         private readonly CommandBusInterface $commandBus,
         private readonly TemplateRendererInterface $template,
+        private readonly UserDataFilter $filter,
     ) {}
 
     #[Override]
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $body = (array) $request->getParsedBody();
+        $data = array_merge(
+            $request->getParsedBody(),
+            [
+                'verificationToken' => Uuid::uuid7()->toString(),
+                'roleId'            => json_encode(self::DEFAULT_ROLE),
+                'active'            => '0',
+            ],
+        );
 
-        $errors = [];
-        foreach (['firstName', 'lastName', 'email', 'password', 'storeId'] as $field) {
-            if (empty($body[$field])) {
-                $errors[] = sprintf('Field "%s" is required.', $field);
-            }
-        }
+        $this->filter->setValidationGroup(self::REGISTRATION_VALIDATION_GROUP);
+        $this->filter->setData($data);
 
-        if (! empty($body['email']) && ! filter_var($body['email'], FILTER_VALIDATE_EMAIL)) {
-            $errors[] = 'A valid email address is required.';
-        }
-
-        if (! empty($errors)) {
+        if (! $this->filter->isValid()) {
             return new HtmlResponse(
-                $this->template->render('user::registration', ['errors' => $errors]),
-                422
+                $this->template->render('user::registration', ['errors' => $this->filter->getMessages()]),
+                422,
             );
         }
 
-        $command = new SaveUserCommand(
-            firstName: (string) $body['firstName'],
-            lastName: (string) $body['lastName'],
-            email: (string) $body['email'],
-            password: (string) $body['password'],
-            storeId: (int) $body['storeId'],
-        );
+        $values = $this->filter->getValues();
+        unset($values['confirmPasswordHash']);
 
-        $result = $this->commandBus->handle($command);
+        $result = $this->commandBus->handle(
+            new CreateUserCommand(...$values),
+        );
 
         if ($result->getStatus() === CommandStatus::Failure) {
             return new HtmlResponse(
                 $this->template->render('user::registration', ['errors' => [$result->getResult()]]),
-                500
+                500,
             );
         }
 
         /** @var SystemMessengerInterface|null $messenger */
         $messenger = $request->getAttribute(SystemMessengerInterface::class);
-        $messenger?->success('Registration successful! Please check your email to verify your account.', hops: 1, now: false);
+        $messenger?->success(
+            'Registration successful! Please check your email to verify your account.',
+            hops: 1,
+            now: false,
+        );
 
         return $handler->handle(
-            $request->withAttribute('registration_result', $result)
+            $request->withAttribute(CommandResult::class, $result),
         );
     }
 }

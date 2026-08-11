@@ -21,6 +21,7 @@ use Override;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Webware\CommandBus\Command\CommandResult;
 use Webware\CommandBus\Command\CommandStatus;
 
 final class RegistrationHandler implements RequestHandlerInterface
@@ -33,9 +34,10 @@ final class RegistrationHandler implements RequestHandlerInterface
     #[Override]
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $result = $request->getAttribute('registration_result');
+        /** @var CommandResult $result */
+        $result = $request->getAttribute(CommandResult::class);
 
-        if ($result !== null && $result->getStatus() === CommandStatus::Success) {
+        if (null !== $result && $result->getStatus() === CommandStatus::Success) {
             return new RedirectResponse($this->loginUrl);
         }
 

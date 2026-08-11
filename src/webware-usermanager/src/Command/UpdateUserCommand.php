@@ -17,13 +17,13 @@ namespace Webware\UserManager\Command;
 use Webware\CommandBus\Command\NamedCommandInterface;
 use Webware\CommandBus\Command\NamedCommandTrait;
 
-final readonly class UpdateUserCommand implements NamedCommandInterface
+readonly class UpdateUserCommand implements NamedCommandInterface
 {
     use NamedCommandTrait;
 
     /** @param string[] $roleId */
     public function __construct(
-        public int $id,
+        public string|int $id,
         public string $firstName,
         public string $lastName,
         public string $email,

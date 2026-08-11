@@ -22,6 +22,7 @@ use Mezzio\Router\RouteProviderInterface;
 use Override;
 use Webware\UserManager\Admin\RequestHandler\CreateUserHandler;
 use Webware\UserManager\Admin\RequestHandler\ToggleUserActiveHandler;
+use Webware\UserManager\Admin\RequestHandler\UpdateUserHandler;
 use Webware\UserManager\Admin\RequestHandler\UpdateUserModalHandler;
 use Webware\UserManager\Middleware\LoginMiddleware;
 use Webware\UserManager\Middleware\ProcessToggleUserActiveMiddleware;
@@ -125,10 +126,10 @@ final readonly class RouteProvider implements RouteProviderInterface
             $this->routeNamePrefix . 'logout.read',
         )->setOptions([
             'navigation' => 'user',
-            'label' => 'Logout',
-            'icon' => 'bi-box-arrow-right',
-            'parent' => null,
-            'order' => 10,
+            'label'      => 'Logout',
+            'icon'       => 'bi-box-arrow-right',
+            'parent'     => null,
+            'order'      => 10,
         ]);
 
         // Admin
@@ -140,27 +141,26 @@ final readonly class RouteProvider implements RouteProviderInterface
             rtrim($this->adminRouteNamePrefix, '.'),
         )->setOptions([
             'navigation' => 'admin',
-            'label' => 'Users',
-            'icon' => 'bi-people-fill',
-            'parent' => null,
-            'order' => 20,
+            'label'      => 'Users',
+            'icon'       => 'bi-people-fill',
+            'parent'     => null,
+            'order'      => 20,
         ]);
 
-        $routeCollector
-            ->route(
-                '/' . $this->adminRouteSegment . '/create',
-                $middlewareFactory->prepare([
-                    CreateUserHandler::class,
-                ]),
-                ['GET', 'POST'],
-                $this->adminRouteNamePrefix . 'create',
-            )
+        $routeCollector->route(
+            '/' . $this->adminRouteSegment . '/create',
+            $middlewareFactory->prepare([
+                CreateUserHandler::class,
+            ]),
+            ['GET', 'POST'],
+            $this->adminRouteNamePrefix . 'create',
+        )
             ->setOptions([
                 'navigation' => 'admin',
-                'label' => 'Create User',
-                'icon' => 'bi-person-plus-fill',
-                'parent' => rtrim($this->adminRouteNamePrefix, '.'),
-                'order' => 10,
+                'label'      => 'Create User',
+                'icon'       => 'bi-person-plus-fill',
+                'parent'     => rtrim($this->adminRouteNamePrefix, '.'),
+                'order'      => 10,
             ]);
 
         // Update the user (PATCH) — re-renders the user list (mirrors webware-acl's role.update route)
@@ -169,7 +169,7 @@ final readonly class RouteProvider implements RouteProviderInterface
             $middlewareFactory->prepare([
                 BodyParamsMiddleware::class,
                 ProcessUpdateUserMiddleware::class,
-                UserListHandler::class,
+                UpdateUserHandler::class,
             ]),
             ['PATCH'],
             $this->adminRouteNamePrefix . 'update',

@@ -14,10 +14,13 @@ declare(strict_types=1);
 
 namespace Webware\UserManager\Middleware\Container;
 
+use Laminas\InputFilter\InputFilterPluginManager;
 use Mezzio\Template\TemplateRendererInterface;
 use Psr\Container\ContainerInterface;
 use Webware\CommandBus\CommandBusInterface;
+use Webware\UserManager\InputFilter\UserDataFilter;
 use Webware\UserManager\Middleware\RegistrationMiddleware;
+use Webware\UserManager\UserInterface;
 
 final class RegistrationMiddlewareFactory
 {
@@ -26,6 +29,7 @@ final class RegistrationMiddlewareFactory
         return new RegistrationMiddleware(
             $container->get(CommandBusInterface::class),
             $container->get(TemplateRendererInterface::class),
+            $container->get(InputFilterPluginManager::class)->get(UserDataFilter::class),
         );
     }
 }

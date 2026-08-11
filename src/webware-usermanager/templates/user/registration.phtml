@@ -35,7 +35,7 @@ $this->headTitle('Create Account');
                         <h1 class="h4 fw-bold mb-1">Create Account</h1>
                         <p class="text-secondary small mb-4">Fill in your details to request access.</p>
 
-                        <?php if (!empty($this->errors)): ?>
+                        <?php if (! empty($this->errors)): ?>
                         <div class="alert alert-danger" role="alert">
                             <ul class="mb-0 ps-3">
                                 <?php foreach ($this->errors as $error): ?>
@@ -88,26 +88,13 @@ $this->headTitle('Create Account');
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label form-label-sm fw-semibold" for="reg-store">Store Number</label>
-                                <input
-                                    type="number"
-                                    class="form-control"
-                                    id="reg-store"
-                                    name="storeId"
-                                    placeholder="e.g. 207"
-                                    min="1"
-                                    required
-                                />
-                            </div>
-
-                            <div class="mb-3">
                                 <label class="form-label form-label-sm fw-semibold" for="reg-password">Password</label>
                                 <div class="input-group">
                                     <input
                                         type="password"
                                         class="form-control"
                                         id="reg-password"
-                                        name="password"
+                                        name="passwordHash"
                                         placeholder="••••••••"
                                         autocomplete="new-password"
                                         required
@@ -129,7 +116,7 @@ $this->headTitle('Create Account');
                                     type="password"
                                     class="form-control"
                                     id="reg-confirm"
-                                    name="confirmPassword"
+                                    name="confirmPasswordHash"
                                     placeholder="••••••••"
                                     autocomplete="new-password"
                                     required
@@ -158,35 +145,36 @@ $this->headTitle('Create Account');
     </div>
 </div>
 <?php
+
 $this->inlineScript()->appendScript(<<<'JS'
-(function () {
-const pwInput   = document.getElementById('reg-password');
-const confirm   = document.getElementById('reg-confirm');
-const toggleBtn = document.getElementById('toggle-password');
-const icon      = document.getElementById('toggle-icon');
+    (function () {
+    const pwInput   = document.getElementById('reg-password');
+    const confirm   = document.getElementById('reg-confirm');
+    const toggleBtn = document.getElementById('toggle-password');
+    const icon      = document.getElementById('toggle-icon');
 
-toggleBtn.addEventListener('click', () => {
-    const isVisible = pwInput.type === 'text';
-    pwInput.type   = isVisible ? 'password' : 'text';
-    icon.className = isVisible ? 'bi bi-eye' : 'bi bi-eye-slash';
-});
+    toggleBtn.addEventListener('click', () => {
+        const isVisible = pwInput.type === 'text';
+        pwInput.type   = isVisible ? 'password' : 'text';
+        icon.className = isVisible ? 'bi bi-eye' : 'bi bi-eye-slash';
+    });
 
-confirm.addEventListener('input', () => {
-    if (confirm.value && confirm.value !== pwInput.value) {
-        confirm.classList.add('is-invalid');
-    } else {
-        confirm.classList.remove('is-invalid');
-    }
-});
+    confirm.addEventListener('input', () => {
+        if (confirm.value && confirm.value !== pwInput.value) {
+            confirm.classList.add('is-invalid');
+        } else {
+            confirm.classList.remove('is-invalid');
+        }
+    });
 
-document.querySelector('form').addEventListener('submit', (e) => {
-    if (confirm.value !== pwInput.value) {
-        e.preventDefault();
-        confirm.classList.add('is-invalid');
-        confirm.focus();
-    }
-});
-})();
-JS);
+    document.querySelector('form').addEventListener('submit', (e) => {
+        if (confirm.value !== pwInput.value) {
+            e.preventDefault();
+            confirm.classList.add('is-invalid');
+            confirm.focus();
+        }
+    });
+    })();
+    JS);
 ?>
 <?= $this->imsMessenger() ?>

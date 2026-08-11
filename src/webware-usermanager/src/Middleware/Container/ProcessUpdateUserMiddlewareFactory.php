@@ -14,14 +14,20 @@ declare(strict_types=1);
 
 namespace Webware\UserManager\Middleware\Container;
 
+use Laminas\InputFilter\InputFilterPluginManager;
 use Psr\Container\ContainerInterface;
 use Webware\CommandBus\CommandBusInterface;
+use Webware\UserManager\InputFilter\UserDataFilter;
 use Webware\UserManager\Middleware\ProcessUpdateUserMiddleware;
 
 final class ProcessUpdateUserMiddlewareFactory
 {
     public function __invoke(ContainerInterface $container): ProcessUpdateUserMiddleware
     {
-        return new ProcessUpdateUserMiddleware(commandBus: $container->get(CommandBusInterface::class));
+        $manager = $container->get(InputFilterPluginManager::class);
+        return new ProcessUpdateUserMiddleware(
+            commandBus: $container->get(CommandBusInterface::class),
+            filter: $manager->get(UserDataFilter::class),
+        );
     }
 }
